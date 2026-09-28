@@ -11,6 +11,7 @@
 - [x] Migración a PostgreSQL
 - [x] Secretos fuera del repositorio, con validación al arrancar
 - [x] Normalización de correos, códigos y series
+- [x] OpenAPI (`/openapi/v1.json`) y Scalar (`/scalar`) en desarrollo
 
 ## Siguiente: base técnica
 
@@ -20,7 +21,6 @@
 | Costo en dólares | `PurchaseLine.InventoryUnitCost` y `StockEntry.UnitCost` quedan en la moneda de la factura, sin aplicar el tipo de cambio: el stock mezcla soles y dólares. **Resolver antes de importaciones.** |
 | `CompanyController.Update` no llama a `Validate()` | Único endpoint que se salta la validación del request |
 | Logs con Serilog | Archivo de logs y consola sin el SQL de cada consulta |
-| OpenAPI + Scalar | Documentación y pruebas desde el navegador |
 | Tests de los cálculos | IGV, conversión de unidades y costeo: es dinero |
 
 ## Después: módulos del negocio
@@ -37,7 +37,7 @@
 5. **Caja y cobranzas**: pagos, ventas al crédito, cuentas por cobrar y por pagar.
 6. **Reportes y dashboard**.
 7. **Facturación electrónica**: XML UBL 2.1, firma digital, envío a SUNAT u OSE, CDR, representación impresa con QR.
-8. **Frontend** (Vite).
+8. **Frontend**: repositorio aparte, `AmirCorp-ERP-Web` (React + Vite). Consume el contrato OpenAPI de esta API.
 9. **Despliegue en Railway**.
 
 ## Decisiones pendientes

@@ -3,6 +3,7 @@ using ERP.Api.Extensions;
 using ERP.Application;
 using ERP.Infrastructure;
 using ERP.Persistence;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,4 +27,15 @@ app.UseCors("AllowLocalhost");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Documentación de la API solo en desarrollo: /openapi/v1.json y /scalar
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference(options => options
+        .WithTitle("AmirCorp ERP API")
+        .AddPreferredSecuritySchemes("Bearer")
+        );
+}
+
 app.Run();

@@ -78,7 +78,12 @@ dotnet ef database update --project ERP.Persistence --startup-project ERP.Api
 ### 4. Arrancar la API
 Al iniciar por primera vez se crea el SuperAdmin con los datos de tus secrets (verás `SuperAdmin creado.` en la consola). La API escucha en `http://localhost:5117` y `https://localhost:7234`.
 
-Para probarla, abre [ERP.Api/ERP.Api.http](ERP.Api/ERP.Api.http) en Visual Studio: tiene el login y ejemplos que reutilizan el token.
+Para probarla:
+- **`http://localhost:5117/scalar`**: documentación interactiva. Haz login, copia el token en *Authentication* y prueba cualquier endpoint.
+- **`http://localhost:5117/openapi/v1.json`**: el contrato OpenAPI. El frontend genera su cliente con tipos a partir de este archivo.
+- [ERP.Api/ERP.Api.http](ERP.Api/ERP.Api.http) en Visual Studio: login y ejemplos que reutilizan el token.
+
+Scalar y OpenAPI solo se publican en el entorno de desarrollo.
 
 ## Endpoints
 

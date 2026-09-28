@@ -1,5 +1,6 @@
 ﻿using ERP.Api.Json;
 using ERP.Api.Middleware;
+using ERP.Api.OpenApi;
 using ERP.Api.Services;
 using ERP.Application.Contracts.Api;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -41,6 +42,22 @@ namespace ERP.Api
                         options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
                         options.JsonSerializerOptions.Converters.Add(new TrimmingStringConverter());
                     });
+
+                // El generador de OpenAPI lee estas opciones: sin ellas documentaría los enums como números.
+                services.ConfigureHttpJsonOptions(options =>
+                    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter())
+                    );
+
+                services.AddOpenApi(options =>
+                {
+                    options.AddDocumentTransformer((document, context, cancellationToken) =>
+                    {
+                        document.Info.Title = "AmirCorp ERP API";
+                        return Task.CompletedTask;
+                    });
+                    options.AddDocumentTransformer<BearerSecurityTransformer>();
+                    options.AddOperationTransformer<BearerSecurityTransformer>();
+                });
 
                 var jwtSecret = configuration["JwtSettings:Secret"];
 
