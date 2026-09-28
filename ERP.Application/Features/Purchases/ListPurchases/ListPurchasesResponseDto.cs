@@ -16,9 +16,7 @@ namespace ERP.Application.Features.Purchases.ListPurchases
         string SupplierName,
         decimal Total,
         bool IsCancelled,
-        string? CancellationReason,
-        DateTime CreatedAt,
-        string? CreatedByName
+        string? CancellationReason
         )
     {
         public string TaxDocumentTypeDescription => TaxDocumentType.Description;

@@ -48,6 +48,8 @@ namespace ERP.Persistence
                     .AddScoped<IPurchaseRepository, PurchaseRepository>()
                     .AddScoped<IPurchaseQueries, PurchaseQueries>()
 
+                    .AddScoped<IAuditQueries, AuditQueries>()
+
                     .AddScoped<IUnitOfWork, UnitOfWork>();
 
                 return services;

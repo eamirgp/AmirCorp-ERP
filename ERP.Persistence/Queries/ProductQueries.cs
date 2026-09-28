@@ -55,9 +55,7 @@ namespace ERP.Persistence.Queries
                     p.UnitOfMeasure,
                     p.IgvAffectation,
                     p.SalePrice,
-                    p.IsActive,
-                    p.CreatedAt,
-                    _context.Users.Where(u => u.Id == p.CreatedBy).Select(u => u.Name).FirstOrDefault()
+                    p.IsActive
                     ))
                 .ToArrayAsync();
 

@@ -59,9 +59,7 @@ namespace ERP.Persistence.Queries
                     bp.Name,
                     bp.IsClient,
                     bp.IsSupplier,
-                    bp.IsActive,
-                    bp.CreatedAt,
-                    _context.Users.Where(u => u.Id == bp.CreatedBy).Select(u => u.Name).FirstOrDefault()
+                    bp.IsActive
                     ))
                 .ToArrayAsync();
 

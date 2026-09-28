@@ -1,4 +1,5 @@
 ﻿using ERP.Domain.Companies;
+using ERP.Persistence.Auditing;
 using ERP.Domain.Inventory;
 using ERP.Domain.Partners;
 using ERP.Domain.Products;
@@ -24,5 +25,6 @@ namespace ERP.Persistence.Context
         public DbSet<StockEntry> StockEntries => Set<StockEntry>();
         public DbSet<Purchase> Purchases => Set<Purchase>();
         public DbSet<PurchaseLine> PurchaseLines => Set<PurchaseLine>();
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     }
 }

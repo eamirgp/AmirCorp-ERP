@@ -77,7 +77,7 @@ El frontend (`AmirCorp-ERP-Web`) no valida, no calcula, no normaliza y no decide
 - **Cálculos:** cuando una pantalla necesita mostrar un resultado antes de guardar (totales de una compra, costo de una importación), se expone un endpoint de cálculo que no guarda nada. El frontend no replica fórmulas.
 - **Descripciones** de enums y catálogos en las respuestas (`...Description`).
 - **Paginación:** cada lista paginada trae `page`, `totalPages`, `hasNextPage`, el rango visible (`from`, `to`) y los tamaños de página que se pueden elegir (`pageSizeOptions`). Un `PageSize` fuera del rango se ajusta al mínimo o al máximo.
-- **Auditoría:** las listas traen quién creó cada registro y cuándo (`createdAt`, `createdByName`). El detalle trae además la última modificación (`updatedAt`, `updatedByName`).
+- **Auditoría:** el historial de cambios se consulta en `GET /api/audit` con los textos listos para mostrar (ver la decisión 12).
 - **Permisos:** qué módulos y acciones puede usar el usuario se informará en `GET /api/me` cuando existan pantallas que dependan del rol.
 - **Contrato exacto:** cada endpoint declara su respuesta en OpenAPI (ver [arquitectura.md](arquitectura.md#contrato-openapi)). El frontend genera sus tipos de ahí y detecta cambios con `npm run api:check`. Las propiedades calculadas de las respuestas (`RoleDescription`, `CanImport`…) se documentan como obligatorias (`ComputedPropertiesTransformer`), porque siempre se envían.
 
@@ -91,3 +91,16 @@ Los productos se pueden cargar desde un Excel (`/api/products/import/...`). Se e
 - **Todo o nada** (`POST import`): vuelve a leer el archivo y, si hay un solo error, no guarda nada. Si todo está bien, guarda en una sola transacción.
 - **Los códigos existentes no se tocan por defecto.** Solo se actualizan si el usuario marca "Actualizar los productos que ya existen". Así una carga de productos nuevos no puede cambiar precios por accidente.
 - El producto se valida con `Product.Create`, las mismas reglas que al crearlo a mano. Límites: 5 MB y 5000 filas.
+
+### 12. Historial de cambios (auditoría)
+**Fecha:** setiembre 2026
+
+Cada cambio en productos, clientes y proveedores, empresas, usuarios y compras queda en la tabla `AuditLogs`: quién, cuándo, qué registro, qué acción y qué campos cambiaron (valor anterior y nuevo).
+
+- **Automático:** lo escribe `AuditInterceptor` al guardar, en la misma transacción. Los casos de uso no hacen nada y ningún cambio se escapa, tampoco los de la carga masiva.
+- **Textos listos:** `AuditDescriber` define qué campos se registran, su nombre ("Precio de venta") y cómo se muestran sus valores ("S/ 30.00", "Caja", "Sí"). Se guardan ya formateados: el historial muestra lo que el usuario vio en su momento.
+- **Acciones:** creación, modificación, activación, desactivación, anulación y cambio de contraseña. De la contraseña nunca se guarda el valor.
+- **Solo lectura:** la API no tiene endpoints para modificar ni borrar el historial.
+- **Consulta:** `GET /api/audit` con filtros por módulo, registro, usuario, acción, rango de fechas (días en hora de Perú) y texto. Solo SuperAdmin y Admin.
+- **Pantallas:** no va en las tablas ni en los formularios. Cada registro tiene su acción "Historial" (panel lateral) y hay una pantalla "Auditoría" en Administración.
+- El historial empieza a registrarse desde la migración `AddAuditLogs`. Lo anterior solo conserva `CreatedBy` y `UpdatedBy` en cada tabla.

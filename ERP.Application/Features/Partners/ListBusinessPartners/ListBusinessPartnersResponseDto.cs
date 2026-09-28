@@ -11,9 +11,7 @@ namespace ERP.Application.Features.Partners.ListBusinessPartners
         string Name,
         bool IsClient,
         bool IsSupplier,
-        bool IsActive,
-        DateTime CreatedAt,
-        string? CreatedByName
+        bool IsActive
         )
     {
         public string IdentityDocumentTypeDescription => IdentityDocumentType.Description;
