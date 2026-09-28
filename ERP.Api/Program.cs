@@ -22,7 +22,12 @@ await app.SeedSuperAdminAsync();
 // Configure the HTTP request pipeline.
 
 app.UseExceptionHandler();
-app.UseHttpsRedirection();
+
+// En desarrollo el frontend llama por http://localhost:5117. Redirigir a HTTPS rompe el preflight
+// de CORS: el navegador no acepta una redirección como respuesta a la consulta OPTIONS.
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+
 app.UseCors("AllowLocalhost");
 app.UseAuthentication();
 app.UseAuthorization();
