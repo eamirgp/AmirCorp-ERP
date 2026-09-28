@@ -1,4 +1,6 @@
-﻿using ERP.Api.Controllers.Purchases.Requests;
+﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Common.Responses;
+using ERP.Api.Controllers.Purchases.Requests;
 using ERP.Api.Extensions;
 using ERP.Application.Features.Purchases.CancelPurchase;
 using ERP.Application.Features.Purchases.CreatePurchase;
@@ -33,6 +35,7 @@ namespace ERP.Api.Controllers.Purchases
         }
 
         [HttpPost]
+        [ProducesResponseType<CreatedResponseDto>(StatusCodes.Status201Created)]
         public async Task<IActionResult> Create([FromBody] CreatePurchaseRequest createPurchaseRequest)
         {
             var errors = createPurchaseRequest.Validate();
@@ -44,10 +47,12 @@ namespace ERP.Api.Controllers.Purchases
         }
 
         [HttpGet]
+        [ProducesResponseType<PagedResult<ListPurchasesResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> List([FromQuery] ListPurchasesRequest listPurchasesRequest) =>
             Ok(await _listPurchasesUseCase.ExecuteAsync(listPurchasesRequest.ToDto()));
 
         [HttpGet("{id:guid}")]
+        [ProducesResponseType<GetPurchaseResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(Guid id)
         {
             var response = await _getPurchaseUseCase.ExecuteAsync(new GetPurchaseDto(id));
@@ -55,6 +60,7 @@ namespace ERP.Api.Controllers.Purchases
         }
 
         [HttpPatch("{id:guid}/cancel")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Cancel(Guid id, [FromBody]CancelPurchaseRequest cancelPurchaseRequest)
         {
             var errors = cancelPurchaseRequest.Validate();

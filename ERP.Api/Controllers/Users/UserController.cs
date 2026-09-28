@@ -1,4 +1,5 @@
-﻿using ERP.Api.Controllers.Users.Requests;
+﻿using ERP.Application.Common.Responses;
+using ERP.Api.Controllers.Users.Requests;
 using ERP.Api.Extensions;
 using ERP.Application.Features.Users.ActivateUser;
 using ERP.Application.Features.Users.ChangeUserRole;
@@ -53,6 +54,7 @@ namespace ERP.Api.Controllers.Users
         }
 
         [HttpPost]
+        [ProducesResponseType<CreatedResponseDto>(StatusCodes.Status201Created)]
         public async Task<IActionResult> Create([FromBody]CreateUserRequest createUserRequest)
         {
             var errors = createUserRequest.Validate();
@@ -64,14 +66,17 @@ namespace ERP.Api.Controllers.Users
         }
 
         [HttpGet("roles")]
+        [ProducesResponseType<IReadOnlyCollection<ListAssignableRolesResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListRoles() =>
             Ok(await _listAssignableRolesUseCase.ExecuteAsync());
 
         [HttpGet]
+        [ProducesResponseType<IReadOnlyCollection<ListUsersResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> List() =>
             Ok(await _listUsersUseCase.ExecuteAsync());
 
         [HttpPatch("{id:guid}/activate")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Activate(Guid id)
         {
             var result = await _activateUserUseCase.ExecuteAsync(new ActivateUserDto(id));
@@ -79,6 +84,7 @@ namespace ERP.Api.Controllers.Users
         }
 
         [HttpPatch("{id:guid}/deactivate")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Deactivate(Guid id)
         {
             var result = await _deactivateUserUseCase.ExecuteAsync(new DeactivateUserDto(id));
@@ -86,6 +92,7 @@ namespace ERP.Api.Controllers.Users
         }
 
         [HttpPut("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> UpdateProfile(Guid id, [FromBody]UpdateUserProfileRequest updateUserProfileRequest)
         {
             var errors = updateUserProfileRequest.Validate();
@@ -97,6 +104,7 @@ namespace ERP.Api.Controllers.Users
         }
 
         [HttpPatch("{id:guid}/role")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ChangeRole(Guid id, [FromBody]ChangeUserRoleRequest changeUserRoleRequest)
         {
             var errors = changeUserRoleRequest.Validate();
@@ -108,6 +116,7 @@ namespace ERP.Api.Controllers.Users
         }
 
         [HttpPatch("{id:guid}/password")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ResetPassword(Guid id, [FromBody]ResetUserPasswordRequest resetUserPasswordRequest)
         {
             var errors = resetUserPasswordRequest.Validate();
@@ -119,6 +128,7 @@ namespace ERP.Api.Controllers.Users
         }
 
         [HttpGet("{id:guid}")]
+        [ProducesResponseType<GetUserResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(Guid id)
         {
             var response = await _getUserUseCase.ExecuteAsync(new GetUserDto(id));

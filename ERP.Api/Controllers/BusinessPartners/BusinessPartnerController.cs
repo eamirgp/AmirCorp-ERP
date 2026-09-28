@@ -1,4 +1,6 @@
-﻿using ERP.Api.Controllers.BusinessPartners.Requests;
+﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Common.Responses;
+using ERP.Api.Controllers.BusinessPartners.Requests;
 using ERP.Api.Extensions;
 using ERP.Application.Features.Partners.ActivateBusinessPartner;
 using ERP.Application.Features.Partners.CreateBusinessPartner;
@@ -45,6 +47,7 @@ namespace ERP.Api.Controllers.BusinessPartners
         }
 
         [HttpPost]
+        [ProducesResponseType<CreatedResponseDto>(StatusCodes.Status201Created)]
         public async Task<IActionResult> Create([FromBody]CreateBusinessPartnerRequest createBusinessPartnerRequest)
         {
             var errors = createBusinessPartnerRequest.Validate();
@@ -56,10 +59,12 @@ namespace ERP.Api.Controllers.BusinessPartners
         }
 
         [HttpGet("identity-document-types")]
+        [ProducesResponseType<IReadOnlyCollection<ListIdentityDocumentTypesResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListIdentityDocumentTypes() =>
             Ok(await _listIdentityDocumentTypesUseCase.ExecuteAsync());
 
         [HttpGet]
+        [ProducesResponseType<PagedResult<ListBusinessPartnersResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> List([FromQuery]ListBusinessPartnersRequest listBusinessPartnersRequest)
         {
             var response = await _listBusinessPartnersUseCase.ExecuteAsync(listBusinessPartnersRequest.ToDto());
@@ -67,6 +72,7 @@ namespace ERP.Api.Controllers.BusinessPartners
         }
 
         [HttpPatch("{id:guid}/activate")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Activate(Guid id)
         {
             var result = await _activateBusinessPartnerUseCase.ExecuteAsync(new ActivateBusinessPartnerDto(id));
@@ -74,6 +80,7 @@ namespace ERP.Api.Controllers.BusinessPartners
         }
 
         [HttpPatch("{id:guid}/deactivate")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Deactivate(Guid id)
         {
             var result = await _deactivateBusinessPartnerUseCase.ExecuteAsync(new DeactivateBusinessPartnerDto(id));
@@ -81,6 +88,7 @@ namespace ERP.Api.Controllers.BusinessPartners
         }
 
         [HttpPut("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Update(Guid id, [FromBody]UpdateBusinessPartnerRequest updateBusinessPartnerRequest)
         {
             var errors = updateBusinessPartnerRequest.Validate();
@@ -92,6 +100,7 @@ namespace ERP.Api.Controllers.BusinessPartners
         }
 
         [HttpGet("{id:guid}")]
+        [ProducesResponseType<GetBusinessPartnerResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(Guid id)
         {
             var response = await _getBusinessPartnerUseCase.ExecuteAsync(new GetBusinessPartnerDto(id));

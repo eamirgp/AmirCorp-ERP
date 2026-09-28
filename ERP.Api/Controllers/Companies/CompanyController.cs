@@ -1,4 +1,5 @@
-﻿using ERP.Api.Controllers.Companies.Requests;
+﻿using ERP.Application.Common.Responses;
+using ERP.Api.Controllers.Companies.Requests;
 using ERP.Api.Extensions;
 using ERP.Application.Features.Companies.Activate;
 using ERP.Application.Features.Companies.CreateCompany;
@@ -41,6 +42,7 @@ namespace ERP.Api.Controllers.Companies
         }
 
         [HttpPost]
+        [ProducesResponseType<CreatedResponseDto>(StatusCodes.Status201Created)]
         public async Task<IActionResult> Create([FromBody]CreateCompanyRequest createCompanyRequest)
         {
             var errors = createCompanyRequest.Validate();
@@ -52,10 +54,12 @@ namespace ERP.Api.Controllers.Companies
         }
 
         [HttpGet]
+        [ProducesResponseType<IReadOnlyCollection<ListCompaniesResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> List() =>
             Ok(await _listCompaniesUseCase.ExecuteAsync());
 
         [HttpPatch("{id:guid}/activate")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Activate(Guid id)
         {
             var result = await _activateCompanyUseCase.ExecuteAsync(new ActivateCompanyDto(id));
@@ -63,6 +67,7 @@ namespace ERP.Api.Controllers.Companies
         }
 
         [HttpPatch("{id:guid}/deactivate")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Deactivate(Guid id)
         {
             var result = await _deactivateCompanyUseCase.ExecuteAsync(new DeactivateCompanyDto(id));
@@ -70,6 +75,7 @@ namespace ERP.Api.Controllers.Companies
         }
 
         [HttpGet("{id:guid}")]
+        [ProducesResponseType<GetCompanyResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(Guid id)
         {
             var response = await _getCompanyUseCase.ExecuteAsync(new GetCompanyDto(id));
@@ -77,8 +83,13 @@ namespace ERP.Api.Controllers.Companies
         }
 
         [HttpPut("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Update(Guid id, [FromBody]UpdateCompanyRequest updateCompanyRequest)
         {
+            var errors = updateCompanyRequest.Validate();
+            if (errors.Count > 0)
+                return errors.ToBadRequest();
+
             var result = await _updateCompanyUseCase.ExecuteAsync(updateCompanyRequest.ToDto(id));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }

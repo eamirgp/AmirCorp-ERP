@@ -11,7 +11,8 @@
 - [x] Migración a PostgreSQL
 - [x] Secretos fuera del repositorio, con validación al arrancar
 - [x] Normalización de correos, códigos y series
-- [x] OpenAPI (`/openapi/v1.json`) y Scalar (`/scalar`) en desarrollo
+- [x] OpenAPI (`/openapi/v1.json`) y Scalar (`/scalar`) en desarrollo, con el tipo de respuesta de cada endpoint
+- [x] Frontend inicial en `AmirCorp-ERP-Web`: login, layout, paleta de comandos y productos
 
 ## Siguiente: base técnica
 
@@ -19,7 +20,6 @@
 |---|---|
 | Errores de base de datos → 409 | Si dos usuarios crean el mismo RUC, código o correo a la vez, el índice único lanza `DbUpdateException` y hoy la API devuelve 500 |
 | Costo en dólares | `PurchaseLine.InventoryUnitCost` y `StockEntry.UnitCost` quedan en la moneda de la factura, sin aplicar el tipo de cambio: el stock mezcla soles y dólares. **Resolver antes de importaciones.** |
-| `CompanyController.Update` no llama a `Validate()` | Único endpoint que se salta la validación del request |
 | Logs con Serilog | Archivo de logs y consola sin el SQL de cada consulta |
 | Tests de los cálculos | IGV, conversión de unidades y costeo: es dinero |
 

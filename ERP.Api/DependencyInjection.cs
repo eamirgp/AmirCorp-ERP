@@ -5,6 +5,7 @@ using ERP.Api.Services;
 using ERP.Application.Contracts.Api;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -38,15 +39,20 @@ namespace ERP.Api
                     .AddControllers()
                     .AddJsonOptions(options =>
                     {
+                        // Los números viajan como números: "12.5" entre comillas se rechaza.
+                        options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict;
                         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                         options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
                         options.JsonSerializerOptions.Converters.Add(new TrimmingStringConverter());
                     });
 
-                // El generador de OpenAPI lee estas opciones: sin ellas documentaría los enums como números.
+                // El generador de OpenAPI lee estas opciones: deben coincidir con las de los controladores
+                // para que documente los enums como texto y los números solo como números.
                 services.ConfigureHttpJsonOptions(options =>
-                    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter())
-                    );
+                {
+                    options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+                    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
 
                 services.AddOpenApi(options =>
                 {
@@ -55,8 +61,16 @@ namespace ERP.Api
                         document.Info.Title = "AmirCorp ERP API";
                         return Task.CompletedTask;
                     });
+                    // Con un convertidor propio, el generador no infiere el tipo: las contraseñas son texto.
+                    options.AddSchemaTransformer((schema, context, cancellationToken) =>
+                    {
+                        if (context.JsonPropertyInfo?.CustomConverter is RawStringConverter)
+                            schema.Type = JsonSchemaType.String | JsonSchemaType.Null;
+                        return Task.CompletedTask;
+                    });
                     options.AddDocumentTransformer<BearerSecurityTransformer>();
                     options.AddOperationTransformer<BearerSecurityTransformer>();
+                    options.AddOperationTransformer<ErrorResponseTransformer>();
                 });
 
                 var jwtSecret = configuration["JwtSettings:Secret"];

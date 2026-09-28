@@ -72,6 +72,17 @@ PostgreSQL distingue mayúsculas en las comparaciones. Para que el comportamient
 - Los repositorios aplican la misma normalización antes de buscar, así ninguna consulta puede olvidarla.
 - Las búsquedas por nombre comparan en minúsculas en ambos lados.
 
+## Contrato OpenAPI
+
+El frontend (`AmirCorp-ERP-Web`) genera sus tipos desde `/openapi/v1.json`, así que el contrato tiene que ser exacto:
+
+- Cada endpoint declara su respuesta exitosa con `[ProducesResponseType<T>(código)]`, o `[ProducesResponseType(StatusCodes.Status204NoContent)]` si no devuelve cuerpo.
+- `ErrorResponseTransformer` agrega a todos los endpoints la respuesta `default` con `ErrorResponse`.
+- `BearerSecurityTransformer` exige el token solo en los endpoints con `[Authorize]`.
+- Los números JSON son estrictos (`JsonNumberHandling.Strict`): `"12.5"` entre comillas se rechaza.
+
+Después de cambiar un endpoint o un DTO, en el frontend se ejecuta `npm run api:generate` y TypeScript señala lo que quedó desactualizado.
+
 ## Cómo agregar un caso de uso
 
 Ejemplo: `Features/Products/ChangePrice`.
@@ -82,7 +93,7 @@ Ejemplo: `Features/Products/ChangePrice`.
    - `ChangePriceUseCase.cs` → `internal sealed`, devuelve `Result`
 2. Si necesita datos nuevos, agrega el método a la interfaz en `Contracts/Persistence/...` y su implementación en `ERP.Persistence`.
 3. Registra el caso de uso en `ERP.Application/DependencyInjection.cs`.
-4. **Api**: crea `Controllers/Products/Requests/ChangePriceRequest.cs` con `Validate()` y `ToDto()`, y agrega el endpoint al controlador.
+4. **Api**: crea `Controllers/Products/Requests/ChangePriceRequest.cs` con `Validate()` y `ToDto()`, y agrega el endpoint al controlador con su `[ProducesResponseType]`.
 5. Si cambia el modelo de datos, genera una migración (ver [configuracion.md](configuracion.md#migraciones)).
 
 ## Convenciones de código

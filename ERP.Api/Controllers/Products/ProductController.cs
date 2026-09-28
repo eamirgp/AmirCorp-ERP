@@ -1,4 +1,6 @@
-﻿using ERP.Api.Controllers.Products.Requests;
+﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Common.Responses;
+using ERP.Api.Controllers.Products.Requests;
 using ERP.Api.Extensions;
 using ERP.Application.Features.Products.ActivateProduct;
 using ERP.Application.Features.Products.CreateProduct;
@@ -41,6 +43,7 @@ namespace ERP.Api.Controllers.Products
         }
 
         [HttpPost]
+        [ProducesResponseType<CreatedResponseDto>(StatusCodes.Status201Created)]
         public async Task<IActionResult> Create([FromBody]CreateProductRequest createProductRequest)
         {
             var errors = createProductRequest.Validate();
@@ -52,10 +55,12 @@ namespace ERP.Api.Controllers.Products
         }
 
         [HttpGet]
+        [ProducesResponseType<PagedResult<ListProductsResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> List([FromQuery]ListProductsRequest listProductsRequest) =>
             Ok(await _listProductsUseCase.ExecuteAsync(listProductsRequest.ToDto()));
 
         [HttpPatch("{id:guid}/activate")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Activate(Guid id)
         {
             var result = await _activateProductUseCase.ExecuteAsync(new ActivateProductDto(id));
@@ -63,6 +68,7 @@ namespace ERP.Api.Controllers.Products
         }
 
         [HttpPatch("{id:guid}/deactivate")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Deactivate(Guid id)
         {
             var result = await _deactivateProductUseCase.ExecuteAsync(new DeactivateProductDto(id));
@@ -70,6 +76,7 @@ namespace ERP.Api.Controllers.Products
         }
 
         [HttpPut("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Update(Guid id, [FromBody]UpdateProductRequest updateProductRequest)
         {
             var errors = updateProductRequest.Validate();
@@ -81,6 +88,7 @@ namespace ERP.Api.Controllers.Products
         }
 
         [HttpGet("{id:guid}")]
+        [ProducesResponseType<GetProductResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(Guid id)
         {
             var response = await _getProductUseCase.ExecuteAsync(new GetProductDto(id));

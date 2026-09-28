@@ -19,6 +19,7 @@ namespace ERP.Api.Controllers.Auth
         }
 
         [HttpPost("login")]
+        [ProducesResponseType<LoginResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Login([FromBody]LoginRequest loginRequest)
         {
             var errors = loginRequest.Validate();

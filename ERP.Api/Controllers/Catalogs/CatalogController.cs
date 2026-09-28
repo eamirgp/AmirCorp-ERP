@@ -39,26 +39,32 @@ namespace ERP.Api.Controllers.Catalogs
         }
 
         [HttpGet("countries")]
+        [ProducesResponseType<IReadOnlyCollection<ListCountriesResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListCountries() =>
             Ok(await _listCountriesUseCase.ExecuteAsync());
 
         [HttpGet("currencies")]
+        [ProducesResponseType<IReadOnlyCollection<ListCurrenciesResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListCurrencies() =>
             Ok(await _listCurrenciesUseCase.ExecuteAsync());
 
         [HttpGet("igv-affectations")]
+        [ProducesResponseType<IReadOnlyCollection<ListIgvAffectationsResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListIgvAffectations() =>
             Ok(await _listIgvAffectationsUseCase.ExecuteAsync());
 
         [HttpGet("tax-document-types")]
+        [ProducesResponseType<IReadOnlyCollection<ListTaxDocumentTypesResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListTaxDocumentTypes() =>
             Ok(await _listTaxDocumentTypesUseCase.ExecuteAsync());
 
         [HttpGet("units-of-measure")]
+        [ProducesResponseType<IReadOnlyCollection<ListUnitsOfMeasureResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListUnitsOfMeasure() =>
             Ok(await _listUnitsOfMeasureUseCase.ExecuteAsync());
 
         [HttpGet("invoice-price-types")]
+        [ProducesResponseType<IReadOnlyCollection<ListInvoicePriceTypesResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListInvoicePriceTypes() =>
             Ok(await _listInvoicePriceTypesUseCase.ExecuteAsync());
     }

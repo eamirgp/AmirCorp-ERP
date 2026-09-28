@@ -17,6 +17,7 @@ namespace ERP.Api.Controllers.Accounts
         }
 
         [HttpGet]
+        [ProducesResponseType<GetMyProfileResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get() =>
             Ok(await _getMyProfileUseCase.ExecuteAsync());
     }
