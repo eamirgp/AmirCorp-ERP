@@ -1,0 +1,105 @@
+﻿using ERP.Application.Features.Accounts.GetMyProfile;
+using ERP.Application.Features.Auth.Login;
+using ERP.Application.Features.Catalogs.ListCountries;
+using ERP.Application.Features.Catalogs.ListCurrencies;
+using ERP.Application.Features.Catalogs.ListIgvAffectations;
+using ERP.Application.Features.Catalogs.ListInvoicePriceTypes;
+using ERP.Application.Features.Catalogs.ListTaxDocumentTypes;
+using ERP.Application.Features.Catalogs.ListUnitsOfMeasure;
+using ERP.Application.Features.Companies.Activate;
+using ERP.Application.Features.Companies.CreateCompany;
+using ERP.Application.Features.Companies.Deactivate;
+using ERP.Application.Features.Companies.GetCompany;
+using ERP.Application.Features.Companies.ListCompanies;
+using ERP.Application.Features.Companies.UpdateCompany;
+using ERP.Application.Features.Partners.ActivateBusinessPartner;
+using ERP.Application.Features.Partners.CreateBusinessPartner;
+using ERP.Application.Features.Partners.DeactivateBusinessPartner;
+using ERP.Application.Features.Partners.GetBusinessPartner;
+using ERP.Application.Features.Partners.ListBusinessPartners;
+using ERP.Application.Features.Partners.ListIdentityDocumentTypes;
+using ERP.Application.Features.Partners.UpdateBusinessPartner;
+using ERP.Application.Features.Products.ActivateProduct;
+using ERP.Application.Features.Products.CreateProduct;
+using ERP.Application.Features.Products.DeactivateProduct;
+using ERP.Application.Features.Products.GetProduct;
+using ERP.Application.Features.Products.ListProducts;
+using ERP.Application.Features.Products.UpdateProduct;
+using ERP.Application.Features.Purchases.CancelPurchase;
+using ERP.Application.Features.Purchases.CreatePurchase;
+using ERP.Application.Features.Purchases.GetPurchase;
+using ERP.Application.Features.Purchases.ListPurchases;
+using ERP.Application.Features.Users.ActivateUser;
+using ERP.Application.Features.Users.ChangeUserRole;
+using ERP.Application.Features.Users.CreateUser;
+using ERP.Application.Features.Users.DeactivateUser;
+using ERP.Application.Features.Users.EnsureSuperAdmin;
+using ERP.Application.Features.Users.GetUser;
+using ERP.Application.Features.Users.ListAssignableRoles;
+using ERP.Application.Features.Users.ListUsers;
+using ERP.Application.Features.Users.ResetUserPassword;
+using ERP.Application.Features.Users.UpdateUserProfile;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace ERP.Application
+{
+    public static class DependencyInjection
+    {
+        extension(IServiceCollection services)
+        {
+            public IServiceCollection AddApplication()
+            {
+                services
+                    .AddScoped<IListCountriesUseCase, ListCountriesUseCase>()
+                    .AddScoped<IListCurrenciesUseCase, ListCurrenciesUseCase>()
+                    .AddScoped<IListIgvAffectationsUseCase, ListIgvAffectationsUseCase>()
+                    .AddScoped<IListTaxDocumentTypesUseCase, ListTaxDocumentTypesUseCase>()
+                    .AddScoped<IListUnitsOfMeasureUseCase, ListUnitsOfMeasureUseCase>()
+                    .AddScoped<IListInvoicePriceTypesUseCase, ListInvoicePriceTypesUseCase>()
+
+                    .AddScoped<ICreateUserUseCase, CreateUserUseCase>()
+                    .AddScoped<IListAssignableRolesUseCase, ListAssignableRolesUseCase>()
+                    .AddScoped<IListUsersUseCase, ListUsersUseCase>()
+                    .AddScoped<IActivateUserUseCase, ActivateUserUseCase>()
+                    .AddScoped<IDeactivateUserUseCase, DeactivateUserUseCase>()
+                    .AddScoped<IUpdateUserProfileUseCase, UpdateUserProfileUseCase>()
+                    .AddScoped<IChangeUserRoleUseCase, ChangeUserRoleUseCase>()
+                    .AddScoped<IResetUserPasswordUseCase, ResetUserPasswordUseCase>()
+                    .AddScoped<ILoginUseCase, LoginUseCase>()
+                    .AddScoped<IGetUserUseCase, GetUserUseCase>()
+                    .AddScoped<IEnsureSuperAdminUseCase, EnsureSuperAdminUseCase>()
+
+                    .AddScoped<IGetMyProfileUseCase, GetMyProfileUseCase>()
+
+                    .AddScoped<ICreateCompanyUseCase, CreateCompanyUseCase>()
+                    .AddScoped<IListCompaniesUseCase, ListCompaniesUseCase>()
+                    .AddScoped<IActivateCompanyUseCase, ActivateCompanyUseCase>()
+                    .AddScoped<IDeactivateCompanyUseCase, DeactivateCompanyUseCase>()
+                    .AddScoped<IGetCompanyUseCase, GetCompanyUseCase>()
+                    .AddScoped<IUpdateCompanyUseCase, UpdateCompanyUseCase>()
+
+                    .AddScoped<ICreateProductUseCase, CreateProductUseCase>()
+                    .AddScoped<IListProductsUseCase, ListProductsUseCase>()
+                    .AddScoped<IActivateProductUseCase, ActivateProductUseCase>()
+                    .AddScoped<IDeactivateProductUseCase, DeactivateProductUseCase>()
+                    .AddScoped<IUpdateProductUseCase, UpdateProductUseCase>()
+                    .AddScoped<IGetProductUseCase, GetProductUseCase>()
+
+                    .AddScoped<ICreateBusinessPartnerUseCase, CreateBusinessPartnerUseCase>()
+                    .AddScoped<IListIdentityDocumentTypesUseCase, ListIdentityDocumentTypesUseCase>()
+                    .AddScoped<IListBusinessPartnersUseCase, ListBusinessPartnersUseCase>()
+                    .AddScoped<IActivateBusinessPartnerUseCase, ActivateBusinessPartnerUseCase>()
+                    .AddScoped<IDeactivateBusinessPartnerUseCase, DeactivateBusinessPartnerUseCase>()
+                    .AddScoped<IUpdateBusinessPartnerUseCase, UpdateBusinessPartnerUseCase>()
+                    .AddScoped<IGetBusinessPartnerUseCase, GetBusinessPartnerUseCase>()
+
+                    .AddScoped<ICreatePurchaseUseCase, CreatePurchaseUseCase>()
+                    .AddScoped<IListPurchasesUseCase, ListPurchasesUseCase>()
+                    .AddScoped<IGetPurchaseUseCase, GetPurchaseUseCase>()
+                    .AddScoped<ICancelPurchaseUseCase, CancelPurchaseUseCase>();
+
+                return services;
+            }
+        }
+    }
+}

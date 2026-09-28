@@ -1,0 +1,27 @@
+@host = http://localhost:5117
+
+### Iniciar sesión (usa el correo y la contraseña del SuperAdmin de tus User Secrets)
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "tu@correo.com",
+  "password": "TuContraseña"
+}
+
+### Mi perfil (usa el token del login anterior)
+GET {{host}}/api/me
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Empresas
+GET {{host}}/api/companies
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Productos (paginado, con búsqueda)
+GET {{host}}/api/products?searchTerm=&page=1&pageSize=10
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Catálogo: monedas
+GET {{host}}/api/catalogs/currencies
+Authorization: Bearer {{login.response.body.$.token}}

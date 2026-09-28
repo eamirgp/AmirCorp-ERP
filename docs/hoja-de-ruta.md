@@ -1,0 +1,47 @@
+# Hoja de ruta
+
+## Hecho
+
+- [x] Autenticación JWT, usuarios y roles
+- [x] Empresas, productos, clientes y proveedores
+- [x] Compras nacionales con ingreso de stock por lotes
+- [x] Concurrencia optimista (`xmin`) en compras y stock
+- [x] Llaves foráneas faltantes
+- [x] SuperAdmin automático al arrancar
+- [x] Migración a PostgreSQL
+- [x] Secretos fuera del repositorio, con validación al arrancar
+- [x] Normalización de correos, códigos y series
+
+## Siguiente: base técnica
+
+| Tarea | Por qué |
+|---|---|
+| Errores de base de datos → 409 | Si dos usuarios crean el mismo RUC, código o correo a la vez, el índice único lanza `DbUpdateException` y hoy la API devuelve 500 |
+| Costo en dólares | `PurchaseLine.InventoryUnitCost` y `StockEntry.UnitCost` quedan en la moneda de la factura, sin aplicar el tipo de cambio: el stock mezcla soles y dólares. **Resolver antes de importaciones.** |
+| `CompanyController.Update` no llama a `Validate()` | Único endpoint que se salta la validación del request |
+| Logs con Serilog | Archivo de logs y consola sin el SQL de cada consulta |
+| OpenAPI + Scalar | Documentación y pruebas desde el navegador |
+| Tests de los cálculos | IGV, conversión de unidades y costeo: es dinero |
+
+## Después: módulos del negocio
+
+1. **Importaciones**
+   - Proveedores extranjeros. Hoy `Purchase` exige un proveedor con RUC.
+   - DUA: FOB, flete, seguro, CIF, ad valorem, IGV 16 %, IPM 2 %, percepción.
+   - Gastos locales (agente de aduanas, almacén, transporte) y prorrateo.
+   - Costo unitario puesto en almacén. IGV, IPM y percepción son crédito fiscal, no costo.
+   - `StockEntry.PurchaseLineId` es obligatorio hoy; los lotes también nacerán de importaciones y ajustes.
+2. **Inventario**: almacenes, kardex, ajustes y traslados.
+3. **Ventas**: facturas, boletas y notas de crédito con series y correlativos. Consumen stock. Modelo listo para SUNAT (ver [decisiones.md](decisiones.md#8-facturación-electrónica-al-final)).
+4. **Guías de remisión remitente**: por venta, traslado entre establecimientos e importación.
+5. **Caja y cobranzas**: pagos, ventas al crédito, cuentas por cobrar y por pagar.
+6. **Reportes y dashboard**.
+7. **Facturación electrónica**: XML UBL 2.1, firma digital, envío a SUNAT u OSE, CDR, representación impresa con QR.
+8. **Frontend** (Vite).
+9. **Despliegue en Railway**.
+
+## Decisiones pendientes
+
+- **Método de costeo:** el código usa lotes FIFO (`StockEntry`). La alternativa es promedio ponderado, más simple y común en importadoras. Confirmar con el contador.
+- **Precio de venta:** ¿igual en las 3 empresas o propio de cada una? Hoy está en el producto, que es compartido.
+- **Facturación electrónica:** envío directo a SUNAT (certificado digital + usuario SOL) o a través de un OSE/PSE.

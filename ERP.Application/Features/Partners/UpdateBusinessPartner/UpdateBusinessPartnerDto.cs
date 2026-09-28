@@ -1,0 +1,15 @@
+﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Partners.Enums;
+
+namespace ERP.Application.Features.Partners.UpdateBusinessPartner
+{
+    public sealed record UpdateBusinessPartnerDto(
+        Guid Id,
+        IdentityDocumentType IdentityDocumentType,
+        string DocumentNumber,
+        Country Country,
+        string Name,
+        bool IsClient,
+        bool IsSupplier
+        );
+}
