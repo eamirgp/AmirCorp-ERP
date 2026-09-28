@@ -78,6 +78,44 @@ namespace ERP.Domain.Purchases
             )
         {
             ValidateProduct(productId);
+
+            var amounts = Calculate(invoicePriceType, invoiceIgvAffectation, invoiceUnitOfMeasure, invoiceQuantity, invoiceAmount, conversionFactor);
+
+            return new(
+                Guid.CreateVersion7(),
+                purchaseId,
+                lineNumber,
+                productId,
+                productCode,
+                productName,
+                invoicePriceType,
+                invoiceIgvAffectation,
+                invoiceUnitOfMeasure,
+                invoiceQuantity,
+                amounts.InvoiceUnitValue,
+                amounts.InvoiceUnitPrice,
+                conversionFactor,
+                amounts.InventoryQuantity,
+                amounts.InventoryUnitCost,
+                amounts.BaseAmount,
+                amounts.IgvAmount,
+                amounts.Total
+                );
+        }
+
+        /// <summary>
+        /// Valida y calcula los montos de una línea sin crearla. Es la única fórmula de cálculo:
+        /// la usan tanto el registro de la compra como su vista previa.
+        /// </summary>
+        public static PurchaseLineAmounts Calculate(
+            InvoicePriceType invoicePriceType,
+            IgvAffectation invoiceIgvAffectation,
+            UnitOfMeasure invoiceUnitOfMeasure,
+            decimal invoiceQuantity,
+            decimal invoiceAmount,
+            decimal conversionFactor
+            )
+        {
             ValidateInvoicePriceType(invoicePriceType);
             ValidateInvoiceIgvAffectation(invoiceIgvAffectation);
             ValidateInvoiceUnitOfMeasure(invoiceUnitOfMeasure);
@@ -109,26 +147,7 @@ namespace ERP.Domain.Purchases
             var inventoryQuantity = invoiceQuantity * conversionFactor;
             var inventoryUnitCost = Math.Round(baseAmount / inventoryQuantity, 6, MidpointRounding.AwayFromZero);
 
-            return new(
-                Guid.CreateVersion7(),
-                purchaseId,
-                lineNumber,
-                productId,
-                productCode,
-                productName,
-                invoicePriceType,
-                invoiceIgvAffectation,
-                invoiceUnitOfMeasure,
-                invoiceQuantity,
-                invoiceUnitValue,
-                invoiceUnitPrice,
-                conversionFactor,
-                inventoryQuantity,
-                inventoryUnitCost,
-                baseAmount,
-                igvAmount,
-                total
-                );
+            return new PurchaseLineAmounts(invoiceUnitValue, invoiceUnitPrice, inventoryQuantity, inventoryUnitCost, baseAmount, igvAmount, total);
         }
 
         private static void ValidateProduct(Guid productId)

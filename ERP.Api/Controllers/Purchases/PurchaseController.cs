@@ -6,6 +6,7 @@ using ERP.Application.Features.Purchases.CancelPurchase;
 using ERP.Application.Features.Purchases.CreatePurchase;
 using ERP.Application.Features.Purchases.GetPurchase;
 using ERP.Application.Features.Purchases.ListPurchases;
+using ERP.Application.Features.Purchases.PreviewPurchase;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,19 +21,30 @@ namespace ERP.Api.Controllers.Purchases
         private readonly IListPurchasesUseCase _listPurchasesUseCase;
         private readonly IGetPurchaseUseCase _getPurchaseUseCase;
         private readonly ICancelPurchaseUseCase _cancelPurchaseUseCase;
+        private readonly IPreviewPurchaseUseCase _previewPurchaseUseCase;
 
         public PurchaseController(
             ICreatePurchaseUseCase createPurchaseUseCase,
             IListPurchasesUseCase listPurchasesUseCase,
             IGetPurchaseUseCase getPurchaseUseCase,
-            ICancelPurchaseUseCase cancelPurchaseUseCase
+            ICancelPurchaseUseCase cancelPurchaseUseCase,
+            IPreviewPurchaseUseCase previewPurchaseUseCase
             )
         {
             _createPurchaseUseCase = createPurchaseUseCase;
             _listPurchasesUseCase = listPurchasesUseCase;
             _getPurchaseUseCase = getPurchaseUseCase;
             _cancelPurchaseUseCase = cancelPurchaseUseCase;
+            _previewPurchaseUseCase = previewPurchaseUseCase;
         }
+
+        /// <summary>
+        /// Calcula los montos y totales de una compra mientras se llena, sin guardarla.
+        /// </summary>
+        [HttpPost("preview")]
+        [ProducesResponseType<PreviewPurchaseResponseDto>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> Preview([FromBody] PreviewPurchaseRequest previewPurchaseRequest) =>
+            Ok(await _previewPurchaseUseCase.ExecuteAsync(previewPurchaseRequest.ToDto()));
 
         [HttpPost]
         [ProducesResponseType<CreatedResponseDto>(StatusCodes.Status201Created)]

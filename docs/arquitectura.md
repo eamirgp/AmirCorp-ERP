@@ -72,6 +72,14 @@ PostgreSQL distingue mayúsculas en las comparaciones. Para que el comportamient
 - Los repositorios aplican la misma normalización antes de buscar, así ninguna consulta puede olvidarla.
 - Las búsquedas por nombre comparan en minúsculas en ambos lados.
 
+## Cálculos sin guardar (vista previa)
+
+Cuando una pantalla necesita mostrar un cálculo antes de guardar, la API lo expone sin persistir nada, **reutilizando la fórmula del dominio**. Ejemplo: `POST /api/purchases/preview`.
+
+- La fórmula vive en el dominio como método estático: `PurchaseLine.Calculate(...)` (montos de una línea) y `Purchase.CalculateTotals(...)` (totales).
+- `PurchaseLine.Create` y `Purchase.AddLine` usan esos mismos métodos al registrar la compra, así el registro y la vista previa nunca difieren.
+- La vista previa es tolerante: las líneas incompletas vuelven sin montos, y las inválidas con el mensaje del dominio en `error`. Nunca responde 400 por datos a medio llenar.
+
 ## Contrato OpenAPI
 
 El frontend (`AmirCorp-ERP-Web`) genera sus tipos desde `/openapi/v1.json`, así que el contrato tiene que ser exacto:

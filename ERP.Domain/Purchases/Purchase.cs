@@ -144,11 +144,23 @@ namespace ERP.Domain.Purchases
                 throw new DomainException("La compra debe tener al menos una línea.");
         }
 
+        /// <summary>
+        /// Totales de la compra a partir de los montos de sus líneas. La usan el registro y la vista previa.
+        /// </summary>
+        public static PurchaseTotals CalculateTotals(IEnumerable<(decimal BaseAmount, decimal IgvAmount)> lines)
+        {
+            var list = lines.ToList();
+            var totalBaseAmount = list.Sum(l => l.BaseAmount);
+            var totalIgvAmount = list.Sum(l => l.IgvAmount);
+            return new PurchaseTotals(totalBaseAmount, totalIgvAmount, totalBaseAmount + totalIgvAmount);
+        }
+
         private void RecalculateTotals()
         {
-            TotalBaseAmount = _lines.Sum(l => l.BaseAmount);
-            TotalIgvAmount = _lines.Sum(l => l.IgvAmount);
-            Total = TotalBaseAmount + TotalIgvAmount;
+            var totals = CalculateTotals(_lines.Select(l => (l.BaseAmount, l.IgvAmount)));
+            TotalBaseAmount = totals.TotalBaseAmount;
+            TotalIgvAmount = totals.TotalIgvAmount;
+            Total = totals.Total;
         }
 
         public void Cancel(string cancellationReason)

@@ -8,5 +8,8 @@ namespace ERP.Application.Features.Users.ListUsers
         string Email,
         UserRole Role,
         bool IsActive
-        );
+        )
+    {
+        public string RoleDescription => Role.Description;
+    }
 }

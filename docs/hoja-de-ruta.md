@@ -12,7 +12,9 @@
 - [x] Secretos fuera del repositorio, con validación al arrancar
 - [x] Normalización de correos, códigos y series
 - [x] OpenAPI (`/openapi/v1.json`) y Scalar (`/scalar`) en desarrollo, con el tipo de respuesta de cada endpoint
-- [x] Frontend inicial en `AmirCorp-ERP-Web`: login, layout, paleta de comandos y productos
+- [x] Frontend en `AmirCorp-ERP-Web` con todas las pantallas de la API: productos, clientes y proveedores, empresas, usuarios y compras
+- [x] Vista previa de compras (`POST /api/purchases/preview`): calcula montos y totales sin guardar, con la misma fórmula del dominio
+- [x] Descripción del rol en la lista de usuarios y factor de conversión fijo en el catálogo de unidades
 
 ## Siguiente: base técnica
 

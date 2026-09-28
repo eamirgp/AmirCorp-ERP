@@ -29,6 +29,7 @@ using ERP.Application.Features.Purchases.CancelPurchase;
 using ERP.Application.Features.Purchases.CreatePurchase;
 using ERP.Application.Features.Purchases.GetPurchase;
 using ERP.Application.Features.Purchases.ListPurchases;
+using ERP.Application.Features.Purchases.PreviewPurchase;
 using ERP.Application.Features.Users.ActivateUser;
 using ERP.Application.Features.Users.ChangeUserRole;
 using ERP.Application.Features.Users.CreateUser;
@@ -96,7 +97,8 @@ namespace ERP.Application
                     .AddScoped<ICreatePurchaseUseCase, CreatePurchaseUseCase>()
                     .AddScoped<IListPurchasesUseCase, ListPurchasesUseCase>()
                     .AddScoped<IGetPurchaseUseCase, GetPurchaseUseCase>()
-                    .AddScoped<ICancelPurchaseUseCase, CancelPurchaseUseCase>();
+                    .AddScoped<ICancelPurchaseUseCase, CancelPurchaseUseCase>()
+                    .AddScoped<IPreviewPurchaseUseCase, PreviewPurchaseUseCase>();
 
                 return services;
             }
