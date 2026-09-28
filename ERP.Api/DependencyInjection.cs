@@ -31,7 +31,9 @@ namespace ERP.Api
                                 "https://poster-caption-endorphin.ngrok-free.dev"
                                 )
                             .AllowAnyHeader()
-                            .AllowAnyMethod();
+                            .AllowAnyMethod()
+                            // El frontend lee aquí el nombre de los archivos que descarga (plantillas, exportaciones).
+                            .WithExposedHeaders("Content-Disposition");
                         });
                     })
                     .AddHttpContextAccessor()
@@ -68,6 +70,7 @@ namespace ERP.Api
                             schema.Type = JsonSchemaType.String | JsonSchemaType.Null;
                         return Task.CompletedTask;
                     });
+                    options.AddSchemaTransformer<ComputedPropertiesTransformer>();
                     options.AddDocumentTransformer<BearerSecurityTransformer>();
                     options.AddOperationTransformer<BearerSecurityTransformer>();
                     options.AddOperationTransformer<ErrorResponseTransformer>();

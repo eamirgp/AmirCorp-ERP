@@ -1,5 +1,6 @@
 ﻿using ERP.Application.Common.Pagination;
 using ERP.Application.Contracts.Persistence.Queries;
+using ERP.Application.Features.Products.ExportProducts;
 using ERP.Application.Features.Products.GetProduct;
 using ERP.Application.Features.Products.ListProducts;
 using ERP.Domain.Products;
@@ -54,7 +55,9 @@ namespace ERP.Persistence.Queries
                     p.UnitOfMeasure,
                     p.IgvAffectation,
                     p.SalePrice,
-                    p.IsActive
+                    p.IsActive,
+                    p.CreatedAt,
+                    _context.Users.Where(u => u.Id == p.CreatedBy).Select(u => u.Name).FirstOrDefault()
                     ))
                 .ToArrayAsync();
 
@@ -84,5 +87,12 @@ namespace ERP.Persistence.Queries
                 _context.Users.Where(u => u.Id == p.UpdatedBy).Select(u => u.Name).FirstOrDefault()
                 ))
             .FirstOrDefaultAsync();
+
+        public async Task<IReadOnlyCollection<ProductExportRowDto>> ListForExportAsync() =>
+            await _context.Products
+            .AsNoTracking()
+            .OrderBy(p => p.Code)
+            .Select(p => new ProductExportRowDto(p.Code, p.Name, p.UnitOfMeasure, p.IgvAffectation, p.SalePrice))
+            .ToArrayAsync();
     }
 }

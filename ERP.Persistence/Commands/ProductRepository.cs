@@ -32,5 +32,14 @@ namespace ERP.Persistence.Commands
             await _context.Products
             .Where(p => ids.Contains(p.Id))
             .ToListAsync();
+
+        public async Task<IReadOnlyCollection<Product>> GetByCodesAsync(IReadOnlyCollection<string> codes)
+        {
+            var normalizedCodes = codes.Select(Product.NormalizeCode).ToArray();
+
+            return await _context.Products
+                .Where(p => normalizedCodes.Contains(p.Code))
+                .ToListAsync();
+        }
     }
 }

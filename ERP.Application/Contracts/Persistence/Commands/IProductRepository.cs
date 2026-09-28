@@ -7,6 +7,7 @@ namespace ERP.Application.Contracts.Persistence.Commands
         void Add(Product product);
         Task<bool> CodeExistsAsync(string code, Guid? excludeId = null);
         Task<Product?> GetByIdAsync(Guid id);
-        Task<IReadOnlyCollection<Product>> GetByIdsAsync(IReadOnlyCollection<Guid> ids); 
+        Task<IReadOnlyCollection<Product>> GetByIdsAsync(IReadOnlyCollection<Guid> ids);
+        Task<IReadOnlyCollection<Product>> GetByCodesAsync(IReadOnlyCollection<string> codes);
     }
 }

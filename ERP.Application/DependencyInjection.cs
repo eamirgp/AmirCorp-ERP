@@ -22,6 +22,11 @@ using ERP.Application.Features.Partners.UpdateBusinessPartner;
 using ERP.Application.Features.Products.ActivateProduct;
 using ERP.Application.Features.Products.CreateProduct;
 using ERP.Application.Features.Products.DeactivateProduct;
+using ERP.Application.Features.Products.ExportProducts;
+using ERP.Application.Features.Products.GetProductImportTemplate;
+using ERP.Application.Features.Products.ImportProducts;
+using ERP.Application.Features.Products.PreviewProductImport;
+using ERP.Application.Features.Products.ProductImport;
 using ERP.Application.Features.Products.GetProduct;
 using ERP.Application.Features.Products.ListProducts;
 using ERP.Application.Features.Products.UpdateProduct;
@@ -85,6 +90,11 @@ namespace ERP.Application
                     .AddScoped<IDeactivateProductUseCase, DeactivateProductUseCase>()
                     .AddScoped<IUpdateProductUseCase, UpdateProductUseCase>()
                     .AddScoped<IGetProductUseCase, GetProductUseCase>()
+                    .AddScoped<ProductImportPlanner>()
+                    .AddScoped<IGetProductImportTemplateUseCase, GetProductImportTemplateUseCase>()
+                    .AddScoped<IExportProductsUseCase, ExportProductsUseCase>()
+                    .AddScoped<IPreviewProductImportUseCase, PreviewProductImportUseCase>()
+                    .AddScoped<IImportProductsUseCase, ImportProductsUseCase>()
 
                     .AddScoped<ICreateBusinessPartnerUseCase, CreateBusinessPartnerUseCase>()
                     .AddScoped<IListIdentityDocumentTypesUseCase, ListIdentityDocumentTypesUseCase>()

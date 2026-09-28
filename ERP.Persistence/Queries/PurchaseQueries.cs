@@ -67,7 +67,9 @@ namespace ERP.Persistence.Queries
                     p.SupplierName,
                     p.Total,
                     p.IsCancelled,
-                    p.CancellationReason
+                    p.CancellationReason,
+                    p.CreatedAt,
+                    _context.Users.Where(u => u.Id == p.CreatedBy).Select(u => u.Name).FirstOrDefault()
                     ))
                 .ToArrayAsync();
 

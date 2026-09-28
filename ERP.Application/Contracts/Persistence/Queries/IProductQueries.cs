@@ -1,4 +1,5 @@
 ﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Features.Products.ExportProducts;
 using ERP.Application.Features.Products.GetProduct;
 using ERP.Application.Features.Products.ListProducts;
 
@@ -8,5 +9,6 @@ namespace ERP.Application.Contracts.Persistence.Queries
     {
         Task<PagedResult<ListProductsResponseDto>> ListProductsAsync(ListProductsDto listProductsDto);
         Task<GetProductResponseDto?> GetProductAsync(GetProductDto getProductDto);
+        Task<IReadOnlyCollection<ProductExportRowDto>> ListForExportAsync();
     }
 }

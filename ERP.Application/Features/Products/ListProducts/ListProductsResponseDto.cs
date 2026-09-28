@@ -9,7 +9,9 @@ namespace ERP.Application.Features.Products.ListProducts
         UnitOfMeasure UnitOfMeasure,
         IgvAffectation IgvAffectation,
         decimal SalePrice,
-        bool IsActive
+        bool IsActive,
+        DateTime CreatedAt,
+        string? CreatedByName
         )
     {
         public string UnitOfMeasureDescription => UnitOfMeasure.Description;

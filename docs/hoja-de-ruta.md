@@ -15,6 +15,8 @@
 - [x] Frontend en `AmirCorp-ERP-Web` con todas las pantallas de la API: productos, clientes y proveedores, empresas, usuarios y compras
 - [x] Vista previa de compras (`POST /api/purchases/preview`): calcula montos y totales sin guardar, con la misma fórmula del dominio
 - [x] Descripción del rol en la lista de usuarios y factor de conversión fijo en el catálogo de unidades
+- [x] Filas por página (10, 20, 50 o 100) y quién creó cada registro en las listas de productos, clientes y proveedores, y compras
+- [x] Carga masiva de productos con Excel: plantilla, exportación, revisión sin guardar y confirmación todo o nada (ver [decisiones.md](decisiones.md#11-carga-masiva-de-productos-con-excel))
 
 ## Siguiente: base técnica
 
@@ -24,6 +26,7 @@
 | Costo en dólares | `PurchaseLine.InventoryUnitCost` y `StockEntry.UnitCost` quedan en la moneda de la factura, sin aplicar el tipo de cambio: el stock mezcla soles y dólares. **Resolver antes de importaciones.** |
 | Logs con Serilog | Archivo de logs y consola sin el SQL de cada consulta |
 | Tests de los cálculos | IGV, conversión de unidades y costeo: es dinero |
+| Excel con los errores (opcional) | En la carga masiva, descargar el mismo archivo con una columna que explique el error de cada fila |
 
 ## Después: módulos del negocio
 
