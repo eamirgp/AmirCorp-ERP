@@ -67,3 +67,14 @@ Reglas a respetar en ventas:
 **Fecha:** setiembre 2026
 
 El proyecto se reinició en un repositorio nuevo (`AmirCorp-ERP`) con una sola migración inicial para PostgreSQL. El repositorio anterior (`ERP`, commits API V1 a V62) queda como archivo.
+
+### 10. La API es la única fuente de verdad (frontend "tonto")
+**Fecha:** setiembre 2026
+
+El frontend (`AmirCorp-ERP-Web`) no valida, no calcula, no normaliza y no decide permisos. Por eso la API debe entregar todo lo necesario:
+
+- **Validaciones completas** con mensajes listos para el usuario, en `{ "errors": [...] }`.
+- **Cálculos:** cuando una pantalla necesita mostrar un resultado antes de guardar (totales de una compra, costo de una importación), se expone un endpoint de cálculo que no guarda nada. El frontend no replica fórmulas.
+- **Descripciones** de enums y catálogos en las respuestas (`...Description`).
+- **Permisos:** qué módulos y acciones puede usar el usuario se informará en `GET /api/me` cuando existan pantallas que dependan del rol.
+- **Contrato exacto:** cada endpoint declara su respuesta en OpenAPI (ver [arquitectura.md](arquitectura.md#contrato-openapi)). El frontend genera sus tipos de ahí y detecta cambios con `npm run api:check`.
