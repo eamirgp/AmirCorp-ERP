@@ -51,6 +51,9 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
             if (isSupplier is true && identityDocumentType is { } t && Enum.IsDefined(t) && !t.CanIssueTaxDocuments)
                 errors.Add("Un proveedor debe tener RUC o documento extranjero: con DNI no puede emitir facturas.");
 
+            if (isClient is true && identityDocumentType is { } c && Enum.IsDefined(c) && !c.CanBeClient)
+                errors.Add("Por ahora solo se vende en Perú: un cliente debe tener RUC o DNI.");
+
             return errors;
         }
 

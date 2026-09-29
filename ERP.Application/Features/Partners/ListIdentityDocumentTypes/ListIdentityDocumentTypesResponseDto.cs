@@ -14,5 +14,8 @@ namespace ERP.Application.Features.Partners.ListIdentityDocumentTypes
 
         /// <summary>Si un proveedor puede tener este documento: RUC o extranjero sí; DNI no (no emite facturas).</summary>
         public bool CanBeSupplier => IdentityDocumentType.CanIssueTaxDocuments;
+
+        /// <summary>Si un cliente puede tener este documento: por ahora solo RUC o DNI (ventas nacionales).</summary>
+        public bool CanBeClient => IdentityDocumentType.CanBeClient;
     }
 }

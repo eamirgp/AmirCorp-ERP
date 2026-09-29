@@ -117,6 +117,9 @@ namespace ERP.Domain.Partners
 
             if (isSupplier && !identityDocumentType.CanIssueTaxDocuments)
                 throw new DomainException("Un proveedor debe tener RUC o documento extranjero: con DNI no puede emitir facturas.");
+
+            if (isClient && !identityDocumentType.CanBeClient)
+                throw new DomainException("Por ahora solo se vende en Perú: un cliente debe tener RUC o DNI.");
         }
     }
 }

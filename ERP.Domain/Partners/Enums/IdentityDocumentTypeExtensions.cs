@@ -32,6 +32,13 @@ namespace ERP.Domain.Partners.Enums
             public bool CanIssueTaxDocuments =>
                 identityDocumentType is IdentityDocumentType.Ruc or IdentityDocumentType.TributarioExtranjero;
 
+            /// <summary>
+            /// Si un cliente puede tener este documento. Por ahora la empresa solo vende en Perú: RUC o DNI. Cuando haya
+            /// exportaciones, basta con agregar aquí el documento extranjero.
+            /// </summary>
+            public bool CanBeClient =>
+                identityDocumentType is IdentityDocumentType.Ruc or IdentityDocumentType.Dni;
+
             public bool IsDomesticTaxpayer =>
                 identityDocumentType is IdentityDocumentType.Ruc;
 
