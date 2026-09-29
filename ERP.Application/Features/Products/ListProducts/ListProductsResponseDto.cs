@@ -16,5 +16,6 @@ namespace ERP.Application.Features.Products.ListProducts
     {
         public string UnitOfMeasureDescription => UnitOfMeasure.Description;
         public string IgvAffectationDescription => IgvAffectation.Description;
+        public string IgvAffectationShortDescription => IgvAffectation.ShortDescription;
     }
 }

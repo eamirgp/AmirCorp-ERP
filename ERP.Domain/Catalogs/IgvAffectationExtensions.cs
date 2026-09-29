@@ -11,6 +11,14 @@
                 _ => igvAffectation.ToString()
             };
 
+            /// <summary>Nombre corto para las tablas, donde el nombre completo de SUNAT se repite en cada fila.</summary>
+            public string ShortDescription => igvAffectation switch
+            {
+                IgvAffectation.Gravado => "Gravado",
+                IgvAffectation.Inafecto => "Inafecto",
+                _ => igvAffectation.ToString()
+            };
+
             public decimal Rate => igvAffectation switch
             {
                 IgvAffectation.Gravado => 0.18m,
