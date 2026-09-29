@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Common.Pagination;
 using ERP.Application.Features.Products.ListProducts;
 
 namespace ERP.Api.Controllers.Products.Requests
@@ -9,7 +9,9 @@ namespace ERP.Api.Controllers.Products.Requests
         string? SearchTerm,
         bool? IsActive,
         ProductSortBy? SortBy,
-        bool? SortDescending
+        bool? SortDescending,
+        // Si se indica, cada producto trae en SupplierCode el código de este proveedor.
+        Guid? SupplierId
         )
     {
         public ListProductsDto ToDto() =>
@@ -19,7 +21,8 @@ namespace ERP.Api.Controllers.Products.Requests
                 SearchTerm,
                 IsActive,
                 SortBy ?? ListProductsDto.DefaultSortBy,
-                SortBy is null ? ListProductsDto.DefaultSortDescending : SortDescending ?? false
+                SortBy is null ? ListProductsDto.DefaultSortDescending : SortDescending ?? false,
+                SupplierId
                 );
     }
 }

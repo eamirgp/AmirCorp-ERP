@@ -11,8 +11,13 @@ namespace ERP.Application.Features.Products.ListProducts
         IgvAffectation IgvAffectation,
         decimal SalePrice,
         bool IsActive,
-        // Ordenados por nombre del proveedor.
+        // Ordenados por nombre del proveedor. Los usa el formulario; la lista no los muestra.
         IReadOnlyCollection<ProductSupplierCodeResponseDto> SupplierCodes,
+        // Código del proveedor pedido en SupplierId (el de la compra), o null.
+        string? SupplierCode,
+        // Por qué apareció en la búsqueda, solo cuando fue por un código de proveedor:
+        // "Encontrado por el código YH-2045-BK de Proveedor X". Si coincide el código interno o el nombre, null.
+        string? SearchMatch,
         // Versión del producto: el formulario la devuelve al editar para no pisar cambios de otra persona.
         uint RowVersion
         )

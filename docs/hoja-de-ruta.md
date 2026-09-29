@@ -16,7 +16,7 @@
 - [x] Frontend en `AmirCorp-ERP-Web` con todas las pantallas de la API: productos, clientes y proveedores, empresas, usuarios y compras
 - [x] Vista previa de compras (`POST /api/purchases/preview`): calcula montos y totales sin guardar, con la misma fórmula del dominio
 - [x] Descripción del rol en la lista de usuarios y factor de conversión fijo en el catálogo de unidades
-- [x] Filas por página (10, 20, 50 o 100) en las listas paginadas
+- [x] Filas por página (10, 20, 50 o 100) en las listas paginadas; 10 por defecto
 - [x] Vistas guardadas por usuario, con vista predeterminada por pantalla (ver [decisiones.md](decisiones.md#13-vistas-guardadas-por-usuario))
 - [x] Historial de cambios (auditoría) con consulta por registro y pantalla general (ver [decisiones.md](decisiones.md#12-historial-de-cambios-auditoría))
 - [x] Código interno y códigos de proveedores por producto (ver [decisiones.md](decisiones.md#14-código-interno-y-códigos-de-proveedores))

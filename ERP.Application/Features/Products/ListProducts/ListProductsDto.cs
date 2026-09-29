@@ -6,7 +6,9 @@ namespace ERP.Application.Features.Products.ListProducts
         string? SearchTerm,
         bool? IsActive,
         ProductSortBy SortBy,
-        bool SortDescending
+        bool SortDescending,
+        // Proveedor con el que se está trabajando (una compra): cada producto trae el código de ese proveedor.
+        Guid? SupplierId
         )
     {
         /// <summary>Orden de la lista cuando la pantalla no pide uno: por nombre, de la A a la Z.</summary>

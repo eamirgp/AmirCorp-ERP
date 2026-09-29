@@ -4,7 +4,7 @@ namespace ERP.Application.Common.Pagination
     {
         public const int MinPageSize = 5;
         public const int MaxPageSize = 100;
-        public const int DefaultPageSize = 20;
+        public const int DefaultPageSize = 10;
 
         /// <summary>Tamaños de página que ofrece la pantalla. Se envían en cada lista paginada.</summary>
         public static readonly IReadOnlyList<int> PageSizeOptions = [10, 20, 50, 100];

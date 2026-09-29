@@ -25,26 +25,52 @@ namespace ERP.Persistence.Queries
             // Si la página pedida ya no existe, se devuelve la última.
             var page = PaginationDefaults.ClampPage(listProductsDto.Page, listProductsDto.PageSize, totalCount);
 
-            var items = await Sort(query, listProductsDto.SortBy, listProductsDto.SortDescending)
+            var (hasTerm, codeTerm, nameTerm) = SearchTerms(listProductsDto.SearchTerm);
+            var supplierId = listProductsDto.SupplierId;
+
+            var rows = await Sort(query, listProductsDto.SortBy, listProductsDto.SortDescending)
                 .Skip((page - 1) * listProductsDto.PageSize)
                 .Take(listProductsDto.PageSize)
-                .Select(p => new ListProductsResponseDto(
-                    p.Id,
-                    p.Code,
-                    p.Name,
-                    p.UnitOfMeasure,
-                    p.IgvAffectation,
-                    p.SalePrice,
-                    p.IsActive,
-                    _context.ProductSupplierCodes
+                .Select(p => new
+                {
+                    Product = p,
+                    SupplierCodes = _context.ProductSupplierCodes
                         .Where(c => c.ProductId == p.Id)
                         .Join(_context.BusinessPartners, c => c.SupplierId, s => s.Id, (c, s) => new { c.SupplierId, SupplierName = s.Name, s.DocumentNumber, c.Code })
                         .OrderBy(x => x.SupplierName)
                         .Select(x => new ProductSupplierCodeResponseDto(x.SupplierId, x.SupplierName, x.DocumentNumber, x.Code))
                         .ToList(),
-                    EF.Property<uint>(p, "RowVersion")
-                    ))
+                    SupplierCode = supplierId == null
+                        ? null
+                        : p.SupplierCodes.Where(c => c.SupplierId == supplierId).Select(c => c.Code).FirstOrDefault(),
+                    // Solo si no coincidió el código interno ni el nombre: el primer código de proveedor que coincide.
+                    Match = !hasTerm || p.Code.Contains(codeTerm) || p.Name.ToLower().Contains(nameTerm)
+                        ? null
+                        : _context.ProductSupplierCodes
+                            .Where(c => c.ProductId == p.Id && c.Code.Contains(codeTerm))
+                            .Join(_context.BusinessPartners, c => c.SupplierId, s => s.Id, (c, s) => new { c.Code, s.Name })
+                            .OrderBy(x => x.Name)
+                            .Select(x => "Encontrado por el código " + x.Code + " de " + x.Name)
+                            .FirstOrDefault(),
+                    RowVersion = EF.Property<uint>(p, "RowVersion")
+                })
                 .ToArrayAsync();
+
+            var items = rows
+                .Select(r => new ListProductsResponseDto(
+                    r.Product.Id,
+                    r.Product.Code,
+                    r.Product.Name,
+                    r.Product.UnitOfMeasure,
+                    r.Product.IgvAffectation,
+                    r.Product.SalePrice,
+                    r.Product.IsActive,
+                    r.SupplierCodes,
+                    r.SupplierCode,
+                    r.Match,
+                    r.RowVersion
+                    ))
+                .ToArray();
 
             return new SortedPagedResult<ListProductsResponseDto, ProductSortBy>(
                 items,
@@ -90,12 +116,9 @@ namespace ERP.Persistence.Queries
         // El texto se busca en cualquier parte del código interno, del nombre o de los códigos de proveedores.
         private static IQueryable<Product> Filter(IQueryable<Product> query, string? searchTerm, bool? isActive)
         {
-            if (!string.IsNullOrWhiteSpace(searchTerm))
+            var (hasTerm, codeTerm, nameTerm) = SearchTerms(searchTerm);
+            if (hasTerm)
             {
-                var term = searchTerm.Trim();
-                var codeTerm = Product.NormalizeCode(term);
-                var nameTerm = term.ToLower();
-
                 query = query
                     .Where(p =>
                     p.Code.Contains(codeTerm) ||
@@ -109,6 +132,16 @@ namespace ERP.Persistence.Queries
                     .Where(p => p.IsActive == isActive);
 
             return query;
+        }
+
+        /// <summary>El texto buscado como se compara: en mayúsculas para los códigos y en minúsculas para el nombre.</summary>
+        private static (bool HasTerm, string CodeTerm, string NameTerm) SearchTerms(string? searchTerm)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return (false, "", "");
+
+            var term = searchTerm.Trim();
+            return (true, Product.NormalizeCode(term), term.ToLower());
         }
 
         private static IQueryable<Product> Sort(IQueryable<Product> query, ProductSortBy sortBy, bool sortDescending) =>
