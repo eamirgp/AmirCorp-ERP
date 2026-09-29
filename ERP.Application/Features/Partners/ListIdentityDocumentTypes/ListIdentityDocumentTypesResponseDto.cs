@@ -11,5 +11,8 @@ namespace ERP.Application.Features.Partners.ListIdentityDocumentTypes
     {
         /// <summary>Si el formulario debe preguntar el país: con DNI o RUC es siempre Perú y no se pregunta.</summary>
         public bool RequiresCountry => !IdentityDocumentType.RequiresPeruvianCountry;
+
+        /// <summary>Si un proveedor puede tener este documento: RUC o extranjero sí; DNI no (no emite facturas).</summary>
+        public bool CanBeSupplier => IdentityDocumentType.CanIssueTaxDocuments;
     }
 }
