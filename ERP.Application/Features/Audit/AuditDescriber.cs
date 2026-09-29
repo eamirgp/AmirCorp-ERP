@@ -30,7 +30,7 @@ namespace ERP.Application.Features.Audit
             {
                 [AuditEntityType.Product] = new Dictionary<string, Field>
                 {
-                    [nameof(Product.Code)] = new("Código"),
+                    [nameof(Product.Code)] = new("Código interno"),
                     [nameof(Product.Name)] = new("Nombre"),
                     [nameof(Product.UnitOfMeasure)] = new("Unidad de medida"),
                     [nameof(Product.IgvAffectation)] = new("Afectación IGV"),
@@ -92,6 +92,10 @@ namespace ERP.Application.Features.Audit
             var field = Fields[type][property];
             return new AuditChangeDto(field.Label, Format(from, field), Format(to, field));
         }
+
+        /// <summary>Cambio en el código de un proveedor del producto; sin valor "desde" se agregó, sin valor "a" se quitó.</summary>
+        public static AuditChangeDto SupplierCodeChange(string supplierName, string? from, string? to) =>
+            new($"Código de {supplierName}", from ?? "—", to ?? "—");
 
         private static string Format(object? value, Field field) => value switch
         {

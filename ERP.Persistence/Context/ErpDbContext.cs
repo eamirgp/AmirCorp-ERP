@@ -22,6 +22,7 @@ namespace ERP.Persistence.Context
         public DbSet<User> Users => Set<User>();
         public DbSet<Company> Companies => Set<Company>();
         public DbSet<Product> Products => Set<Product>();
+        public DbSet<ProductSupplierCode> ProductSupplierCodes => Set<ProductSupplierCode>();
         public DbSet<BusinessPartner> BusinessPartners => Set<BusinessPartner>();
         public DbSet<StockEntry> StockEntries => Set<StockEntry>();
         public DbSet<Purchase> Purchases => Set<Purchase>();

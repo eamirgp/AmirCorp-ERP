@@ -1,4 +1,5 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Application.Features.Products.SupplierCodes;
+using ERP.Domain.Catalogs;
 
 namespace ERP.Application.Features.Products.UpdateProduct
 {
@@ -9,6 +10,8 @@ namespace ERP.Application.Features.Products.UpdateProduct
         UnitOfMeasure UnitOfMeasure,
         IgvAffectation IgvAffectation,
         decimal SalePrice,
+        // Lista completa: los códigos que no vienen se quitan.
+        IReadOnlyCollection<ProductSupplierCodeDto> SupplierCodes,
         uint RowVersion
         );
 }

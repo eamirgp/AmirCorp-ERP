@@ -3,6 +3,7 @@ using ERP.Application.Contracts.Persistence.Queries;
 using ERP.Application.Features.Products.ExportProducts;
 using ERP.Application.Features.Products.GetProduct;
 using ERP.Application.Features.Products.ListProducts;
+using ERP.Application.Features.Products.SupplierCodes;
 using ERP.Domain.Products;
 using ERP.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,12 @@ namespace ERP.Persistence.Queries
                     p.IgvAffectation,
                     p.SalePrice,
                     p.IsActive,
+                    _context.ProductSupplierCodes
+                        .Where(c => c.ProductId == p.Id)
+                        .Join(_context.BusinessPartners, c => c.SupplierId, s => s.Id, (c, s) => new { c.SupplierId, SupplierName = s.Name, s.DocumentNumber, c.Code })
+                        .OrderBy(x => x.SupplierName)
+                        .Select(x => new ProductSupplierCodeResponseDto(x.SupplierId, x.SupplierName, x.DocumentNumber, x.Code))
+                        .ToList(),
                     EF.Property<uint>(p, "RowVersion")
                     ))
                 .ToArrayAsync();
@@ -61,6 +68,12 @@ namespace ERP.Persistence.Queries
                 p.IgvAffectation,
                 p.SalePrice,
                 p.IsActive,
+                _context.ProductSupplierCodes
+                    .Where(c => c.ProductId == p.Id)
+                    .Join(_context.BusinessPartners, c => c.SupplierId, s => s.Id, (c, s) => new { c.SupplierId, SupplierName = s.Name, s.DocumentNumber, c.Code })
+                    .OrderBy(x => x.SupplierName)
+                    .Select(x => new ProductSupplierCodeResponseDto(x.SupplierId, x.SupplierName, x.DocumentNumber, x.Code))
+                    .ToList(),
                 p.CreatedAt,
                 _context.Users.Where(u => u.Id == p.CreatedBy).Select(u => u.Name).FirstOrDefault(),
                 p.UpdatedAt,
@@ -74,17 +87,20 @@ namespace ERP.Persistence.Queries
             .ToArrayAsync();
 
         // La lista y la exportación filtran y ordenan igual: el Excel trae exactamente lo que se ve en la pantalla.
+        // El texto se busca en cualquier parte del código interno, del nombre o de los códigos de proveedores.
         private static IQueryable<Product> Filter(IQueryable<Product> query, string? searchTerm, bool? isActive)
         {
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                var codeTerm = Product.NormalizeCode(searchTerm);
-                var nameTerm = searchTerm.ToLower();
+                var term = searchTerm.Trim();
+                var codeTerm = Product.NormalizeCode(term);
+                var nameTerm = term.ToLower();
 
                 query = query
                     .Where(p =>
-                    p.Code.StartsWith(codeTerm) ||
-                    p.Name.ToLower().Contains(nameTerm)
+                    p.Code.Contains(codeTerm) ||
+                    p.Name.ToLower().Contains(nameTerm) ||
+                    p.SupplierCodes.Any(c => c.Code.Contains(codeTerm))
                     );
             }
 

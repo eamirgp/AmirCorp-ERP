@@ -2,6 +2,7 @@ using ERP.Application.Common.Exceptions;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace ERP.Persistence.Commands
 {
@@ -20,6 +21,12 @@ namespace ERP.Persistence.Commands
             catch (DbUpdateConcurrencyException ex)
             {
                 throw new ConcurrencyException(ex);
+            }
+            // Los casos de uso revisan que un código o documento no se repita, pero si dos personas guardan el mismo
+            // a la vez, lo frena el índice único de la base. Se responde 409 en vez de un error del servidor.
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                throw new ConcurrencyException("Otra persona acaba de guardar un registro con el mismo código o documento. Revisa los datos y vuelve a intentarlo.", ex);
             }
         }
     }

@@ -54,7 +54,7 @@ namespace ERP.Application.Features.Products.ProductImport
                 if (candidate is not null)
                 {
                     if (firstRowByCode.TryGetValue(candidate.Code, out var firstRow))
-                        errors.Add($"El código {candidate.Code} está repetido: ya aparece en la fila {firstRow}.");
+                        errors.Add($"El código interno {candidate.Code} está repetido: ya aparece en la fila {firstRow}.");
                     else
                         firstRowByCode[candidate.Code] = row.RowNumber;
                 }

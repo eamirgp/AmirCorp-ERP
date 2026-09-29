@@ -24,5 +24,10 @@ namespace ERP.Persistence.Commands
         public async Task<BusinessPartner?> GetByIdAsync(Guid id) =>
             await _context.BusinessPartners
             .FindAsync(id);
+
+        public async Task<IReadOnlyCollection<BusinessPartner>> GetByIdsAsync(IReadOnlyCollection<Guid> ids) =>
+            await _context.BusinessPartners
+            .Where(bp => ids.Contains(bp.Id))
+            .ToListAsync();
     }
 }

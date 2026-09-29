@@ -1,4 +1,5 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Application.Features.Products.SupplierCodes;
+using ERP.Domain.Catalogs;
 
 namespace ERP.Application.Features.Products.GetProduct
 {
@@ -10,6 +11,7 @@ namespace ERP.Application.Features.Products.GetProduct
         IgvAffectation IgvAffectation,
         decimal SalePrice,
         bool IsActive,
+        IReadOnlyCollection<ProductSupplierCodeResponseDto> SupplierCodes,
         DateTime CreatedAt,
         string? CreatedByName,
         DateTime? UpdatedAt,

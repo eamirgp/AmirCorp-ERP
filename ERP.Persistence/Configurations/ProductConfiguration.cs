@@ -53,6 +53,15 @@ namespace ERP.Persistence.Configurations
             builder.Property<uint>("RowVersion")
                 .IsRowVersion();
 
+            builder.Navigation(p => p.SupplierCodes)
+                .HasField("_supplierCodes")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            builder.HasMany(p => p.SupplierCodes)
+                .WithOne()
+                .HasForeignKey(c => c.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             builder.HasIndex(p => p.Code)
                 .IsUnique();
         }

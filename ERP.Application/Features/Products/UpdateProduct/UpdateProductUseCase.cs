@@ -1,19 +1,23 @@
-﻿using ERP.Application.Common.Results;
+using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Application.Features.Products.SupplierCodes;
 
 namespace ERP.Application.Features.Products.UpdateProduct
 {
     internal sealed class UpdateProductUseCase : IUpdateProductUseCase
     {
         private readonly IProductRepository _productRepository;
+        private readonly IBusinessPartnerRepository _businessPartnerRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public UpdateProductUseCase(
             IProductRepository productRepository,
+            IBusinessPartnerRepository businessPartnerRepository,
             IUnitOfWork unitOfWork
             )
         {
             _productRepository = productRepository;
+            _businessPartnerRepository = businessPartnerRepository;
             _unitOfWork = unitOfWork;
         }
 
@@ -31,13 +35,18 @@ namespace ERP.Application.Features.Products.UpdateProduct
                     );
 
             if (await _productRepository.CodeExistsAsync(request.Code, request.Id))
-                return Result.Failure(["El código ya se encuentra en uso."], ErrorType.Conflict);
+                return Result.Failure(["El código interno ya se encuentra en uso."], ErrorType.Conflict);
+
+            var supplierCodes = await ProductSupplierCodeRules.CheckAsync(request.SupplierCodes, product, _businessPartnerRepository, _productRepository);
+            if (!supplierCodes.IsSuccess)
+                return supplierCodes;
 
             product.UpdateCode(request.Code);
             product.UpdateName(request.Name);
             product.UpdateUnitOfMeasure(request.UnitOfMeasure);
             product.UpdateIgvAffectation(request.IgvAffectation);
             product.UpdateSalePrice(request.SalePrice);
+            product.SetSupplierCodes(request.SupplierCodes.Select(c => (c.SupplierId, c.Code)).ToArray());
 
             await _unitOfWork.SaveChangesAsync();
 

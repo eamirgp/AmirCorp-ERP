@@ -18,7 +18,10 @@ namespace ERP.Infrastructure.Services.Spreadsheets
         private const string HelpSheet = "Instrucciones";
         private const int MaxRows = 5000;
 
-        private static readonly string[] Headers = ["Código", "Nombre", "Unidad de medida", "Afectación IGV", "Precio de venta (S/, con IGV)"];
+        private static readonly string[] Headers = ["Código interno", "Nombre", "Unidad de medida", "Afectación IGV", "Precio de venta (S/, con IGV)"];
+
+        // Nombres anteriores de las columnas: los archivos descargados antes se siguen aceptando.
+        private static readonly Dictionary<int, string> FormerHeaders = new() { [0] = "Código" };
 
         public byte[] Write(IReadOnlyCollection<ProductSheetRow> rows)
         {
@@ -104,7 +107,9 @@ namespace ERP.Infrastructure.Services.Spreadsheets
                 for (var c = 0; c < Headers.Length; c++)
                 {
                     var text = TextOf(sheet.Cell(1, c + 1));
-                    if (!string.Equals(text, Headers[c], StringComparison.CurrentCultureIgnoreCase))
+                    var matches = string.Equals(text, Headers[c], StringComparison.CurrentCultureIgnoreCase)
+                        || (FormerHeaders.TryGetValue(c, out var former) && string.Equals(text, former, StringComparison.CurrentCultureIgnoreCase));
+                    if (!matches)
                         return Fail("Las columnas no coinciden con la plantilla. Descarga la plantilla y copia tus datos en ella, sin cambiar la cabecera.");
                 }
 
@@ -199,12 +204,13 @@ namespace ERP.Infrastructure.Services.Spreadsheets
                 "",
                 "1. Llena la hoja \"Productos\": una fila por producto, desde la fila 2.",
                 "2. No cambies ni borres la fila de títulos.",
-                "3. Código: único para cada producto. Se guarda en mayúsculas.",
+                "3. Código interno: el código de la empresa, único para cada producto, de hasta 30 caracteres. Se guarda en mayúsculas.",
+                "   Los códigos de los proveedores se agregan en el sistema, en la ficha de cada producto.",
                 "4. Unidad de medida y Afectación IGV: elígelos de la lista desplegable de cada celda.",
                 "5. Precio de venta: en soles e incluye IGV. Usa punto para los decimales y no uses comas, por ejemplo 1500.50",
                 "6. Sube el archivo en el sistema: antes de guardar verás qué productos se crean, cuáles se actualizan y los errores.",
                 "",
-                "Si el código ya existe, el producto se omite. Para actualizar productos existentes (por ejemplo, sus precios),",
+                "Si el código interno ya existe, el producto se omite. Para actualizar productos existentes (por ejemplo, sus precios),",
                 "marca la opción \"Actualizar los productos que ya existen\" al subir el archivo.",
                 "",
                 "Si una sola fila tiene errores no se guarda nada: corrige el archivo y vuelve a subirlo.",

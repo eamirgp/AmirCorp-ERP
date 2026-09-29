@@ -1,4 +1,5 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Application.Features.Products.SupplierCodes;
+using ERP.Domain.Catalogs;
 
 namespace ERP.Application.Features.Products.ListProducts
 {
@@ -10,6 +11,8 @@ namespace ERP.Application.Features.Products.ListProducts
         IgvAffectation IgvAffectation,
         decimal SalePrice,
         bool IsActive,
+        // Ordenados por nombre del proveedor.
+        IReadOnlyCollection<ProductSupplierCodeResponseDto> SupplierCodes,
         // Versión del producto: el formulario la devuelve al editar para no pisar cambios de otra persona.
         uint RowVersion
         )

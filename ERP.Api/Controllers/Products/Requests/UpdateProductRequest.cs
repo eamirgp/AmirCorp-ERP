@@ -10,6 +10,8 @@ namespace ERP.Api.Controllers.Products.Requests
         UnitOfMeasure? UnitOfMeasure,
         IgvAffectation? IgvAffectation,
         decimal? SalePrice,
+        // Lista completa de códigos de proveedores: los que no se envían se quitan del producto.
+        IReadOnlyCollection<ProductSupplierCodeRequest?>? SupplierCodes,
         uint? RowVersion
         )
     {
@@ -18,10 +20,10 @@ namespace ERP.Api.Controllers.Products.Requests
             var errors = new List<string>();
 
             if (string.IsNullOrWhiteSpace(Code))
-                errors.Add("El código es requerido.");
+                errors.Add("El código interno es requerido.");
 
             if (!string.IsNullOrWhiteSpace(Code) && Code.Length > Product.CodeMaxLength)
-                errors.Add($"El código no puede exceder los {Product.CodeMaxLength} caracteres.");
+                errors.Add($"El código interno no puede exceder los {Product.CodeMaxLength} caracteres.");
 
             if (string.IsNullOrWhiteSpace(Name))
                 errors.Add("El nombre es requerido.");
@@ -50,6 +52,8 @@ namespace ERP.Api.Controllers.Products.Requests
             if (SalePrice is not null && SalePrice > Product.SalePriceMax)
                 errors.Add("El precio de venta es demasiado grande. Revisa que esté bien escrito.");
 
+            errors.AddRange(ProductSupplierCodeRequest.Validate(SupplierCodes));
+
             if (RowVersion is null)
                 errors.Add("Falta la versión del producto. Vuelve a abrir el formulario.");
 
@@ -57,6 +61,6 @@ namespace ERP.Api.Controllers.Products.Requests
         }
 
         public UpdateProductDto ToDto(Guid id) =>
-            new(id, Code!, Name!, UnitOfMeasure!.Value, IgvAffectation!.Value, SalePrice!.Value, RowVersion!.Value);
+            new(id, Code!, Name!, UnitOfMeasure!.Value, IgvAffectation!.Value, SalePrice!.Value, ProductSupplierCodeRequest.ToDtos(SupplierCodes), RowVersion!.Value);
     }
 }

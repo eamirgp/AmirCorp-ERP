@@ -9,7 +9,8 @@ namespace ERP.Api.Controllers.Products.Requests
         string? Name,
         UnitOfMeasure? UnitOfMeasure,
         IgvAffectation? IgvAffectation,
-        decimal? SalePrice
+        decimal? SalePrice,
+        IReadOnlyCollection<ProductSupplierCodeRequest?>? SupplierCodes
         )
     {
         public IReadOnlyCollection<string> Validate()
@@ -17,10 +18,10 @@ namespace ERP.Api.Controllers.Products.Requests
             var errors = new List<string>();
 
             if (string.IsNullOrWhiteSpace(Code))
-                errors.Add("El código es requerido.");
-            
+                errors.Add("El código interno es requerido.");
+
             if (!string.IsNullOrWhiteSpace(Code) && Code.Length > Product.CodeMaxLength)
-                errors.Add($"El código no puede exceder los {Product.CodeMaxLength} caracteres.");
+                errors.Add($"El código interno no puede exceder los {Product.CodeMaxLength} caracteres.");
 
             if (string.IsNullOrWhiteSpace(Name))
                 errors.Add("El nombre es requerido.");
@@ -36,7 +37,7 @@ namespace ERP.Api.Controllers.Products.Requests
 
             if (IgvAffectation is null)
                 errors.Add("El tipo de afectación del IGV es requerido.");
-            
+
             if (IgvAffectation is not null && !Enum.IsDefined(IgvAffectation.Value))
                 errors.Add("El tipo de afectación del IGV es inválido.");
 
@@ -49,10 +50,12 @@ namespace ERP.Api.Controllers.Products.Requests
             if (SalePrice is not null && SalePrice > Product.SalePriceMax)
                 errors.Add("El precio de venta es demasiado grande. Revisa que esté bien escrito.");
 
+            errors.AddRange(ProductSupplierCodeRequest.Validate(SupplierCodes));
+
             return errors;
         }
 
         public CreateProductDto ToDto() =>
-            new(Code!, Name!, UnitOfMeasure!.Value, IgvAffectation!.Value, SalePrice!.Value);
+            new(Code!, Name!, UnitOfMeasure!.Value, IgvAffectation!.Value, SalePrice!.Value, ProductSupplierCodeRequest.ToDtos(SupplierCodes));
     }
 }

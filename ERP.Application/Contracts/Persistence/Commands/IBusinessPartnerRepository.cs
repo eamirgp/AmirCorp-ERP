@@ -8,5 +8,6 @@ namespace ERP.Application.Contracts.Persistence.Commands
         void Add(BusinessPartner businessPartner);
         Task<bool> DocumentNumberExistsAsync(string documentNumber, IdentityDocumentType identityDocumentType, Guid? excludeId = null);
         Task<BusinessPartner?> GetByIdAsync(Guid id);
+        Task<IReadOnlyCollection<BusinessPartner>> GetByIdsAsync(IReadOnlyCollection<Guid> ids);
     }
 }

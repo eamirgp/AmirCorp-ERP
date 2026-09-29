@@ -120,3 +120,17 @@ Cada usuario puede guardar con un nombre los filtros, el orden y las filas por p
 - **Filtros opacos:** la API guarda el texto que envía la pantalla (JSON de los parámetros de la URL, máx. 2000 caracteres) y no lo interpreta. Al aplicarse, la pantalla lo valida como cualquier URL.
 - **Reglas:** nombre único por usuario y pantalla (sin distinguir mayúsculas), máximo 20 por pantalla, una sola predeterminada.
 - **No se audita:** es una preferencia personal, no un dato del negocio.
+
+### 14. Código interno y códigos de proveedores
+**Fecha:** setiembre 2026
+
+Cada producto tiene **un código interno** y **varios códigos de proveedores**.
+
+- **Código interno** (`Product.Code`): lo define la empresa, es obligatorio y único, de hasta 30 caracteres. Es el que va en la factura electrónica: en el XML UBL 2.1, el "código de producto del ítem" (`SellersItemIdentification`) es el del vendedor y admite hasta 30 caracteres. SUNAT no pide el código del proveedor en la factura ni en el registro de compras.
+- **Códigos de proveedores** (tabla `ProductSupplierCodes`): el código con el que cada proveedor identifica el producto en su factura, proforma o catálogo. Uno por proveedor en cada producto, y un mismo código de un proveedor apunta a un solo producto. Así, más adelante, la factura de un proveedor se podrá relacionar con los productos sin dudas. Sirve igual para compras nacionales e importaciones.
+- **No es el "Código de producto SUNAT"** (catálogo 25, 8 dígitos). Ese es obligatorio desde agosto de 2026 solo para ciertos bienes (oro, combustibles, bienes con detracción o percepción…). Se agregará con la facturación electrónica si algún producto lo necesita.
+- **Búsqueda:** la lista y el buscador de las compras encuentran el producto por cualquier parte del código interno, de un código de proveedor o del nombre.
+- **Formulario:** los códigos se envían junto con el producto (`SupplierCodes`) y la lista es completa: los que no vienen se quitan. Un proveedor desactivado conserva sus códigos, pero no se le agregan nuevos.
+- **Historial:** agregar, cambiar o quitar un código de proveedor queda en el historial del producto ("Código de Proveedor X: — → YH-2045-BK") y cuenta como modificación del producto. Así la versión (`RowVersion`) también protege estos cambios.
+- **Migración:** hasta ahora el código del producto era el del proveedor. `AddProductSupplierCodes` lo copia como código del proveedor de la última compra del producto. El código interno queda igual hasta que se cambie en el sistema.
+- **Pendiente:** marca y modelo (para la DUA) y código de barras, cuando se necesiten. Los códigos de proveedores en la carga masiva con Excel.
