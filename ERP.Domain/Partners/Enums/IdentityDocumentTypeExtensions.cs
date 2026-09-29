@@ -18,7 +18,8 @@ namespace ERP.Domain.Partners.Enums
         {
             public string Description => identityDocumentType switch
             {
-                IdentityDocumentType.TributarioExtranjero => "Documento Tributario Extranjero",
+                // Nombre corto para las pantallas; en SUNAT es "Doc. tributario no domiciliado sin RUC" (catálogo 06, código 0).
+                IdentityDocumentType.TributarioExtranjero => "Documento extranjero",
                 IdentityDocumentType.Dni => "DNI",
                 IdentityDocumentType.Ruc => "RUC",
                 _ => identityDocumentType.ToString()
