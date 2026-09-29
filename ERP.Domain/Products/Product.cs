@@ -1,5 +1,6 @@
 ﻿using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
+using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Domain.Products
 {
@@ -14,7 +15,8 @@ namespace ERP.Domain.Products
         /// <summary>Código interno: lo define la empresa y es único.</summary>
         public string Code { get; private set; }
         public string Name { get; private set; }
-        public UnitOfMeasure UnitOfMeasure { get; private set; }
+        /// <summary>Código SUNAT de la unidad de medida (NIU, DZN…). Debe ser una unidad activa del catálogo.</summary>
+        public string UnitOfMeasureCode { get; private set; }
         public IgvAffectation IgvAffectation { get; private set; }
         public decimal SalePrice { get; private set; }
         public bool IsActive { get; private set; }
@@ -23,18 +25,18 @@ namespace ERP.Domain.Products
         /// <summary>Códigos con los que cada proveedor identifica al producto: uno por proveedor.</summary>
         public IReadOnlyCollection<ProductSupplierCode> SupplierCodes => _supplierCodes.AsReadOnly();
 
-        private Product(Guid id, string code, string name, UnitOfMeasure unitOfMeasure, IgvAffectation igvAffectation, decimal salePrice, bool isActive) : base(id)
+        private Product(Guid id, string code, string name, string unitOfMeasureCode, IgvAffectation igvAffectation, decimal salePrice, bool isActive) : base(id)
         {
             Code = code;
             Name = name;
-            UnitOfMeasure = unitOfMeasure;
+            UnitOfMeasureCode = unitOfMeasureCode;
             IgvAffectation = igvAffectation;
             SalePrice = salePrice;
             IsActive = isActive;
         }
 
-        public static Product Create(string code, string name, UnitOfMeasure unitOfMeasure, IgvAffectation igvAffectation, decimal salePrice) =>
-            new(Guid.CreateVersion7(), ValidateCode(code), ValidateName(name), ValidateUnitOfMeasure(unitOfMeasure), ValidateIgvAffectation(igvAffectation), ValidateSalePrice(salePrice), isActive: true);
+        public static Product Create(string code, string name, string unitOfMeasureCode, IgvAffectation igvAffectation, decimal salePrice) =>
+            new(Guid.CreateVersion7(), ValidateCode(code), ValidateName(name), ValidateUnitOfMeasureCode(unitOfMeasureCode), ValidateIgvAffectation(igvAffectation), ValidateSalePrice(salePrice), isActive: true);
 
         public static string NormalizeCode(string code) =>
             code.ToUpperInvariant();
@@ -45,8 +47,8 @@ namespace ERP.Domain.Products
         public void UpdateName(string name) =>
             Name = ValidateName(name);
 
-        public void UpdateUnitOfMeasure(UnitOfMeasure unitOfMeasure) =>
-            UnitOfMeasure = ValidateUnitOfMeasure(unitOfMeasure);
+        public void UpdateUnitOfMeasure(string unitOfMeasureCode) =>
+            UnitOfMeasureCode = ValidateUnitOfMeasureCode(unitOfMeasureCode);
 
         public void UpdateIgvAffectation(IgvAffectation igvAffectation) =>
             IgvAffectation = ValidateIgvAffectation(igvAffectation);
@@ -120,12 +122,17 @@ namespace ERP.Domain.Products
             return name;
         }
 
-        private static UnitOfMeasure ValidateUnitOfMeasure(UnitOfMeasure unitOfMeasure)
+        // Que la unidad exista y esté activa lo revisa el caso de uso, que conoce el catálogo.
+        private static string ValidateUnitOfMeasureCode(string unitOfMeasureCode)
         {
-            if (!Enum.IsDefined(unitOfMeasure))
+            if (string.IsNullOrWhiteSpace(unitOfMeasureCode))
+                throw new DomainException("La unidad de medida es requerida.");
+
+            var code = UnitOfMeasure.NormalizeCode(unitOfMeasureCode);
+            if (code.Length > UnitOfMeasure.CodeMaxLength)
                 throw new DomainException("La unidad de medida es inválida.");
 
-            return unitOfMeasure;
+            return code;
         }
 
         private static IgvAffectation ValidateIgvAffectation(IgvAffectation igvAffectation)

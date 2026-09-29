@@ -52,6 +52,9 @@ using ERP.Application.Features.Users.ListAssignableRoles;
 using ERP.Application.Features.Users.ListUsers;
 using ERP.Application.Features.Users.ResetUserPassword;
 using ERP.Application.Features.Users.UpdateUserProfile;
+using ERP.Application.Features.UnitsOfMeasure.ListAllUnitsOfMeasure;
+using ERP.Application.Features.UnitsOfMeasure.ToggleUnitOfMeasure;
+using ERP.Application.Features.UnitsOfMeasure.UpdateUnitOfMeasure;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ERP.Application
@@ -68,6 +71,10 @@ namespace ERP.Application
                     .AddScoped<IListIgvAffectationsUseCase, ListIgvAffectationsUseCase>()
                     .AddScoped<IListTaxDocumentTypesUseCase, ListTaxDocumentTypesUseCase>()
                     .AddScoped<IListUnitsOfMeasureUseCase, ListUnitsOfMeasureUseCase>()
+                    .AddScoped<IListAllUnitsOfMeasureUseCase, ListAllUnitsOfMeasureUseCase>()
+                    .AddScoped<IUpdateUnitOfMeasureUseCase, UpdateUnitOfMeasureUseCase>()
+                    .AddScoped<IActivateUnitOfMeasureUseCase, ActivateUnitOfMeasureUseCase>()
+                    .AddScoped<IDeactivateUnitOfMeasureUseCase, DeactivateUnitOfMeasureUseCase>()
                     .AddScoped<IListInvoicePriceTypesUseCase, ListInvoicePriceTypesUseCase>()
 
                     .AddScoped<ICreateUserUseCase, CreateUserUseCase>()

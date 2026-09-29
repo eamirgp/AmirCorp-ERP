@@ -19,6 +19,7 @@
 - [x] Filas por página (10, 20, 50 o 100) en las listas paginadas; 10 por defecto
 - [x] Vistas guardadas por usuario, con vista predeterminada por pantalla (ver [decisiones.md](decisiones.md#13-vistas-guardadas-por-usuario))
 - [x] Historial de cambios (auditoría) con consulta por registro y pantalla general (ver [decisiones.md](decisiones.md#12-historial-de-cambios-auditoría))
+- [x] Unidades de medida desde el catálogo N.° 03 de SUNAT, activables por la empresa (ver [decisiones.md](decisiones.md#15-unidades-de-medida-desde-el-catálogo-de-sunat))
 - [x] Código interno y códigos de proveedores por producto (ver [decisiones.md](decisiones.md#14-código-interno-y-códigos-de-proveedores))
 - [x] Datos repetidos guardados al mismo tiempo (índice único): la API responde 409 en vez de 500
 - [x] Carga masiva de productos con Excel: plantilla, exportación, revisión sin guardar y confirmación todo o nada (ver [decisiones.md](decisiones.md#11-carga-masiva-de-productos-con-excel))

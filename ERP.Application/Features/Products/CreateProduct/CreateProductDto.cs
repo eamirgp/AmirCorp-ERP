@@ -6,7 +6,7 @@ namespace ERP.Application.Features.Products.CreateProduct
     public sealed record CreateProductDto(
         string Code,
         string Name,
-        UnitOfMeasure UnitOfMeasure,
+        string UnitOfMeasureCode,
         IgvAffectation IgvAffectation,
         decimal SalePrice,
         IReadOnlyCollection<ProductSupplierCodeDto> SupplierCodes

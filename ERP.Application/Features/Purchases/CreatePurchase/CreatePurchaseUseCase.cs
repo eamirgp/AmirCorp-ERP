@@ -3,7 +3,9 @@ using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Inventory;
 using ERP.Domain.Partners.Enums;
+using ERP.Application.Features.UnitsOfMeasure;
 using ERP.Domain.Purchases;
+using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Application.Features.Purchases.CreatePurchase
 {
@@ -14,6 +16,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
         private readonly IBusinessPartnerRepository _businessPartnerRepository;
         private readonly IProductRepository _productRepository;
         private readonly IStockEntryRepository _stockEntryRepository;
+        private readonly IUnitOfMeasureRepository _unitOfMeasureRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public CreatePurchaseUseCase(
@@ -22,9 +25,11 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             IBusinessPartnerRepository businessPartnerRepository,
             IProductRepository productRepository,
             IStockEntryRepository stockEntryRepository,
+            IUnitOfMeasureRepository unitOfMeasureRepository,
             IUnitOfWork unitOfWork
             )
         {
+            _unitOfMeasureRepository = unitOfMeasureRepository;
             _purchaseRepository = purchaseRepository;
             _companyRepository = companyRepository;
             _businessPartnerRepository = businessPartnerRepository;
@@ -65,6 +70,9 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             var products = await _productRepository.GetByIdsAsync(productIds);
             var productsDictionary = products.ToDictionary(p => p.Id);
 
+            var unitCodes = lines.Select(l => UnitOfMeasure.NormalizeCode(l.InvoiceUnitOfMeasureCode)).Distinct().ToArray();
+            var units = (await _unitOfMeasureRepository.GetByCodesAsync(unitCodes)).ToDictionary(u => u.Code);
+
             var errors = new List<string>();
 
             for (var i = 0; i < lines.Length; i++)
@@ -75,6 +83,10 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                     errors.Add($"Línea {lineNumber}: El producto no existe.");
                 else if (!product.IsActive)
                     errors.Add($"Línea {lineNumber}: El producto '{product.Name}' está desactivado.");
+
+                var code = lines[i].InvoiceUnitOfMeasureCode;
+                if (UnitOfMeasureRules.CheckUsable(units.GetValueOrDefault(UnitOfMeasure.NormalizeCode(code)), code) is { } unitError)
+                    errors.Add($"Línea {lineNumber}: {unitError}");
             }
 
             if (errors.Count > 0)
@@ -106,7 +118,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                     product.Code,
                     product.Name,
                     line.InvoiceIgvAffectation,
-                    line.InvoiceUnitOfMeasure,
+                    units[UnitOfMeasure.NormalizeCode(line.InvoiceUnitOfMeasureCode)],
                     line.InvoiceQuantity,
                     line.InvoiceAmount,
                     line.ConversionFactor

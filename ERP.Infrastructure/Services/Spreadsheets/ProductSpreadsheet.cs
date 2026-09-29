@@ -23,7 +23,7 @@ namespace ERP.Infrastructure.Services.Spreadsheets
         // Nombres anteriores de las columnas: los archivos descargados antes se siguen aceptando.
         private static readonly Dictionary<int, string> FormerHeaders = new() { [0] = "Código" };
 
-        public byte[] Write(IReadOnlyCollection<ProductSheetRow> rows)
+        public byte[] Write(IReadOnlyCollection<ProductSheetRow> rows, IReadOnlyCollection<string> unitNames)
         {
             using var workbook = new XLWorkbook();
             var sheet = workbook.Worksheets.Add(DataSheet);
@@ -52,14 +52,15 @@ namespace ERP.Infrastructure.Services.Spreadsheets
             sheet.Column(5).Style.NumberFormat.Format = "0.00";
 
             // Listas de valores válidos (hoja oculta) y validación en las celdas.
-            var units = Enum.GetValues<UnitOfMeasure>().Select(u => u.Description).ToArray();
+            var units = unitNames.ToArray();
             var igvs = Enum.GetValues<IgvAffectation>().Select(i => i.Description).ToArray();
             for (var i = 0; i < units.Length; i++) lists.Cell(i + 1, 1).Value = units[i];
             for (var i = 0; i < igvs.Length; i++) lists.Cell(i + 1, 2).Value = igvs[i];
             lists.Visibility = XLWorksheetVisibility.Hidden;
 
             var lastDataRow = MaxRows + 1;
-            AddList(sheet.Range(2, 3, lastDataRow, 3), lists.Range(1, 1, units.Length, 1), "Unidad de medida");
+            if (units.Length > 0)
+                AddList(sheet.Range(2, 3, lastDataRow, 3), lists.Range(1, 1, units.Length, 1), "Unidad de medida");
             AddList(sheet.Range(2, 4, lastDataRow, 4), lists.Range(1, 2, igvs.Length, 2), "Afectación IGV");
 
             var price = sheet.Range(2, 5, lastDataRow, 5).CreateDataValidation();
@@ -207,6 +208,7 @@ namespace ERP.Infrastructure.Services.Spreadsheets
                 "3. Código interno: el código de la empresa, único para cada producto, de hasta 30 caracteres. Se guarda en mayúsculas.",
                 "   Los códigos de los proveedores se agregan en el sistema, en la ficha de cada producto.",
                 "4. Unidad de medida y Afectación IGV: elígelos de la lista desplegable de cada celda.",
+                "   La lista trae las unidades activas. Para usar otra, actívala en el sistema: Administración > Unidades de medida.",
                 "5. Precio de venta: en soles e incluye IGV. Usa punto para los decimales y no uses comas, por ejemplo 1500.50",
                 "6. Sube el archivo en el sistema: antes de guardar verás qué productos se crean, cuáles se actualizan y los errores.",
                 "",
@@ -234,7 +236,7 @@ namespace ERP.Infrastructure.Services.Spreadsheets
 
             help.Cell(exampleRow + 1, 1).Value = "EL-1003";
             help.Cell(exampleRow + 1, 2).Value = "Power bank 20 000 mAh carga rápida";
-            help.Cell(exampleRow + 1, 3).Value = units[0];
+            help.Cell(exampleRow + 1, 3).Value = units.FirstOrDefault() ?? "";
             help.Cell(exampleRow + 1, 4).Value = igvs[0];
             help.Cell(exampleRow + 1, 5).Value = 89.90m;
 

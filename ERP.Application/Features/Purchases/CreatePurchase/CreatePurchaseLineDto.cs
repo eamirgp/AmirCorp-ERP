@@ -1,11 +1,11 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Catalogs;
 
 namespace ERP.Application.Features.Purchases.CreatePurchase
 {
     public sealed record CreatePurchaseLineDto(
         Guid ProductId,
         IgvAffectation InvoiceIgvAffectation,
-        UnitOfMeasure InvoiceUnitOfMeasure,
+        string InvoiceUnitOfMeasureCode,
         decimal InvoiceQuantity,
         decimal InvoiceAmount,
         decimal ConversionFactor

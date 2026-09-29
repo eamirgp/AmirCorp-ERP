@@ -2,6 +2,7 @@ using ERP.Application.Common.Responses;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Application.Features.Products.SupplierCodes;
+using ERP.Application.Features.UnitsOfMeasure;
 using ERP.Domain.Products;
 
 namespace ERP.Application.Features.Products.CreateProduct
@@ -10,16 +11,19 @@ namespace ERP.Application.Features.Products.CreateProduct
     {
         private readonly IProductRepository _productRepository;
         private readonly IBusinessPartnerRepository _businessPartnerRepository;
+        private readonly IUnitOfMeasureRepository _unitOfMeasureRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public CreateProductUseCase(
             IProductRepository productRepository,
             IBusinessPartnerRepository businessPartnerRepository,
+            IUnitOfMeasureRepository unitOfMeasureRepository,
             IUnitOfWork unitOfWork
             )
         {
             _productRepository = productRepository;
             _businessPartnerRepository = businessPartnerRepository;
+            _unitOfMeasureRepository = unitOfMeasureRepository;
             _unitOfWork = unitOfWork;
         }
 
@@ -28,6 +32,10 @@ namespace ERP.Application.Features.Products.CreateProduct
             if (await _productRepository.CodeExistsAsync(request.Code))
                 return Result<CreatedResponseDto>.Failure(["El código interno ya se encuentra en uso."], ErrorType.Conflict);
 
+            var unitError = UnitOfMeasureRules.CheckUsable(await _unitOfMeasureRepository.GetByCodeAsync(request.UnitOfMeasureCode), request.UnitOfMeasureCode);
+            if (unitError is not null)
+                return Result<CreatedResponseDto>.Failure([unitError], ErrorType.BadRequest);
+
             var supplierCodes = await ProductSupplierCodeRules.CheckAsync(request.SupplierCodes, null, _businessPartnerRepository, _productRepository);
             if (!supplierCodes.IsSuccess)
                 return Result<CreatedResponseDto>.Failure(supplierCodes.Errors, supplierCodes.ErrorType!.Value);
@@ -35,7 +43,7 @@ namespace ERP.Application.Features.Products.CreateProduct
             var product = Product.Create(
                 request.Code,
                 request.Name,
-                request.UnitOfMeasure,
+                request.UnitOfMeasureCode,
                 request.IgvAffectation,
                 request.SalePrice
                 );

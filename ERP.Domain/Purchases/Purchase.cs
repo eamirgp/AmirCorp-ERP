@@ -1,6 +1,7 @@
 ﻿using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
 using ERP.Domain.Partners.Enums;
+using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Domain.Purchases
 {

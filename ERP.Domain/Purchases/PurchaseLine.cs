@@ -1,5 +1,6 @@
 ﻿using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
+using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Domain.Purchases
 {
@@ -12,7 +13,8 @@ namespace ERP.Domain.Purchases
         public string ProductName { get; }
         public InvoicePriceType InvoicePriceType { get; }
         public IgvAffectation InvoiceIgvAffectation { get; }
-        public UnitOfMeasure InvoiceUnitOfMeasure { get; }
+        /// <summary>Código SUNAT de la unidad en que viene la factura (NIU, DZN, BX…).</summary>
+        public string InvoiceUnitOfMeasureCode { get; }
         public decimal InvoiceQuantity { get; }
         public decimal InvoiceUnitValue { get; }
         public decimal InvoiceUnitPrice { get; }
@@ -32,7 +34,7 @@ namespace ERP.Domain.Purchases
             string productName,
             InvoicePriceType invoicePriceType,
             IgvAffectation invoiceIgvAffectation,
-            UnitOfMeasure invoiceUnitOfMeasure,
+            string invoiceUnitOfMeasureCode,
             decimal invoiceQuantity,
             decimal invoiceUnitValue,
             decimal invoiceUnitPrice,
@@ -51,7 +53,7 @@ namespace ERP.Domain.Purchases
             ProductName = productName;
             InvoicePriceType = invoicePriceType;
             InvoiceIgvAffectation = invoiceIgvAffectation;
-            InvoiceUnitOfMeasure = invoiceUnitOfMeasure;
+            InvoiceUnitOfMeasureCode = invoiceUnitOfMeasureCode;
             InvoiceQuantity = invoiceQuantity;
             InvoiceUnitValue = invoiceUnitValue;
             InvoiceUnitPrice = invoiceUnitPrice;
@@ -81,6 +83,9 @@ namespace ERP.Domain.Purchases
 
             var amounts = Calculate(invoicePriceType, invoiceIgvAffectation, invoiceUnitOfMeasure, invoiceQuantity, invoiceAmount, conversionFactor);
 
+            if (!invoiceUnitOfMeasure.IsActive)
+                throw new DomainException($"La unidad de medida '{invoiceUnitOfMeasure.Name}' está desactivada.");
+
             return new(
                 Guid.CreateVersion7(),
                 purchaseId,
@@ -90,7 +95,7 @@ namespace ERP.Domain.Purchases
                 productName,
                 invoicePriceType,
                 invoiceIgvAffectation,
-                invoiceUnitOfMeasure,
+                invoiceUnitOfMeasure.Code,
                 invoiceQuantity,
                 amounts.InvoiceUnitValue,
                 amounts.InvoiceUnitPrice,
@@ -118,7 +123,6 @@ namespace ERP.Domain.Purchases
         {
             ValidateInvoicePriceType(invoicePriceType);
             ValidateInvoiceIgvAffectation(invoiceIgvAffectation);
-            ValidateInvoiceUnitOfMeasure(invoiceUnitOfMeasure);
             ValidateInvoiceQuantity(invoiceQuantity);
             ValidateInvoiceAmount(invoiceAmount, invoicePriceType);
             ValidateConversionFactor(conversionFactor, invoiceUnitOfMeasure);
@@ -168,12 +172,6 @@ namespace ERP.Domain.Purchases
                 throw new DomainException("El tipo de afectación del IGV es inválido.");
         }
 
-        private static void ValidateInvoiceUnitOfMeasure(UnitOfMeasure invoiceUnitOfMeasure)
-        {
-            if (!Enum.IsDefined(invoiceUnitOfMeasure))
-                throw new DomainException("La unidad de medida es inválida.");
-        }
-
         private static void ValidateInvoiceQuantity(decimal invoiceQuantity)
         {
             if (invoiceQuantity <= 0)
@@ -193,7 +191,7 @@ namespace ERP.Domain.Purchases
 
             var fixedFactor = unitOfMeasure.FixedConversionFactor;
             if (fixedFactor is not null && conversionFactor != fixedFactor)
-                throw new DomainException($"Cuando la unidad de medida es '{unitOfMeasure.Description}', el factor de conversión debe ser {fixedFactor}.");
+                throw new DomainException($"Cuando la unidad de medida es '{unitOfMeasure.Name}', el factor de conversión debe ser {fixedFactor.Value:0.######}.");
         }
     }
 }

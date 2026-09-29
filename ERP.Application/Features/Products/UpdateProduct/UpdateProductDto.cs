@@ -7,7 +7,7 @@ namespace ERP.Application.Features.Products.UpdateProduct
         Guid Id,
         string Code,
         string Name,
-        UnitOfMeasure UnitOfMeasure,
+        string UnitOfMeasureCode,
         IgvAffectation IgvAffectation,
         decimal SalePrice,
         // Lista completa: los códigos que no vienen se quitan.

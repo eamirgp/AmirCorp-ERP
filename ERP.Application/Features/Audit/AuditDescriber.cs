@@ -5,6 +5,7 @@ using ERP.Domain.Partners;
 using ERP.Domain.Partners.Enums;
 using ERP.Domain.Products;
 using ERP.Domain.Purchases;
+using ERP.Domain.UnitsOfMeasure;
 using ERP.Domain.Users;
 using ERP.Domain.Users.Enums;
 
@@ -19,6 +20,8 @@ namespace ERP.Application.Features.Audit
         public const string IsActiveProperty = "IsActive";
         public const string IsCancelledProperty = "IsCancelled";
         public const string PasswordProperty = "PasswordHash";
+        /// <summary>El producto guarda el código de la unidad; el historial muestra su nombre ("NIU" → "Unidad").</summary>
+        public const string UnitOfMeasureCodeProperty = nameof(Product.UnitOfMeasureCode);
 
 
         private sealed record Field(string Label, bool IsMoney = false);
@@ -32,7 +35,7 @@ namespace ERP.Application.Features.Audit
                 {
                     [nameof(Product.Code)] = new("Código interno"),
                     [nameof(Product.Name)] = new("Nombre"),
-                    [nameof(Product.UnitOfMeasure)] = new("Unidad de medida"),
+                    [UnitOfMeasureCodeProperty] = new("Unidad de medida"),
                     [nameof(Product.IgvAffectation)] = new("Afectación IGV"),
                     [nameof(Product.SalePrice)] = new("Precio de venta", IsMoney: true),
                     [IsActiveProperty] = new("Activo"),
@@ -65,6 +68,11 @@ namespace ERP.Application.Features.Audit
                     [IsCancelledProperty] = new("Anulada"),
                     [nameof(Purchase.CancellationReason)] = new("Motivo de anulación"),
                 },
+                [AuditEntityType.UnitOfMeasure] = new Dictionary<string, Field>
+                {
+                    [nameof(UnitOfMeasure.Name)] = new("Nombre"),
+                    [IsActiveProperty] = new("Activa"),
+                },
             };
 
         /// <summary>Tipo y nombre legible del registro ("LIM-005 · Abrillantador…"), o null si no se audita.</summary>
@@ -75,6 +83,7 @@ namespace ERP.Application.Features.Audit
             Company c => (AuditEntityType.Company, $"{c.Ruc} · {c.Name}"),
             User u => (AuditEntityType.User, $"{u.Name} · {u.Email}"),
             Purchase p => (AuditEntityType.Purchase, $"{p.Serie}-{p.Number} · {p.SupplierName}"),
+            UnitOfMeasure u => (AuditEntityType.UnitOfMeasure, $"{u.Code} · {u.Name}"),
             _ => null
         };
 
@@ -105,7 +114,6 @@ namespace ERP.Application.Features.Audit
             bool b => b ? "Sí" : "No",
             decimal d when field.IsMoney => NumberText.Money(d),
             decimal d => NumberText.Decimal(d),
-            UnitOfMeasure u => u.Description,
             IgvAffectation i => i.Description,
             IdentityDocumentType t => t.Description,
             Country c => c.Name,

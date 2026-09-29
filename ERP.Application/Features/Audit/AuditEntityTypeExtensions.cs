@@ -11,6 +11,7 @@ namespace ERP.Application.Features.Audit
                 AuditEntityType.Company => "Empresa",
                 AuditEntityType.User => "Usuario",
                 AuditEntityType.Purchase => "Compra",
+                AuditEntityType.UnitOfMeasure => "Unidad de medida",
                 _ => entityType.ToString()
             };
         }

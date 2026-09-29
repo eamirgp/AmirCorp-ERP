@@ -6,7 +6,7 @@ namespace ERP.Api.Controllers.Purchases.Requests
     public sealed record CreatePurchaseLineRequest(
         Guid? ProductId,
         IgvAffectation? InvoiceIgvAffectation,
-        UnitOfMeasure? InvoiceUnitOfMeasure,
+        string? InvoiceUnitOfMeasureCode,
         decimal? InvoiceQuantity,
         decimal? InvoiceAmount,
         decimal? ConversionFactor
@@ -29,11 +29,8 @@ namespace ERP.Api.Controllers.Purchases.Requests
             if (InvoiceIgvAffectation is not null && !Enum.IsDefined(InvoiceIgvAffectation.Value))
                 errors.Add($"Línea {lineNumber}: El tipo de afectación del IGV es inválido.");
 
-            if (InvoiceUnitOfMeasure is null)
+            if (string.IsNullOrWhiteSpace(InvoiceUnitOfMeasureCode))
                 errors.Add($"Línea {lineNumber}: La unidad de medida es requerida.");
-
-            if (InvoiceUnitOfMeasure is not null && !Enum.IsDefined(InvoiceUnitOfMeasure.Value))
-                errors.Add($"Línea {lineNumber}: La unidad de medida es inválida.");
 
             if (InvoiceQuantity is null)
                 errors.Add($"Línea {lineNumber}: La cantidad es requerida.");
@@ -53,13 +50,6 @@ namespace ERP.Api.Controllers.Purchases.Requests
             if (ConversionFactor is not null && ConversionFactor <= 0)
                 errors.Add($"Línea {lineNumber}: El factor de conversión debe ser mayor a cero.");
 
-            if (InvoiceUnitOfMeasure is not null && ConversionFactor is not null)
-            {
-                var fixedFactor = InvoiceUnitOfMeasure.Value.FixedConversionFactor;
-                if (fixedFactor is not null && ConversionFactor != fixedFactor)
-                    errors.Add($"Línea {lineNumber}: Cuando la unidad de medida es '{InvoiceUnitOfMeasure.Value.Description}', el factor de conversión debe ser {fixedFactor}.");
-            }
-
             return errors;
         }
 
@@ -67,7 +57,7 @@ namespace ERP.Api.Controllers.Purchases.Requests
             new(
                 ProductId!.Value,
                 InvoiceIgvAffectation!.Value,
-                InvoiceUnitOfMeasure!.Value,
+                InvoiceUnitOfMeasureCode!,
                 InvoiceQuantity!.Value,
                 InvoiceAmount!.Value,
                 ConversionFactor!.Value

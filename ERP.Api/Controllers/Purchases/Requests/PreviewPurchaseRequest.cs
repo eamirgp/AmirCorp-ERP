@@ -16,7 +16,7 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 InvoicePriceType,
                 (Lines ?? []).Select(l => new PreviewPurchaseLineDto(
                     l.InvoiceIgvAffectation,
-                    l.InvoiceUnitOfMeasure,
+                    l.InvoiceUnitOfMeasureCode,
                     l.InvoiceQuantity,
                     l.InvoiceAmount,
                     l.ConversionFactor
@@ -26,7 +26,7 @@ namespace ERP.Api.Controllers.Purchases.Requests
 
     public sealed record PreviewPurchaseLineRequest(
         IgvAffectation? InvoiceIgvAffectation,
-        UnitOfMeasure? InvoiceUnitOfMeasure,
+        string? InvoiceUnitOfMeasureCode,
         decimal? InvoiceQuantity,
         decimal? InvoiceAmount,
         decimal? ConversionFactor

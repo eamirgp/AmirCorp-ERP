@@ -135,3 +135,17 @@ Cada producto tiene **un código interno** y **varios códigos de proveedores**.
 - **Historial:** agregar, cambiar o quitar un código de proveedor queda en el historial del producto ("Código de Proveedor X: — → YH-2045-BK") y cuenta como modificación del producto. Así la versión (`RowVersion`) también protege estos cambios.
 - **Migración:** hasta ahora el código del producto era el del proveedor. `AddProductSupplierCodes` lo copia como código del proveedor de la última compra del producto. El código interno queda igual hasta que se cambie en el sistema.
 - **Pendiente:** marca y modelo (para la DUA) y código de barras, cuando se necesiten. Los códigos de proveedores en la carga masiva con Excel.
+
+### 15. Unidades de medida desde el catálogo de SUNAT
+**Fecha:** setiembre 2026
+
+Las unidades de medida están en una tabla (`UnitsOfMeasure`), no fijas en el código.
+
+- **Qué dice SUNAT:** el catálogo N.° 03 del Anexo N.° 8 no es una lista propia, sino el estándar internacional "UN/ECE Recommendation 20" (más de 2000 códigos). Si la factura lleva un código que no está en ese estándar, SUNAT la rechaza.
+- **Qué se carga:** la migración `AddUnitsOfMeasure` carga las 62 unidades de uso común con su nombre oficial (la lista de la Tabla 6 del PLE: unidad, pieza, docena, caja, par, juego, kit, metro, litro…). Si algún día se necesita otro código del estándar, se agrega con una migración. **No se crean desde el sistema**, para no inventar códigos que SUNAT rechace.
+- **Qué elige la empresa:** en Administración › Unidades de medida activa las que usa (al inicio: Unidad, Pieza, Docena y Caja) y puede darles un nombre corto ("Unidad" en vez de "UNIDAD (BIENES)"). En productos, compras y la planilla de Excel solo aparecen las activas (`GET api/catalogs/units-of-measure`).
+- **Protección:** una unidad que usa algún producto no se puede desactivar (409, con cuántos productos la usan).
+- **Código SUNAT como llave:** productos (`UnitOfMeasureCode`) y líneas de compra (`InvoiceUnitOfMeasureCode`) guardan el código, que es el dato que va en la factura, con llave foránea a `UnitsOfMeasure.Code`.
+- **Factor fijo:** las unidades que siempre traen lo mismo (Docena 12, Par 2, Ciento 100, Millar 1000, Gruesa 144) fijan el factor de conversión en las compras. Las demás (Caja, Paquete, Kilogramo…) lo indica cada compra.
+- **Excel:** la columna "Unidad de medida" acepta el nombre corto, el nombre SUNAT o el código, sin distinguir mayúsculas ni tildes.
+- **Historial:** activar, desactivar o renombrar una unidad queda en su historial. En el de un producto, el cambio de unidad se muestra con nombres ("Unidad → Docena").

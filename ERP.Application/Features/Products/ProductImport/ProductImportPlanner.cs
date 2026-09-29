@@ -1,9 +1,11 @@
+using System.Globalization;
 using ERP.Application.Common.Formatting;
 using ERP.Application.Contracts.Infrastructure;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
 using ERP.Domain.Products;
+using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Application.Features.Products.ProductImport
 {
@@ -15,11 +17,19 @@ namespace ERP.Application.Features.Products.ProductImport
     internal sealed class ProductImportPlanner
     {
         private readonly IProductRepository _productRepository;
+        private readonly IUnitOfMeasureRepository _unitOfMeasureRepository;
 
-        public ProductImportPlanner(IProductRepository productRepository) => _productRepository = productRepository;
+        public ProductImportPlanner(IProductRepository productRepository, IUnitOfMeasureRepository unitOfMeasureRepository)
+        {
+            _productRepository = productRepository;
+            _unitOfMeasureRepository = unitOfMeasureRepository;
+        }
 
         public async Task<IReadOnlyList<ProductImportEntry>> BuildAsync(IReadOnlyList<ProductSheetRow> rows, bool updateExisting)
         {
+            var units = await _unitOfMeasureRepository.ListAllAsync();
+            var unitNames = units.ToDictionary(u => u.Code, u => u.Name);
+
             var codes = rows
                 .Where(r => !string.IsNullOrWhiteSpace(r.Code))
                 .Select(r => Product.NormalizeCode(r.Code!.Trim()))
@@ -33,7 +43,7 @@ namespace ERP.Application.Features.Products.ProductImport
             foreach (var row in rows)
             {
                 var errors = new List<string>();
-                var unit = ParseUnit(row.UnitOfMeasure, errors);
+                var unit = ParseUnit(row.UnitOfMeasure, units, errors);
                 var igv = ParseIgvAffectation(row.IgvAffectation, errors);
                 var price = ParsePrice(row, errors);
 
@@ -42,7 +52,7 @@ namespace ERP.Application.Features.Products.ProductImport
                 Product? candidate = null;
                 try
                 {
-                    candidate = Product.Create(row.Code?.Trim() ?? "", row.Name?.Trim() ?? "", unit ?? UnitOfMeasure.NIU, igv ?? IgvAffectation.Gravado, price ?? 0);
+                    candidate = Product.Create(row.Code?.Trim() ?? "", row.Name?.Trim() ?? "", unit?.Code ?? PlaceholderUnitCode, igv ?? IgvAffectation.Gravado, price ?? 0);
                 }
                 catch (DomainException ex)
                 {
@@ -68,7 +78,7 @@ namespace ERP.Application.Features.Products.ProductImport
                 if (!existing.TryGetValue(candidate.Code, out var current))
                 {
                     // Se muestran los valores que se crearán, para detectar antes de guardar un precio o unidad mal leídos.
-                    entries.Add(new ProductImportEntry(row.RowNumber, code, candidate.Name, ProductImportAction.Create, [], Values(candidate), candidate, null));
+                    entries.Add(new ProductImportEntry(row.RowNumber, code, candidate.Name, ProductImportAction.Create, [], Values(candidate, unitNames), candidate, null));
                     continue;
                 }
 
@@ -78,7 +88,7 @@ namespace ERP.Application.Features.Products.ProductImport
                     continue;
                 }
 
-                var changes = Diff(current, candidate);
+                var changes = Diff(current, candidate, unitNames);
                 entries.Add(new ProductImportEntry(
                     row.RowNumber,
                     code,
@@ -106,20 +116,20 @@ namespace ERP.Application.Features.Products.ProductImport
                     var current = entry.Existing!;
                     var next = entry.Candidate!;
                     current.UpdateName(next.Name);
-                    current.UpdateUnitOfMeasure(next.UnitOfMeasure);
+                    current.UpdateUnitOfMeasure(next.UnitOfMeasureCode);
                     current.UpdateIgvAffectation(next.IgvAffectation);
                     current.UpdateSalePrice(next.SalePrice);
                 }
             }
         }
 
-        private static List<ProductImportChangeDto> Diff(Product current, Product next)
+        private static List<ProductImportChangeDto> Diff(Product current, Product next, IReadOnlyDictionary<string, string> unitNames)
         {
             var changes = new List<ProductImportChangeDto>();
             if (current.Name != next.Name)
                 changes.Add(new("Nombre", current.Name, next.Name));
-            if (current.UnitOfMeasure != next.UnitOfMeasure)
-                changes.Add(new("Unidad de medida", current.UnitOfMeasure.Description, next.UnitOfMeasure.Description));
+            if (current.UnitOfMeasureCode != next.UnitOfMeasureCode)
+                changes.Add(new("Unidad de medida", unitNames.GetValueOrDefault(current.UnitOfMeasureCode, current.UnitOfMeasureCode), unitNames[next.UnitOfMeasureCode]));
             if (current.IgvAffectation != next.IgvAffectation)
                 changes.Add(new("Afectación IGV", current.IgvAffectation.Description, next.IgvAffectation.Description));
             if (current.SalePrice != next.SalePrice)
@@ -127,16 +137,23 @@ namespace ERP.Application.Features.Products.ProductImport
             return changes;
         }
 
-        private static List<ProductImportChangeDto> Values(Product next) =>
+        private static List<ProductImportChangeDto> Values(Product next, IReadOnlyDictionary<string, string> unitNames) =>
         [
-            new("Unidad de medida", null, next.UnitOfMeasure.Description),
+            new("Unidad de medida", null, unitNames[next.UnitOfMeasureCode]),
             new("Afectación IGV", null, next.IgvAffectation.Description),
             new("Precio de venta", null, FormatPrice(next.SalePrice)),
         ];
 
         private static string FormatPrice(decimal price) => NumberText.Money(price);
 
-        private static UnitOfMeasure? ParseUnit(string? text, List<string> errors)
+        // Si falta la unidad, se usa esta solo para validar el resto de la fila (la fila igual queda con error).
+        private const string PlaceholderUnitCode = "NIU";
+
+        /// <summary>
+        /// La unidad se reconoce por su nombre corto ("Docena"), su nombre SUNAT ("UNIDAD (BIENES)") o su código ("DZN"),
+        /// sin distinguir mayúsculas ni tildes. Debe estar activa.
+        /// </summary>
+        private static UnitOfMeasure? ParseUnit(string? text, IReadOnlyCollection<UnitOfMeasure> units, List<string> errors)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -144,13 +161,26 @@ namespace ERP.Application.Features.Products.ProductImport
                 return null;
             }
 
-            foreach (var unit in Enum.GetValues<UnitOfMeasure>())
-                if (Matches(text, unit.Description) || Matches(text, unit.ToString()))
-                    return unit;
+            var unit = units.FirstOrDefault(u => MatchesIgnoringAccents(text, u.Name))
+                ?? units.FirstOrDefault(u => MatchesIgnoringAccents(text, u.SunatName) || MatchesIgnoringAccents(text, u.Code));
 
-            errors.Add($"La unidad de medida '{text.Trim()}' no existe. Elige una de la lista.");
-            return null;
+            if (unit is null)
+            {
+                errors.Add($"La unidad de medida '{text.Trim()}' no existe. Elige una de la lista.");
+                return null;
+            }
+
+            if (!unit.IsActive)
+            {
+                errors.Add($"La unidad de medida '{unit.Name}' está desactivada. Actívala en Administración › Unidades de medida o elige otra de la lista.");
+                return null;
+            }
+
+            return unit;
         }
+
+        private static bool MatchesIgnoringAccents(string text, string value) =>
+            string.Compare(text.Trim(), value, CultureInfo.InvariantCulture, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) == 0;
 
         private static IgvAffectation? ParseIgvAffectation(string? text, List<string> errors)
         {

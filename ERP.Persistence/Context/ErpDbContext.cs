@@ -5,6 +5,7 @@ using ERP.Domain.Partners;
 using ERP.Domain.Products;
 using ERP.Domain.Purchases;
 using ERP.Domain.SavedViews;
+using ERP.Domain.UnitsOfMeasure;
 using ERP.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +27,7 @@ namespace ERP.Persistence.Context
         public DbSet<Company> Companies => Set<Company>();
         public DbSet<Product> Products => Set<Product>();
         public DbSet<ProductSupplierCode> ProductSupplierCodes => Set<ProductSupplierCode>();
+        public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
         public DbSet<BusinessPartner> BusinessPartners => Set<BusinessPartner>();
         public DbSet<StockEntry> StockEntries => Set<StockEntry>();
         public DbSet<Purchase> Purchases => Set<Purchase>();

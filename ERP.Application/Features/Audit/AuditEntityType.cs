@@ -7,6 +7,7 @@ namespace ERP.Application.Features.Audit
         BusinessPartner = 2,
         Company = 3,
         User = 4,
-        Purchase = 5
+        Purchase = 5,
+        UnitOfMeasure = 6
     }
 }

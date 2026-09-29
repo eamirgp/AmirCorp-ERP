@@ -34,6 +34,7 @@ namespace ERP.Persistence.Queries
                 .Select(p => new
                 {
                     Product = p,
+                    UnitOfMeasureName = _context.UnitsOfMeasure.Where(u => u.Code == p.UnitOfMeasureCode).Select(u => u.Name).First(),
                     SupplierCodes = _context.ProductSupplierCodes
                         .Where(c => c.ProductId == p.Id)
                         .Join(_context.BusinessPartners, c => c.SupplierId, s => s.Id, (c, s) => new { c.SupplierId, SupplierName = s.Name, s.DocumentNumber, c.Code })
@@ -61,7 +62,8 @@ namespace ERP.Persistence.Queries
                     r.Product.Id,
                     r.Product.Code,
                     r.Product.Name,
-                    r.Product.UnitOfMeasure,
+                    r.Product.UnitOfMeasureCode,
+                    r.UnitOfMeasureName,
                     r.Product.IgvAffectation,
                     r.Product.SalePrice,
                     r.Product.IsActive,
@@ -90,7 +92,8 @@ namespace ERP.Persistence.Queries
                 p.Id,
                 p.Code,
                 p.Name,
-                p.UnitOfMeasure,
+                p.UnitOfMeasureCode,
+                _context.UnitsOfMeasure.Where(u => u.Code == p.UnitOfMeasureCode).Select(u => u.Name).First(),
                 p.IgvAffectation,
                 p.SalePrice,
                 p.IsActive,
@@ -109,7 +112,13 @@ namespace ERP.Persistence.Queries
 
         public async Task<IReadOnlyCollection<ProductExportRowDto>> ListForExportAsync(ExportProductsDto exportProductsDto) =>
             await Sort(Filter(_context.Products.AsNoTracking(), exportProductsDto.SearchTerm, exportProductsDto.IsActive), exportProductsDto.SortBy, exportProductsDto.SortDescending)
-            .Select(p => new ProductExportRowDto(p.Code, p.Name, p.UnitOfMeasure, p.IgvAffectation, p.SalePrice))
+            .Select(p => new ProductExportRowDto(
+                p.Code,
+                p.Name,
+                _context.UnitsOfMeasure.Where(u => u.Code == p.UnitOfMeasureCode).Select(u => u.Name).First(),
+                p.IgvAffectation,
+                p.SalePrice
+                ))
             .ToArrayAsync();
 
         // La lista y la exportación filtran y ordenan igual: el Excel trae exactamente lo que se ve en la pantalla.

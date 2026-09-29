@@ -6,8 +6,11 @@ namespace ERP.Application.Contracts.Infrastructure
     /// </summary>
     public interface IProductSpreadsheet
     {
-        /// <summary>Genera el archivo con las filas indicadas (vacío = plantilla).</summary>
-        byte[] Write(IReadOnlyCollection<ProductSheetRow> rows);
+        /// <summary>
+        /// Genera el archivo con las filas indicadas (vacío = plantilla). <paramref name="unitNames"/> son las unidades
+        /// activas: forman la lista desplegable de la columna "Unidad de medida".
+        /// </summary>
+        byte[] Write(IReadOnlyCollection<ProductSheetRow> rows, IReadOnlyCollection<string> unitNames);
 
         /// <summary>Lee el archivo subido. Si no tiene el formato de la plantilla, devuelve el error.</summary>
         ProductSheetReadResult Read(Stream file);

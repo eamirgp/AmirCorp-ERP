@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Catalogs;
 
 namespace ERP.Application.Features.Purchases.GetPurchase
 {
@@ -8,7 +8,8 @@ namespace ERP.Application.Features.Purchases.GetPurchase
         string ProductCode,
         string ProductName,
         IgvAffectation InvoiceIgvAffectation,
-        UnitOfMeasure InvoiceUnitOfMeasure,
+        string InvoiceUnitOfMeasureCode,
+        string InvoiceUnitOfMeasureName,
         decimal InvoiceQuantity,
         decimal InvoiceUnitAmount,
         decimal BaseAmount,
@@ -17,6 +18,5 @@ namespace ERP.Application.Features.Purchases.GetPurchase
         )
     {
         public string InvoiceIgvAffectationDescription => InvoiceIgvAffectation.Description;
-        public string InvoiceUnitOfMeasureDescription => InvoiceUnitOfMeasure.Description;
     }
 }

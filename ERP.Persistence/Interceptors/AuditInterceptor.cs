@@ -3,6 +3,7 @@ using ERP.Application.Features.Audit;
 using ERP.Domain.Common;
 using ERP.Domain.Partners;
 using ERP.Domain.Products;
+using ERP.Domain.UnitsOfMeasure;
 using ERP.Persistence.Auditing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -38,6 +39,8 @@ namespace ERP.Persistence.Interceptors
                     if (productEntry.State == EntityState.Unchanged && supplierCodeChanges.ContainsKey(productEntry.Entity.Id))
                         productEntry.Property(p => p.UpdatedAt).IsModified = true;
 
+                var unitNames = await UnitNamesAsync(context, ct);
+
                 foreach(var entry in context.ChangeTracker.Entries<AuditableEntity>())
                 {
                     if (entry.State == EntityState.Added)
@@ -52,7 +55,7 @@ namespace ERP.Persistence.Interceptors
                     }
 
                     var extraChanges = supplierCodeChanges.GetValueOrDefault(entry.Entity.Id) ?? [];
-                    if (ToAuditLog(entry, now, userId, extraChanges) is { } log)
+                    if (ToAuditLog(entry, now, userId, extraChanges, unitNames) is { } log)
                         logs.Add(log);
                 }
 
@@ -62,7 +65,12 @@ namespace ERP.Persistence.Interceptors
             return await base.SavingChangesAsync(eventData, result, ct);
         }
 
-        private static AuditLog? ToAuditLog(EntityEntry<AuditableEntity> entry, DateTime now, Guid userId, IReadOnlyCollection<AuditChangeDto> extraChanges)
+        private static AuditLog? ToAuditLog(
+            EntityEntry<AuditableEntity> entry,
+            DateTime now,
+            Guid userId,
+            IReadOnlyCollection<AuditChangeDto> extraChanges,
+            IReadOnlyDictionary<string, string> unitNames)
         {
             if (AuditDescriber.Describe(entry.Entity) is not { } subject)
                 return null;
@@ -92,7 +100,9 @@ namespace ERP.Persistence.Interceptors
             // (como el motivo de anulación) sí se muestran.
             var changes = modified.Values
                 .Where(p => action == AuditAction.Updated || !AuditDescriber.IsStatus(p.Metadata.Name))
-                .Select(p => AuditDescriber.Change(subject.Type, p.Metadata.Name, p.OriginalValue, p.CurrentValue))
+                .Select(p => p.Metadata.Name == AuditDescriber.UnitOfMeasureCodeProperty
+                    ? AuditDescriber.Change(subject.Type, p.Metadata.Name, UnitName(p.OriginalValue, unitNames), UnitName(p.CurrentValue, unitNames))
+                    : AuditDescriber.Change(subject.Type, p.Metadata.Name, p.OriginalValue, p.CurrentValue))
                 .Concat(extraChanges)
                 .Select(c => new AuditLogChange(c.Field, c.From, c.To))
                 .ToList();
@@ -145,6 +155,26 @@ namespace ERP.Persistence.Interceptors
                         .OrderBy(c => c.Field)
                         .ToList());
         }
+
+        /// <summary>
+        /// Nombres de las unidades de medida, solo si algún producto cambió de unidad (el historial muestra
+        /// "Unidad → Docena", no "NIU → DZN"). Son pocas: se leen todas.
+        /// </summary>
+        private static async Task<IReadOnlyDictionary<string, string>> UnitNamesAsync(DbContext context, CancellationToken ct)
+        {
+            var changed = context.ChangeTracker.Entries<Product>()
+                .Any(e => e.State == EntityState.Modified && e.Property(p => p.UnitOfMeasureCode).IsModified);
+
+            if (!changed)
+                return new Dictionary<string, string>();
+
+            return await context.Set<UnitOfMeasure>()
+                .AsNoTracking()
+                .ToDictionaryAsync(u => u.Code, u => u.Name, ct);
+        }
+
+        private static object? UnitName(object? code, IReadOnlyDictionary<string, string> unitNames) =>
+            code is string c && unitNames.TryGetValue(c, out var name) ? name : code;
 
         private static AuditAction ActionFor(IReadOnlyDictionary<string, PropertyEntry> modified)
         {

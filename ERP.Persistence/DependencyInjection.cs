@@ -52,6 +52,8 @@ namespace ERP.Persistence
 
                     .AddScoped<ISavedViewRepository, SavedViewRepository>()
                     .AddScoped<ISavedViewQueries, SavedViewQueries>()
+                    .AddScoped<IUnitOfMeasureRepository, UnitOfMeasureRepository>()
+                    .AddScoped<IUnitOfMeasureQueries, UnitOfMeasureQueries>()
 
                     .AddScoped<IUnitOfWork, UnitOfWork>();
 

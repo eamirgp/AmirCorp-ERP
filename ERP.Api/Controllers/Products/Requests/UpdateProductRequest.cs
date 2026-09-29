@@ -7,7 +7,7 @@ namespace ERP.Api.Controllers.Products.Requests
     public sealed record UpdateProductRequest(
         string? Code,
         string? Name,
-        UnitOfMeasure? UnitOfMeasure,
+        string? UnitOfMeasureCode,
         IgvAffectation? IgvAffectation,
         decimal? SalePrice,
         // Lista completa de códigos de proveedores: los que no se envían se quitan del producto.
@@ -31,11 +31,8 @@ namespace ERP.Api.Controllers.Products.Requests
             if (!string.IsNullOrWhiteSpace(Name) && Name.Length > Product.NameMaxLength)
                 errors.Add($"El nombre no puede exceder los {Product.NameMaxLength} caracteres.");
 
-            if (UnitOfMeasure is null)
+            if (string.IsNullOrWhiteSpace(UnitOfMeasureCode))
                 errors.Add("La unidad de medida es requerida.");
-
-            if (UnitOfMeasure is not null && !Enum.IsDefined(UnitOfMeasure.Value))
-                errors.Add("La unidad de medida es inválida.");
 
             if (IgvAffectation is null)
                 errors.Add("El tipo de afectación del IGV es requerido.");
@@ -61,6 +58,6 @@ namespace ERP.Api.Controllers.Products.Requests
         }
 
         public UpdateProductDto ToDto(Guid id) =>
-            new(id, Code!, Name!, UnitOfMeasure!.Value, IgvAffectation!.Value, SalePrice!.Value, ProductSupplierCodeRequest.ToDtos(SupplierCodes), RowVersion!.Value);
+            new(id, Code!, Name!, UnitOfMeasureCode!, IgvAffectation!.Value, SalePrice!.Value, ProductSupplierCodeRequest.ToDtos(SupplierCodes), RowVersion!.Value);
     }
 }

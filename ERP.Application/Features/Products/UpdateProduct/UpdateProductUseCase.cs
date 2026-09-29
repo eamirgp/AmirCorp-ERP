@@ -1,6 +1,8 @@
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Application.Features.Products.SupplierCodes;
+using ERP.Application.Features.UnitsOfMeasure;
+using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Application.Features.Products.UpdateProduct
 {
@@ -8,16 +10,19 @@ namespace ERP.Application.Features.Products.UpdateProduct
     {
         private readonly IProductRepository _productRepository;
         private readonly IBusinessPartnerRepository _businessPartnerRepository;
+        private readonly IUnitOfMeasureRepository _unitOfMeasureRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public UpdateProductUseCase(
             IProductRepository productRepository,
             IBusinessPartnerRepository businessPartnerRepository,
+            IUnitOfMeasureRepository unitOfMeasureRepository,
             IUnitOfWork unitOfWork
             )
         {
             _productRepository = productRepository;
             _businessPartnerRepository = businessPartnerRepository;
+            _unitOfMeasureRepository = unitOfMeasureRepository;
             _unitOfWork = unitOfWork;
         }
 
@@ -37,13 +42,21 @@ namespace ERP.Application.Features.Products.UpdateProduct
             if (await _productRepository.CodeExistsAsync(request.Code, request.Id))
                 return Result.Failure(["El código interno ya se encuentra en uso."], ErrorType.Conflict);
 
+            // Si no cambia la unidad, se acepta aunque ya no esté activa: el producto puede seguir editándose.
+            if (UnitOfMeasure.NormalizeCode(request.UnitOfMeasureCode) != product.UnitOfMeasureCode)
+            {
+                var unitError = UnitOfMeasureRules.CheckUsable(await _unitOfMeasureRepository.GetByCodeAsync(request.UnitOfMeasureCode), request.UnitOfMeasureCode);
+                if (unitError is not null)
+                    return Result.Failure([unitError], ErrorType.BadRequest);
+            }
+
             var supplierCodes = await ProductSupplierCodeRules.CheckAsync(request.SupplierCodes, product, _businessPartnerRepository, _productRepository);
             if (!supplierCodes.IsSuccess)
                 return supplierCodes;
 
             product.UpdateCode(request.Code);
             product.UpdateName(request.Name);
-            product.UpdateUnitOfMeasure(request.UnitOfMeasure);
+            product.UpdateUnitOfMeasure(request.UnitOfMeasureCode);
             product.UpdateIgvAffectation(request.IgvAffectation);
             product.UpdateSalePrice(request.SalePrice);
             product.SetSupplierCodes(request.SupplierCodes.Select(c => (c.SupplierId, c.Code)).ToArray());

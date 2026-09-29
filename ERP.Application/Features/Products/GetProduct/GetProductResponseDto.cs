@@ -7,7 +7,8 @@ namespace ERP.Application.Features.Products.GetProduct
         Guid Id,
         string Code,
         string Name,
-        UnitOfMeasure UnitOfMeasure,
+        string UnitOfMeasureCode,
+        string UnitOfMeasureName,
         IgvAffectation IgvAffectation,
         decimal SalePrice,
         bool IsActive,
@@ -18,7 +19,6 @@ namespace ERP.Application.Features.Products.GetProduct
         string? UpdatedByName
         )
     {
-        public string UnitOfMeasureDescription => UnitOfMeasure.Description;
         public string IgvAffectationDescription => IgvAffectation.Description;
     }
 }

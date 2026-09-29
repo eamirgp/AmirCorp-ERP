@@ -1,5 +1,6 @@
 ﻿using ERP.Domain.Products;
 using ERP.Domain.Purchases;
+using ERP.Domain.UnitsOfMeasure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -41,10 +42,15 @@ namespace ERP.Persistence.Configurations
                 .HasMaxLength(20)
                 .HasConversion<string>();
 
-            builder.Property(pl => pl.InvoiceUnitOfMeasure)
+            builder.Property(pl => pl.InvoiceUnitOfMeasureCode)
                 .IsRequired()
-                .HasMaxLength(3)
-                .HasConversion<string>();
+                .HasMaxLength(UnitOfMeasure.CodeMaxLength);
+
+            builder.HasOne<UnitOfMeasure>()
+                .WithMany()
+                .HasForeignKey(pl => pl.InvoiceUnitOfMeasureCode)
+                .HasPrincipalKey(u => u.Code)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Property(pl => pl.InvoiceQuantity)
                 .IsRequired()

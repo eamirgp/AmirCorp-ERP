@@ -1,4 +1,5 @@
 ﻿using ERP.Domain.Products;
+using ERP.Domain.UnitsOfMeasure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,10 +22,15 @@ namespace ERP.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(Product.NameMaxLength);
 
-            builder.Property(p => p.UnitOfMeasure)
+            builder.Property(p => p.UnitOfMeasureCode)
                 .IsRequired()
-                .HasConversion<string>()
-                .HasMaxLength(3);
+                .HasMaxLength(UnitOfMeasure.CodeMaxLength);
+
+            builder.HasOne<UnitOfMeasure>()
+                .WithMany()
+                .HasForeignKey(p => p.UnitOfMeasureCode)
+                .HasPrincipalKey(u => u.Code)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Property(p => p.IgvAffectation)
                 .IsRequired()

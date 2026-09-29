@@ -12,7 +12,7 @@ namespace ERP.Application.Features.Purchases.PreviewPurchase
 
     public sealed record PreviewPurchaseLineDto(
         IgvAffectation? InvoiceIgvAffectation,
-        UnitOfMeasure? InvoiceUnitOfMeasure,
+        string? InvoiceUnitOfMeasureCode,
         decimal? InvoiceQuantity,
         decimal? InvoiceAmount,
         decimal? ConversionFactor

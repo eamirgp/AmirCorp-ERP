@@ -120,7 +120,8 @@ namespace ERP.Persistence.Queries
                     l.ProductCode,
                     l.ProductName,
                     l.InvoiceIgvAffectation,
-                    l.InvoiceUnitOfMeasure,
+                    l.InvoiceUnitOfMeasureCode,
+                    _context.UnitsOfMeasure.Where(u => u.Code == l.InvoiceUnitOfMeasureCode).Select(u => u.Name).First(),
                     l.InvoiceQuantity,
                     l.InvoicePriceType == InvoicePriceType.UnitValue
                         ? l.InvoiceUnitValue
