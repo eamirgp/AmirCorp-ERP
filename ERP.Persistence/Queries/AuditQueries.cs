@@ -46,10 +46,13 @@ namespace ERP.Persistence.Queries
 
             var totalCount = await query.CountAsync();
 
+            // Si la página pedida ya no existe, se devuelve la última.
+            var page = PaginationDefaults.ClampPage(filter.Page, filter.PageSize, totalCount);
+
             var rows = await query
                 .OrderByDescending(a => a.OccurredAt)
                 .ThenByDescending(a => a.Id)
-                .Skip((filter.Page - 1) * filter.PageSize)
+                .Skip((page - 1) * filter.PageSize)
                 .Take(filter.PageSize)
                 .Select(a => new
                 {
@@ -79,7 +82,7 @@ namespace ERP.Persistence.Queries
                     ))
                 .ToArray();
 
-            return new PagedResult<AuditEntryDto>(items, filter.Page, filter.PageSize, totalCount);
+            return new PagedResult<AuditEntryDto>(items, page, filter.PageSize, totalCount);
         }
     }
 }

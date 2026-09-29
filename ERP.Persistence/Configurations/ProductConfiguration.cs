@@ -48,6 +48,11 @@ namespace ERP.Persistence.Configurations
 
             builder.Property(p => p.UpdatedBy);
 
+            // Control de concurrencia optimista: en PostgreSQL se mapea a la columna de sistema xmin, que cambia en cada
+            // actualización de la fila. El formulario envía la versión que vio y así no pisa cambios de otra persona.
+            builder.Property<uint>("RowVersion")
+                .IsRowVersion();
+
             builder.HasIndex(p => p.Code)
                 .IsUnique();
         }

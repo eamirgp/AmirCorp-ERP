@@ -38,6 +38,9 @@ namespace ERP.Persistence.Queries
 
             var totalCount = await query.CountAsync();
 
+            // Si la página pedida ya no existe, se devuelve la última.
+            var page = PaginationDefaults.ClampPage(listPurchasesDto.Page, listPurchasesDto.PageSize, totalCount);
+
             query = (listPurchasesDto.SortBy, listPurchasesDto.SortDescending) switch
             {
                 (PurchaseSortBy.IssueDate, false) => query.OrderBy(p => p.IssueDate).ThenBy(p => p.Id),
@@ -51,7 +54,7 @@ namespace ERP.Persistence.Queries
             };
 
             var items = await query
-                .Skip((listPurchasesDto.Page - 1) * listPurchasesDto.PageSize)
+                .Skip((page - 1) * listPurchasesDto.PageSize)
                 .Take(listPurchasesDto.PageSize)
                 .Select(p => new ListPurchasesResponseDto(
                     p.Id,
@@ -73,7 +76,7 @@ namespace ERP.Persistence.Queries
 
             return new SortedPagedResult<ListPurchasesResponseDto, PurchaseSortBy>(
                 items,
-                listPurchasesDto.Page,
+                page,
                 listPurchasesDto.PageSize,
                 totalCount,
                 listPurchasesDto.SortBy,

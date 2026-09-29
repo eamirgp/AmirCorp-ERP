@@ -1,4 +1,5 @@
-﻿using ERP.Application.Common.Responses;
+using ERP.Api.Common;
+using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.Users.Requests;
 using ERP.Api.Extensions;
 using ERP.Application.Features.Users.ActivateUser;
@@ -132,7 +133,7 @@ namespace ERP.Api.Controllers.Users
         public async Task<IActionResult> Get(Guid id)
         {
             var response = await _getUserUseCase.ExecuteAsync(new GetUserDto(id));
-            return response is null ? NotFound() : Ok(response);
+            return response is null ? NotFound(new ErrorResponse(["El usuario no existe."])) : Ok(response);
         }
     }
 }

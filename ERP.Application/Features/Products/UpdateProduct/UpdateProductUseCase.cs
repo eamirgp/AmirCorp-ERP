@@ -23,6 +23,13 @@ namespace ERP.Application.Features.Products.UpdateProduct
             if (product is null)
                 return Result.Failure(["El producto no existe."], ErrorType.NotFound);
 
+            // Si alguien lo modificó (otra persona o una importación) después de abrir el formulario, no se pisa su cambio.
+            if (_productRepository.VersionOf(product) != request.RowVersion)
+                return Result.Failure(
+                    ["Otra persona modificó este producto mientras lo editabas. Cierra el formulario y vuelve a abrirlo para ver los datos actuales."],
+                    ErrorType.Conflict
+                    );
+
             if (await _productRepository.CodeExistsAsync(request.Code, request.Id))
                 return Result.Failure(["El código ya se encuentra en uso."], ErrorType.Conflict);
 

@@ -14,5 +14,15 @@ namespace ERP.Application.Common.Pagination
 
         public static int NormalizedPageSize(int? pageSize) =>
             Math.Clamp(pageSize ?? DefaultPageSize, MinPageSize, MaxPageSize);
+
+        /// <summary>
+        /// Página dentro del rango real: si se pide una que ya no existe (se desactivó el último registro de la
+        /// última página, o una URL vieja), se devuelve la última. Evita listas vacías falsas y desbordes.
+        /// </summary>
+        public static int ClampPage(int page, int pageSize, int totalCount)
+        {
+            var lastPage = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+            return Math.Min(page, lastPage);
+        }
     }
 }

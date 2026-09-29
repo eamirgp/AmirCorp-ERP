@@ -9,5 +9,8 @@ namespace ERP.Application.Contracts.Persistence.Commands
         Task<Product?> GetByIdAsync(Guid id);
         Task<IReadOnlyCollection<Product>> GetByIdsAsync(IReadOnlyCollection<Guid> ids);
         Task<IReadOnlyCollection<Product>> GetByCodesAsync(IReadOnlyCollection<string> codes);
+
+        /// <summary>Versión actual del producto en la base (cambia con cada modificación).</summary>
+        uint VersionOf(Product product);
     }
 }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using ERP.Application.Contracts.Infrastructure;
 using ERP.Domain.Catalogs;
@@ -159,16 +160,36 @@ namespace ERP.Infrastructure.Services.Spreadsheets
         {
             var value = ValueOf(cell);
             if (value.IsBlank) return (null, null);
-            if (value.IsNumber) return ((decimal)Math.Round(value.GetNumber(), 6), null);
+            if (value.IsNumber)
+            {
+                // Un número fuera de rango (ej. 1E+30) no cabe en decimal: se reporta como precio inválido.
+                var number = value.GetNumber();
+                return Math.Abs(number) < 1e15
+                    ? ((decimal)Math.Round(number, 6), null)
+                    : (null, number.ToString(CultureInfo.InvariantCulture));
+            }
 
             var text = TextOf(cell);
             if (text is null) return (null, null);
 
-            // Acepta "25.50" y también "25,50" (sin separador de miles).
-            var normalized = text.Contains(',') && !text.Contains('.') ? text.Replace(',', '.') : text;
-            return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed)
-                ? (parsed, null)
-                : (null, text);
+            return TryParsePrice(text, out var parsed) ? (parsed, null) : (null, text);
+        }
+
+        // Precio escrito como texto, como se escribe en Perú:
+        //   "1,234.50" → 1234.50 (coma de miles y punto decimal)
+        //   "1,500"    → 1500    (coma seguida de grupos de 3 dígitos: es de miles)
+        //   "12,90"    → 12.90   (cualquier otra coma sola: es decimal)
+        private static readonly Regex ThousandsOnly = new(@"^-?\d{1,3}(,\d{3})+$", RegexOptions.Compiled);
+
+        internal static bool TryParsePrice(string text, out decimal price)
+        {
+            var clean = text.Replace(" ", "");
+            if (clean.Contains(',') && (clean.Contains('.') || ThousandsOnly.IsMatch(clean)))
+                clean = clean.Replace(",", "");
+            else
+                clean = clean.Replace(',', '.');
+
+            return decimal.TryParse(clean, NumberStyles.Number, CultureInfo.InvariantCulture, out price);
         }
 
         private static void WriteHelp(IXLWorksheet help, string[] units, string[] igvs)

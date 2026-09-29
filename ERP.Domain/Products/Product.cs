@@ -7,6 +7,8 @@ namespace ERP.Domain.Products
     {
         public const int CodeMaxLength = 50;
         public const int NameMaxLength = 100;
+        // La columna es numeric(18,6): 12 dígitos enteros como máximo.
+        public const decimal SalePriceMax = 999_999_999_999m;
 
         public string Code { get; private set; }
         public string Name { get; private set; }
@@ -94,6 +96,9 @@ namespace ERP.Domain.Products
         {
             if (salePrice < 0)
                 throw new DomainException("El precio de venta no puede ser negativo.");
+
+            if (salePrice > SalePriceMax)
+                throw new DomainException("El precio de venta es demasiado grande. Revisa que esté bien escrito.");
 
             return salePrice;
         }

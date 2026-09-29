@@ -5,7 +5,8 @@
 - [x] Autenticación JWT, usuarios y roles
 - [x] Empresas, productos, clientes y proveedores
 - [x] Compras nacionales con ingreso de stock por lotes
-- [x] Concurrencia optimista (`xmin`) en compras y stock
+- [x] Concurrencia optimista (`xmin`) en compras y stock; en productos, el formulario envía la versión que abrió (`RowVersion`)
+- [x] Errores siempre como `{ errors: [...] }` en español: datos con formato inválido, 404 y errores inesperados (500)
 - [x] Llaves foráneas faltantes
 - [x] SuperAdmin automático al arrancar
 - [x] Migración a PostgreSQL

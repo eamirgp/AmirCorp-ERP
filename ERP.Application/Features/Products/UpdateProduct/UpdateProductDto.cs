@@ -8,6 +8,7 @@ namespace ERP.Application.Features.Products.UpdateProduct
         string Name,
         UnitOfMeasure UnitOfMeasure,
         IgvAffectation IgvAffectation,
-        decimal SalePrice
+        decimal SalePrice,
+        uint RowVersion
         );
 }

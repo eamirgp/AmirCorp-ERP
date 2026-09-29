@@ -21,8 +21,11 @@ namespace ERP.Persistence.Queries
 
             var totalCount = await query.CountAsync();
 
+            // Si la página pedida ya no existe, se devuelve la última.
+            var page = PaginationDefaults.ClampPage(listProductsDto.Page, listProductsDto.PageSize, totalCount);
+
             var items = await Sort(query, listProductsDto.SortBy, listProductsDto.SortDescending)
-                .Skip((listProductsDto.Page - 1) * listProductsDto.PageSize)
+                .Skip((page - 1) * listProductsDto.PageSize)
                 .Take(listProductsDto.PageSize)
                 .Select(p => new ListProductsResponseDto(
                     p.Id,
@@ -31,13 +34,14 @@ namespace ERP.Persistence.Queries
                     p.UnitOfMeasure,
                     p.IgvAffectation,
                     p.SalePrice,
-                    p.IsActive
+                    p.IsActive,
+                    EF.Property<uint>(p, "RowVersion")
                     ))
                 .ToArrayAsync();
 
             return new SortedPagedResult<ListProductsResponseDto, ProductSortBy>(
                 items,
-                listProductsDto.Page,
+                page,
                 listProductsDto.PageSize,
                 totalCount,
                 listProductsDto.SortBy,

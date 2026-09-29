@@ -41,5 +41,8 @@ namespace ERP.Persistence.Commands
                 .Where(p => normalizedCodes.Contains(p.Code))
                 .ToListAsync();
         }
+
+        public uint VersionOf(Product product) =>
+            _context.Entry(product).Property<uint>("RowVersion").CurrentValue;
     }
 }

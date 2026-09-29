@@ -40,6 +40,9 @@ namespace ERP.Persistence.Queries
 
             var totalCount = await query.CountAsync();
 
+            // Si la página pedida ya no existe, se devuelve la última.
+            var page = PaginationDefaults.ClampPage(listBusinessPartnersDto.Page, listBusinessPartnersDto.PageSize, totalCount);
+
             query = (listBusinessPartnersDto.SortBy, listBusinessPartnersDto.SortDescending) switch
             {
                 (BusinessPartnerSortBy.Name, false) => query.OrderBy(bp => bp.Name).ThenBy(bp => bp.Id),
@@ -49,7 +52,7 @@ namespace ERP.Persistence.Queries
             };
 
             var items = await query
-                .Skip((listBusinessPartnersDto.Page - 1) * listBusinessPartnersDto.PageSize)
+                .Skip((page - 1) * listBusinessPartnersDto.PageSize)
                 .Take(listBusinessPartnersDto.PageSize)
                 .Select(bp => new ListBusinessPartnersResponseDto(
                     bp.Id,
@@ -65,7 +68,7 @@ namespace ERP.Persistence.Queries
 
             return new SortedPagedResult<ListBusinessPartnersResponseDto, BusinessPartnerSortBy>(
                 items,
-                listBusinessPartnersDto.Page,
+                page,
                 listBusinessPartnersDto.PageSize,
                 totalCount,
                 listBusinessPartnersDto.SortBy,

@@ -67,7 +67,8 @@ namespace ERP.Application.Features.Products.ProductImport
 
                 if (!existing.TryGetValue(candidate.Code, out var current))
                 {
-                    entries.Add(new ProductImportEntry(row.RowNumber, code, candidate.Name, ProductImportAction.Create, [], [], candidate, null));
+                    // Se muestran los valores que se crearán, para detectar antes de guardar un precio o unidad mal leídos.
+                    entries.Add(new ProductImportEntry(row.RowNumber, code, candidate.Name, ProductImportAction.Create, [], Values(candidate), candidate, null));
                     continue;
                 }
 
@@ -126,6 +127,13 @@ namespace ERP.Application.Features.Products.ProductImport
             return changes;
         }
 
+        private static List<ProductImportChangeDto> Values(Product next) =>
+        [
+            new("Unidad de medida", null, next.UnitOfMeasure.Description),
+            new("Afectación IGV", null, next.IgvAffectation.Description),
+            new("Precio de venta", null, FormatPrice(next.SalePrice)),
+        ];
+
         private static string FormatPrice(decimal price) => "S/ " + price.ToString("#,##0.00", CultureInfo.InvariantCulture);
 
         private static UnitOfMeasure? ParseUnit(string? text, List<string> errors)
@@ -162,8 +170,9 @@ namespace ERP.Application.Features.Products.ProductImport
 
         private static decimal? ParsePrice(ProductSheetRow row, List<string> errors)
         {
+            // La base guarda 6 decimales: redondear igual evita marcar como "cambio" un precio que ya está guardado.
             if (row.SalePrice is not null)
-                return row.SalePrice;
+                return Math.Round(row.SalePrice.Value, 6, MidpointRounding.AwayFromZero);
 
             if (!string.IsNullOrWhiteSpace(row.SalePriceText))
                 errors.Add($"El precio de venta '{row.SalePriceText.Trim()}' no es un número.");

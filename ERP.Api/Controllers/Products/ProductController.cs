@@ -1,3 +1,4 @@
+using ERP.Api.Common;
 using ERP.Application.Common.Pagination;
 using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.Products.Requests;
@@ -92,7 +93,7 @@ namespace ERP.Api.Controllers.Products
         public async Task<IActionResult> Get(Guid id)
         {
             var response = await _getProductUseCase.ExecuteAsync(new GetProductDto(id));
-            return response is null ? NotFound() : Ok(response);
+            return response is null ? NotFound(new ErrorResponse(["El producto no existe."])) : Ok(response);
         }
     }
 }

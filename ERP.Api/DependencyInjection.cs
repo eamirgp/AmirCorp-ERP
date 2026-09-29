@@ -1,4 +1,5 @@
-﻿using ERP.Api.Json;
+﻿using ERP.Api.Common;
+using ERP.Api.Json;
 using ERP.Api.Middleware;
 using ERP.Api.OpenApi;
 using ERP.Api.Services;
@@ -20,6 +21,8 @@ namespace ERP.Api
                 services
                     .AddExceptionHandler<DomainExceptionHandler>()
                     .AddExceptionHandler<ConcurrencyExceptionHandler>()
+                    // Debe ir al final: atiende lo que los anteriores no reconocieron.
+                    .AddExceptionHandler<UnexpectedExceptionHandler>()
                     .AddProblemDetails()
                     .AddCors(options =>
                     {
@@ -46,7 +49,8 @@ namespace ERP.Api
                         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                         options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
                         options.JsonSerializerOptions.Converters.Add(new TrimmingStringConverter());
-                    });
+                    })
+                    .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = InvalidModelStateResponse.Create);
 
                 // El generador de OpenAPI lee estas opciones: deben coincidir con las de los controladores
                 // para que documente los enums como texto y los números solo como números.

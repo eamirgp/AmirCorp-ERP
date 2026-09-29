@@ -1,3 +1,4 @@
+using ERP.Api.Common;
 using ERP.Application.Common.Pagination;
 using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.BusinessPartners.Requests;
@@ -105,7 +106,7 @@ namespace ERP.Api.Controllers.BusinessPartners
         {
             var response = await _getBusinessPartnerUseCase.ExecuteAsync(new GetBusinessPartnerDto(id));
             return response is null
-                ? NotFound()
+                ? NotFound(new ErrorResponse(["El cliente o proveedor no existe."]))
                 : Ok(response);
         }
     }

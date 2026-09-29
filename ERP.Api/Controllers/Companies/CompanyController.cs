@@ -1,4 +1,5 @@
-﻿using ERP.Application.Common.Responses;
+using ERP.Api.Common;
+using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.Companies.Requests;
 using ERP.Api.Extensions;
 using ERP.Application.Features.Companies.Activate;
@@ -79,7 +80,7 @@ namespace ERP.Api.Controllers.Companies
         public async Task<IActionResult> Get(Guid id)
         {
             var response = await _getCompanyUseCase.ExecuteAsync(new GetCompanyDto(id));
-            return response is null ? NotFound() : Ok(response);
+            return response is null ? NotFound(new ErrorResponse(["La empresa no existe."])) : Ok(response);
         }
 
         [HttpPut("{id:guid}")]

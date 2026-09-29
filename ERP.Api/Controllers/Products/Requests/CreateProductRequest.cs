@@ -1,4 +1,4 @@
-﻿using ERP.Application.Features.Products.CreateProduct;
+using ERP.Application.Features.Products.CreateProduct;
 using ERP.Domain.Catalogs;
 using ERP.Domain.Products;
 
@@ -41,10 +41,13 @@ namespace ERP.Api.Controllers.Products.Requests
                 errors.Add("El tipo de afectación del IGV es inválido.");
 
             if (SalePrice is null)
-                errors.Add("El precio de venta es requerido.");
+                errors.Add("Ingresa el precio de venta como un número, por ejemplo 12.90.");
 
             if (SalePrice is not null && SalePrice < 0)
                 errors.Add("El precio de venta no puede ser negativo.");
+
+            if (SalePrice is not null && SalePrice > Product.SalePriceMax)
+                errors.Add("El precio de venta es demasiado grande. Revisa que esté bien escrito.");
 
             return errors;
         }

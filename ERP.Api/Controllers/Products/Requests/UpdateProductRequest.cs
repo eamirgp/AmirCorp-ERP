@@ -1,4 +1,4 @@
-﻿using ERP.Application.Features.Products.UpdateProduct;
+using ERP.Application.Features.Products.UpdateProduct;
 using ERP.Domain.Catalogs;
 using ERP.Domain.Products;
 
@@ -9,7 +9,8 @@ namespace ERP.Api.Controllers.Products.Requests
         string? Name,
         UnitOfMeasure? UnitOfMeasure,
         IgvAffectation? IgvAffectation,
-        decimal? SalePrice
+        decimal? SalePrice,
+        uint? RowVersion
         )
     {
         public IReadOnlyCollection<string> Validate()
@@ -41,15 +42,21 @@ namespace ERP.Api.Controllers.Products.Requests
                 errors.Add("El tipo de afectación del IGV es inválido.");
 
             if (SalePrice is null)
-                errors.Add("El precio de venta es requerido.");
+                errors.Add("Ingresa el precio de venta como un número, por ejemplo 12.90.");
 
             if (SalePrice is not null && SalePrice < 0)
                 errors.Add("El precio de venta no puede ser negativo.");
+
+            if (SalePrice is not null && SalePrice > Product.SalePriceMax)
+                errors.Add("El precio de venta es demasiado grande. Revisa que esté bien escrito.");
+
+            if (RowVersion is null)
+                errors.Add("Falta la versión del producto. Vuelve a abrir el formulario.");
 
             return errors;
         }
 
         public UpdateProductDto ToDto(Guid id) =>
-            new(id, Code!, Name!, UnitOfMeasure!.Value, IgvAffectation!.Value, SalePrice!.Value);
+            new(id, Code!, Name!, UnitOfMeasure!.Value, IgvAffectation!.Value, SalePrice!.Value, RowVersion!.Value);
     }
 }
