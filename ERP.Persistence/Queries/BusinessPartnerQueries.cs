@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Common.Pagination;
 using ERP.Application.Contracts.Persistence.Queries;
 using ERP.Application.Features.Partners.GetBusinessPartner;
 using ERP.Application.Features.Partners.ListBusinessPartners;
@@ -13,7 +13,7 @@ namespace ERP.Persistence.Queries
 
         public BusinessPartnerQueries(ErpDbContext context) => _context = context;
 
-        public async Task<PagedResult<ListBusinessPartnersResponseDto>> ListBusinessPartnersAsync(ListBusinessPartnersDto listBusinessPartnersDto)
+        public async Task<SortedPagedResult<ListBusinessPartnersResponseDto, BusinessPartnerSortBy>> ListBusinessPartnersAsync(ListBusinessPartnersDto listBusinessPartnersDto)
         {
             var query = _context.BusinessPartners.AsNoTracking();
 
@@ -63,11 +63,13 @@ namespace ERP.Persistence.Queries
                     ))
                 .ToArrayAsync();
 
-            return new PagedResult<ListBusinessPartnersResponseDto>(
+            return new SortedPagedResult<ListBusinessPartnersResponseDto, BusinessPartnerSortBy>(
                 items,
                 listBusinessPartnersDto.Page,
                 listBusinessPartnersDto.PageSize,
-                totalCount
+                totalCount,
+                listBusinessPartnersDto.SortBy,
+                listBusinessPartnersDto.SortDescending
                 );
         }
 

@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Common.Pagination;
 using ERP.Application.Contracts.Persistence.Queries;
 
 namespace ERP.Application.Features.Purchases.ListPurchases
@@ -9,7 +9,7 @@ namespace ERP.Application.Features.Purchases.ListPurchases
 
         public ListPurchasesUseCase(IPurchaseQueries purchaseQueries) => _purchaseQueries = purchaseQueries;
 
-        public async Task<PagedResult<ListPurchasesResponseDto>> ExecuteAsync(ListPurchasesDto request) =>
+        public async Task<SortedPagedResult<ListPurchasesResponseDto, PurchaseSortBy>> ExecuteAsync(ListPurchasesDto request) =>
             await _purchaseQueries.ListPurchasesAsync(request);
     }
 }

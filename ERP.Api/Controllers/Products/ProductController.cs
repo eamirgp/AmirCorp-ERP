@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Common.Pagination;
 using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.Products.Requests;
 using ERP.Api.Extensions;
@@ -55,7 +55,7 @@ namespace ERP.Api.Controllers.Products
         }
 
         [HttpGet]
-        [ProducesResponseType<PagedResult<ListProductsResponseDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<SortedPagedResult<ListProductsResponseDto, ProductSortBy>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> List([FromQuery]ListProductsRequest listProductsRequest) =>
             Ok(await _listProductsUseCase.ExecuteAsync(listProductsRequest.ToDto()));
 

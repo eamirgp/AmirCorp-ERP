@@ -18,8 +18,8 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 PaginationDefaults.NormalizedPageSize(PageSize),
                 SearchTerm,
                 CompanyId,
-                SortBy ?? PurchaseSortBy.CreatedAt,
-                SortDescending ?? true
+                SortBy ?? ListPurchasesDto.DefaultSortBy,
+                SortBy is null ? ListPurchasesDto.DefaultSortDescending : SortDescending ?? false
                 );
     }
 }

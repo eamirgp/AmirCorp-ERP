@@ -1,6 +1,6 @@
 namespace ERP.Application.Common.Pagination
 {
-    public sealed class PagedResult<T>
+    public class PagedResult<T>
     {
         public IReadOnlyCollection<T> Items { get; }
         public int Page { get; }

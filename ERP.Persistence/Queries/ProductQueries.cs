@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Common.Pagination;
 using ERP.Application.Contracts.Persistence.Queries;
 using ERP.Application.Features.Products.ExportProducts;
 using ERP.Application.Features.Products.GetProduct;
@@ -15,7 +15,7 @@ namespace ERP.Persistence.Queries
 
         public ProductQueries(ErpDbContext context) => _context = context;
 
-        public async Task<PagedResult<ListProductsResponseDto>> ListProductsAsync(ListProductsDto listProductsDto)
+        public async Task<SortedPagedResult<ListProductsResponseDto, ProductSortBy>> ListProductsAsync(ListProductsDto listProductsDto)
         {
             var query = _context.Products.AsNoTracking();
 
@@ -59,11 +59,13 @@ namespace ERP.Persistence.Queries
                     ))
                 .ToArrayAsync();
 
-            return new PagedResult<ListProductsResponseDto>(
+            return new SortedPagedResult<ListProductsResponseDto, ProductSortBy>(
                 items,
                 listProductsDto.Page,
                 listProductsDto.PageSize,
-                totalCount
+                totalCount,
+                listProductsDto.SortBy,
+                listProductsDto.SortDescending
                 );
         }
 

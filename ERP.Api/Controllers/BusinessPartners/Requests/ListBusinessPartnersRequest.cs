@@ -23,8 +23,8 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
                 IsActive,
                 PartnerRoleFilter,
                 IdentityDocumentType,
-                SortBy ?? BusinessPartnerSortBy.CreatedAt,
-                SortDescending ?? true
+                SortBy ?? ListBusinessPartnersDto.DefaultSortBy,
+                SortBy is null ? ListBusinessPartnersDto.DefaultSortDescending : SortDescending ?? false
                 );
     }
 }

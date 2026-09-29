@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Common.Pagination;
 using ERP.Application.Contracts.Persistence.Queries;
 using ERP.Application.Features.Purchases.GetPurchase;
 using ERP.Application.Features.Purchases.ListPurchases;
@@ -15,7 +15,7 @@ namespace ERP.Persistence.Queries
 
         public PurchaseQueries(ErpDbContext context) => _context = context;
 
-        public async Task<PagedResult<ListPurchasesResponseDto>> ListPurchasesAsync(ListPurchasesDto listPurchasesDto)
+        public async Task<SortedPagedResult<ListPurchasesResponseDto, PurchaseSortBy>> ListPurchasesAsync(ListPurchasesDto listPurchasesDto)
         {
             var query = _context.Purchases.AsNoTracking();
 
@@ -71,11 +71,13 @@ namespace ERP.Persistence.Queries
                     ))
                 .ToArrayAsync();
 
-            return new PagedResult<ListPurchasesResponseDto>(
+            return new SortedPagedResult<ListPurchasesResponseDto, PurchaseSortBy>(
                 items,
                 listPurchasesDto.Page,
                 listPurchasesDto.PageSize,
-                totalCount
+                totalCount,
+                listPurchasesDto.SortBy,
+                listPurchasesDto.SortDescending
                 );
         }
 

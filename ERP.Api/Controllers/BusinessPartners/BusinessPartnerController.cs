@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Pagination;
+using ERP.Application.Common.Pagination;
 using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.BusinessPartners.Requests;
 using ERP.Api.Extensions;
@@ -64,7 +64,7 @@ namespace ERP.Api.Controllers.BusinessPartners
             Ok(await _listIdentityDocumentTypesUseCase.ExecuteAsync());
 
         [HttpGet]
-        [ProducesResponseType<PagedResult<ListBusinessPartnersResponseDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<SortedPagedResult<ListBusinessPartnersResponseDto, BusinessPartnerSortBy>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> List([FromQuery]ListBusinessPartnersRequest listBusinessPartnersRequest)
         {
             var response = await _listBusinessPartnersUseCase.ExecuteAsync(listBusinessPartnersRequest.ToDto());
