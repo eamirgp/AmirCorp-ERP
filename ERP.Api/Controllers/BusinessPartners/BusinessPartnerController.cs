@@ -9,6 +9,7 @@ using ERP.Application.Features.Partners.DeactivateBusinessPartner;
 using ERP.Application.Features.Partners.GetBusinessPartner;
 using ERP.Application.Features.Partners.ListBusinessPartners;
 using ERP.Application.Features.Partners.ListIdentityDocumentTypes;
+using ERP.Application.Features.Partners.LookupRuc;
 using ERP.Application.Features.Partners.UpdateBusinessPartner;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,6 +28,7 @@ namespace ERP.Api.Controllers.BusinessPartners
         private readonly IDeactivateBusinessPartnerUseCase _deactivateBusinessPartnerUseCase;
         private readonly IUpdateBusinessPartnerUseCase _updateBusinessPartnerUseCase;
         private readonly IGetBusinessPartnerUseCase _getBusinessPartnerUseCase;
+        private readonly ILookupRucUseCase _lookupRucUseCase;
 
         public BusinessPartnerController(
             ICreateBusinessPartnerUseCase createBusinessPartnerUseCase,
@@ -35,9 +37,11 @@ namespace ERP.Api.Controllers.BusinessPartners
             IActivateBusinessPartnerUseCase activateBusinessPartnerUseCase,
             IDeactivateBusinessPartnerUseCase deactivateBusinessPartnerUseCase,
             IUpdateBusinessPartnerUseCase updateBusinessPartnerUseCase,
-            IGetBusinessPartnerUseCase getBusinessPartnerUseCase
+            IGetBusinessPartnerUseCase getBusinessPartnerUseCase,
+            ILookupRucUseCase lookupRucUseCase
             )
         {
+            _lookupRucUseCase = lookupRucUseCase;
             _createBusinessPartnerUseCase = createBusinessPartnerUseCase;
             _listIdentityDocumentTypesUseCase = listIdentityDocumentTypesUseCase;
             _listBusinessPartnersUseCase = listBusinessPartnersUseCase;
@@ -57,6 +61,18 @@ namespace ERP.Api.Controllers.BusinessPartners
 
             var result = await _createBusinessPartnerUseCase.ExecuteAsync(createBusinessPartnerRequest.ToDto());
             return result.ToActionResult(StatusCodes.Status201Created);
+        }
+
+        /// <summary>
+        /// Busca un RUC en SUNAT (razón social, estado, condición y dirección) para llenar el formulario.
+        /// 503 si la consulta no está configurada o el servicio no responde; el formulario sigue funcionando a mano.
+        /// </summary>
+        [HttpGet("ruc-lookup/{ruc}")]
+        [ProducesResponseType<LookupRucResponseDto>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> LookupRuc(string ruc, CancellationToken ct)
+        {
+            var result = await _lookupRucUseCase.ExecuteAsync(ruc, ct);
+            return result.ToActionResult(StatusCodes.Status200OK);
         }
 
         [HttpGet("identity-document-types")]

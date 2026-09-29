@@ -21,6 +21,7 @@ using ERP.Application.Features.Partners.DeactivateBusinessPartner;
 using ERP.Application.Features.Partners.GetBusinessPartner;
 using ERP.Application.Features.Partners.ListBusinessPartners;
 using ERP.Application.Features.Partners.ListIdentityDocumentTypes;
+using ERP.Application.Features.Partners.LookupRuc;
 using ERP.Application.Features.Partners.UpdateBusinessPartner;
 using ERP.Application.Features.Products.ActivateProduct;
 using ERP.Application.Features.Products.CreateProduct;
@@ -117,6 +118,7 @@ namespace ERP.Application
                     .AddScoped<IDeactivateBusinessPartnerUseCase, DeactivateBusinessPartnerUseCase>()
                     .AddScoped<IUpdateBusinessPartnerUseCase, UpdateBusinessPartnerUseCase>()
                     .AddScoped<IGetBusinessPartnerUseCase, GetBusinessPartnerUseCase>()
+                    .AddScoped<ILookupRucUseCase, LookupRucUseCase>()
 
                     .AddScoped<ICreatePurchaseUseCase, CreatePurchaseUseCase>()
                     .AddScoped<IListPurchasesUseCase, ListPurchasesUseCase>()

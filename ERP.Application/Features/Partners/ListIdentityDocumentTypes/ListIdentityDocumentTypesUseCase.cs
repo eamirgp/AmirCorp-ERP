@@ -1,15 +1,21 @@
-﻿using ERP.Domain.Partners.Enums;
+using ERP.Application.Contracts.Infrastructure;
+using ERP.Domain.Partners.Enums;
 
 namespace ERP.Application.Features.Partners.ListIdentityDocumentTypes
 {
     internal sealed class ListIdentityDocumentTypesUseCase : IListIdentityDocumentTypesUseCase
     {
-        private static readonly IReadOnlyCollection<ListIdentityDocumentTypesResponseDto> _identityDocumentTypes =
-            Enum.GetValues<IdentityDocumentType>()
-            .Select(idt => new ListIdentityDocumentTypesResponseDto(idt, idt.Description))
-            .ToArray();
+        private readonly IRucLookup _rucLookup;
 
-        public Task<IReadOnlyCollection<ListIdentityDocumentTypesResponseDto>> ExecuteAsync() =>
-            Task.FromResult(_identityDocumentTypes);
+        public ListIdentityDocumentTypesUseCase(IRucLookup rucLookup) => _rucLookup = rucLookup;
+
+        public Task<IReadOnlyCollection<ListIdentityDocumentTypesResponseDto>> ExecuteAsync()
+        {
+            IReadOnlyCollection<ListIdentityDocumentTypesResponseDto> types = Enum.GetValues<IdentityDocumentType>()
+                .Select(t => new ListIdentityDocumentTypesResponseDto(t, t.Description, t == IdentityDocumentType.Ruc && _rucLookup.IsConfigured))
+                .ToArray();
+
+            return Task.FromResult(types);
+        }
     }
 }

@@ -6,6 +6,8 @@
         Unauthorized,
         Forbidden,
         NotFound,
-        Conflict
+        Conflict,
+        /// <summary>Un servicio externo (por ejemplo, la consulta de RUC) no respondió: 503.</summary>
+        Unavailable
     }
 }

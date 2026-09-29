@@ -24,6 +24,17 @@ El código siempre lee `configuration["Clave"]` y no sabe de dónde viene el val
 | `JwtSettings:Secret` | Firma de los tokens (mínimo 32 caracteres) | La API no arranca y muestra qué falta |
 | `SuperAdmin:Name`, `:Email`, `:Password` | Crear el primer usuario | La API arranca con un aviso; solo hacen falta con la base vacía |
 
+## Claves opcionales
+
+| Clave | Para qué | Si falta |
+|---|---|---|
+| `RucLookup:Token` | Token de [Decolecta](https://decolecta.com) para consultar RUC en SUNAT desde el formulario de clientes y proveedores | El botón "SUNAT" no aparece y la razón social se escribe a mano |
+| `RucLookup:BaseUrl` | Dirección del servicio (por defecto `https://api.decolecta.com`) | Se usa la de por defecto |
+
+```
+dotnet user-secrets set "RucLookup:Token" "TU_TOKEN" --project ERP.Api
+```
+
 Formato de la conexión:
 
 ```

@@ -1,5 +1,6 @@
 ﻿using ERP.Application.Contracts.Infrastructure;
 using ERP.Infrastructure.Services.Auth;
+using ERP.Infrastructure.Services.RucLookup;
 using ERP.Infrastructure.Services.Settings;
 using ERP.Infrastructure.Services.Spreadsheets;
 using Microsoft.Extensions.Configuration;
@@ -17,7 +18,10 @@ namespace ERP.Infrastructure
                     .AddSingleton<IPasswordService, PasswordService>()
                     .Configure<JwtSettings>(configuration.GetSection("JwtSettings"))
                     .AddSingleton<IJwtService, JwtService>()
-                    .AddSingleton<IProductSpreadsheet, ProductSpreadsheet>();
+                    .AddSingleton<IProductSpreadsheet, ProductSpreadsheet>()
+                    // Consulta de RUC: sin RucLookup:Token la consulta no está disponible y el sistema funciona igual.
+                    .Configure<RucLookupSettings>(configuration.GetSection("RucLookup"))
+                    .AddSingleton<IRucLookup, DecolectaRucLookup>();
 
                 return services;
             }

@@ -31,6 +31,7 @@ namespace ERP.Api.Extensions
                 ErrorType.Forbidden => StatusCodes.Status403Forbidden,
                 ErrorType.NotFound => StatusCodes.Status404NotFound,
                 ErrorType.Conflict => StatusCodes.Status409Conflict,
+                ErrorType.Unavailable => StatusCodes.Status503ServiceUnavailable,
                 _ => StatusCodes.Status500InternalServerError
             };
 

@@ -4,7 +4,9 @@ namespace ERP.Application.Features.Partners.ListIdentityDocumentTypes
 {
     public sealed record ListIdentityDocumentTypesResponseDto(
         IdentityDocumentType IdentityDocumentType,
-        string Description
+        string Description,
+        // Si el formulario puede buscar el número en SUNAT y llenar el nombre (RUC, con la consulta configurada).
+        bool SupportsLookup
         )
     {
         /// <summary>Si el formulario debe preguntar el país: con DNI o RUC es siempre Perú y no se pregunta.</summary>
