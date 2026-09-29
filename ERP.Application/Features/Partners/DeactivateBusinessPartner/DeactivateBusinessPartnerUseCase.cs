@@ -21,7 +21,7 @@ namespace ERP.Application.Features.Partners.DeactivateBusinessPartner
         {
             var businessPartner = await _businessPartnerRepository.GetByIdAsync(request.Id);
             if (businessPartner is null)
-                return Result.Failure(["El socio comercial no existe."], ErrorType.NotFound);
+                return Result.Failure(["El cliente o proveedor no existe."], ErrorType.NotFound);
 
             businessPartner.Deactivate();
 

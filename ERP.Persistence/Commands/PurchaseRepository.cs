@@ -34,5 +34,9 @@ namespace ERP.Persistence.Commands
             await _context.Purchases
             .Include(p => p.Lines)
             .FirstOrDefaultAsync(p => p.Id == id);
+
+        public async Task<int> CountBySupplierAsync(Guid supplierId) =>
+            await _context.Purchases
+            .CountAsync(p => p.SupplierId == supplierId);
     }
 }

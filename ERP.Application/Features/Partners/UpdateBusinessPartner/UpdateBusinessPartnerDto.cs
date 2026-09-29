@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Catalogs;
 using ERP.Domain.Partners.Enums;
 
 namespace ERP.Application.Features.Partners.UpdateBusinessPartner
@@ -10,6 +10,7 @@ namespace ERP.Application.Features.Partners.UpdateBusinessPartner
         Country Country,
         string Name,
         bool IsClient,
-        bool IsSupplier
+        bool IsSupplier,
+        uint RowVersion
         );
 }

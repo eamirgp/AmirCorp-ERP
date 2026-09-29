@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Catalogs;
 using ERP.Domain.Partners.Enums;
 
 namespace ERP.Application.Features.Partners.ListBusinessPartners
@@ -11,10 +11,13 @@ namespace ERP.Application.Features.Partners.ListBusinessPartners
         string Name,
         bool IsClient,
         bool IsSupplier,
-        bool IsActive
+        bool IsActive,
+        // Versión del registro: el formulario la devuelve al editar para no pisar cambios de otra persona.
+        uint RowVersion
         )
     {
         public string IdentityDocumentTypeDescription => IdentityDocumentType.Description;
         public string CountryName => Country.Name;
+        public string RoleDescription => BusinessPartnerRules.RoleDescription(IsClient, IsSupplier);
     }
 }

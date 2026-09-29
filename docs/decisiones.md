@@ -149,3 +149,13 @@ Las unidades de medida están en una tabla (`UnitsOfMeasure`), no fijas en el c�
 - **Factor fijo:** las unidades que siempre traen lo mismo (Docena 12, Par 2, Ciento 100, Millar 1000, Gruesa 144) fijan el factor de conversión en las compras. Las demás (Caja, Paquete, Kilogramo…) lo indica cada compra.
 - **Excel:** la columna "Unidad de medida" acepta el nombre corto, el nombre SUNAT o el código, sin distinguir mayúsculas ni tildes.
 - **Historial:** activar, desactivar o renombrar una unidad queda en su historial. En el de un producto, el cambio de unidad se muestra con nombres ("Unidad → Docena").
+
+### 16. Clientes y proveedores: documento verificado y protegido
+**Fecha:** setiembre 2026
+
+- **RUC verificado como SUNAT:** 11 dígitos, prefijo 10, 15, 16, 17 o 20 y dígito verificador (módulo 11). DNI de 8 dígitos. Documento extranjero de hasta 20 letras, números o guiones. Una sola regla (`DocumentNumberError`) para la API y el dominio.
+- **Normalización:** el documento se guarda sin espacios y en mayúsculas, y el nombre sin espacios de sobra. El duplicado se compara ya normalizado y el mensaje dice quién lo tiene ("Ya existe ACME S.A.C. con RUC 20123456789.").
+- **País:** con DNI o RUC es siempre Perú y no se pregunta. Con documento extranjero se elige, y no puede ser Perú. El catálogo de tipos de documento indica `RequiresCountry` para que la pantalla sepa cuándo mostrar el campo.
+- **El documento identifica al contribuyente:** mientras no tenga compras se puede corregir (error de tipeo). Con compras ya no, porque el registro mezclaría dos empresas; si es otra empresa, se registra como nueva. Cada compra guarda su propia copia del RUC y la razón social, así que el historial nunca cambia. La razón social sí se puede editar siempre.
+- **Rol de proveedor:** no se puede quitar si tiene compras o códigos en productos; en ese caso se desactiva.
+- **Concurrencia:** el formulario envía `RowVersion` (xmin), como en productos.

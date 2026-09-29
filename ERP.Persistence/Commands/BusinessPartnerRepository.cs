@@ -1,4 +1,4 @@
-﻿using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Partners;
 using ERP.Domain.Partners.Enums;
 using ERP.Persistence.Context;
@@ -16,10 +16,15 @@ namespace ERP.Persistence.Commands
             _context.BusinessPartners
             .Add(businessPartner);
 
-        public async Task<bool> DocumentNumberExistsAsync(string documentNumber, IdentityDocumentType identityDocumentType, Guid? excludeId = null) =>
-            await _context.BusinessPartners
-            .Where(bp => excludeId == null || bp.Id != excludeId)
-            .AnyAsync(bp => bp.IdentityDocumentType == identityDocumentType && bp.DocumentNumber == documentNumber);
+        public async Task<BusinessPartner?> FindByDocumentAsync(IdentityDocumentType identityDocumentType, string documentNumber, Guid? excludeId = null)
+        {
+            var normalized = IdentityDocumentTypeExtensions.NormalizeDocumentNumber(documentNumber);
+
+            return await _context.BusinessPartners
+                .AsNoTracking()
+                .Where(bp => excludeId == null || bp.Id != excludeId)
+                .FirstOrDefaultAsync(bp => bp.IdentityDocumentType == identityDocumentType && bp.DocumentNumber == normalized);
+        }
 
         public async Task<BusinessPartner?> GetByIdAsync(Guid id) =>
             await _context.BusinessPartners
@@ -29,5 +34,8 @@ namespace ERP.Persistence.Commands
             await _context.BusinessPartners
             .Where(bp => ids.Contains(bp.Id))
             .ToListAsync();
+
+        public uint VersionOf(BusinessPartner businessPartner) =>
+            _context.Entry(businessPartner).Property<uint>("RowVersion").CurrentValue;
     }
 }

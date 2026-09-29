@@ -48,6 +48,10 @@ namespace ERP.Persistence.Configurations
 
             builder.Property(bp => bp.UpdatedBy);
 
+            // Control de concurrencia optimista (xmin): el formulario envía la versión que vio y no pisa cambios de otra persona.
+            builder.Property<uint>("RowVersion")
+                .IsRowVersion();
+
             builder.HasIndex(bp => new { bp.DocumentNumber, bp.IdentityDocumentType })
                 .IsUnique();
         }

@@ -63,7 +63,8 @@ namespace ERP.Persistence.Queries
                     bp.Name,
                     bp.IsClient,
                     bp.IsSupplier,
-                    bp.IsActive
+                    bp.IsActive,
+                    EF.Property<uint>(bp, "RowVersion")
                     ))
                 .ToArrayAsync();
 

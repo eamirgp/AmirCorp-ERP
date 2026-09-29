@@ -52,7 +52,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 return Result<CreatedResponseDto>.Failure(["El proveedor no existe."], ErrorType.NotFound);
 
             if (!supplier.IsSupplier)
-                return Result<CreatedResponseDto>.Failure(["El socio comercial no es un proveedor."], ErrorType.BadRequest);
+                return Result<CreatedResponseDto>.Failure(["El cliente elegido no está registrado como proveedor."], ErrorType.BadRequest);
 
             if (!supplier.IsActive)
                 return Result<CreatedResponseDto>.Failure(["El proveedor está desactivado."], ErrorType.BadRequest);

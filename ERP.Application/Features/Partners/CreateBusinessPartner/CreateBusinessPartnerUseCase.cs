@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Responses;
+using ERP.Application.Common.Responses;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Partners;
@@ -21,8 +21,8 @@ namespace ERP.Application.Features.Partners.CreateBusinessPartner
 
         public async Task<Result<CreatedResponseDto>> ExecuteAsync(CreateBusinessPartnerDto request)
         {
-            if (await _businessPartnerRepository.DocumentNumberExistsAsync(request.DocumentNumber, request.IdentityDocumentType))
-                return Result<CreatedResponseDto>.Failure(["El número de documento ya se encuentra en uso."], ErrorType.Conflict);
+            if (await _businessPartnerRepository.FindByDocumentAsync(request.IdentityDocumentType, request.DocumentNumber) is { } existing)
+                return Result<CreatedResponseDto>.Failure([BusinessPartnerRules.AlreadyExists(existing)], ErrorType.Conflict);
 
             var businessPartner = BusinessPartner.Create(
                 request.IdentityDocumentType,

@@ -20,5 +20,6 @@ namespace ERP.Application.Features.Partners.GetBusinessPartner
     {
         public string IdentityDocumentTypeDescription => IdentityDocumentType.Description;
         public string CountryName => Country.Name;
+        public string RoleDescription => BusinessPartnerRules.RoleDescription(IsClient, IsSupplier);
     }
 }
