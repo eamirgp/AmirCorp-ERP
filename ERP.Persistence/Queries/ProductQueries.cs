@@ -44,7 +44,7 @@ namespace ERP.Persistence.Queries
                         ? null
                         : p.SupplierCodes.Where(c => c.SupplierId == supplierId).Select(c => c.Code).FirstOrDefault(),
                     // Solo si no coincidió el código interno ni el nombre: el primer código de proveedor que coincide.
-                    Match = !hasTerm || p.Code.Contains(codeTerm) || p.Name.ToLower().Contains(nameTerm)
+                    Match = !hasTerm || p.Code.Contains(codeTerm) || EF.Functions.Unaccent(p.Name.ToLower()).Contains(nameTerm)
                         ? null
                         : _context.ProductSupplierCodes
                             .Where(c => c.ProductId == p.Id && c.Code.Contains(codeTerm))
@@ -122,7 +122,7 @@ namespace ERP.Persistence.Queries
                 query = query
                     .Where(p =>
                     p.Code.Contains(codeTerm) ||
-                    p.Name.ToLower().Contains(nameTerm) ||
+                    EF.Functions.Unaccent(p.Name.ToLower()).Contains(nameTerm) ||
                     p.SupplierCodes.Any(c => c.Code.Contains(codeTerm))
                     );
             }
@@ -134,14 +134,14 @@ namespace ERP.Persistence.Queries
             return query;
         }
 
-        /// <summary>El texto buscado como se compara: en mayúsculas para los códigos y en minúsculas para el nombre.</summary>
+        /// <summary>El texto buscado como se compara: en mayúsculas para los códigos y en minúsculas sin tildes para el nombre.</summary>
         private static (bool HasTerm, string CodeTerm, string NameTerm) SearchTerms(string? searchTerm)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
                 return (false, "", "");
 
             var term = searchTerm.Trim();
-            return (true, Product.NormalizeCode(term), term.ToLower());
+            return (true, Product.NormalizeCode(term), SearchText.Normalize(term));
         }
 
         private static IQueryable<Product> Sort(IQueryable<Product> query, ProductSortBy sortBy, bool sortDescending) =>

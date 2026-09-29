@@ -22,14 +22,14 @@ namespace ERP.Persistence.Queries
             if (!string.IsNullOrWhiteSpace(listPurchasesDto.SearchTerm))
             {
                 var documentTerm = Purchase.NormalizeSerie(listPurchasesDto.SearchTerm);
-                var nameTerm = listPurchasesDto.SearchTerm.ToLower();
+                var nameTerm = SearchText.Normalize(listPurchasesDto.SearchTerm);
 
                 query = query
                     .Where(p =>
                     (p.Serie + "-" + p.Number).StartsWith(documentTerm) ||
                     p.Number.StartsWith(listPurchasesDto.SearchTerm) ||
                     p.SupplierDocumentNumber.StartsWith(listPurchasesDto.SearchTerm) ||
-                    p.SupplierName.ToLower().Contains(nameTerm)
+                    EF.Functions.Unaccent(p.SupplierName.ToLower()).Contains(nameTerm)
                     );
             }
 

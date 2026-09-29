@@ -16,6 +16,9 @@ namespace ERP.Persistence.Context
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // unaccent: las búsquedas por nombre ignoran las tildes ("camara" encuentra "Cámara").
+            modelBuilder.HasPostgresExtension("unaccent");
+
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ErpDbContext).Assembly);
         }
 

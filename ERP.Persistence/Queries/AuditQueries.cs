@@ -40,8 +40,8 @@ namespace ERP.Persistence.Queries
 
             if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
             {
-                var term = filter.SearchTerm.ToLower();
-                query = query.Where(a => a.EntityLabel.ToLower().Contains(term));
+                var term = SearchText.Normalize(filter.SearchTerm);
+                query = query.Where(a => EF.Functions.Unaccent(a.EntityLabel.ToLower()).Contains(term));
             }
 
             var totalCount = await query.CountAsync();

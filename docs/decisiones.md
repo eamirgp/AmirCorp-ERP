@@ -20,7 +20,7 @@ La producción irá en **Railway**, que ofrece PostgreSQL nativo y no SQL Server
 
 Consecuencias en el código:
 - Concurrencia con la columna de sistema `xmin` en vez de `rowversion`.
-- PostgreSQL distingue mayúsculas: se normalizan correos, códigos y series, y las búsquedas comparan en minúsculas (ver decisión 5).
+- PostgreSQL distingue mayúsculas: se normalizan correos, códigos y series, y las búsquedas comparan en minúsculas (ver decisión 5). Los nombres también se comparan sin tildes con la extensión `unaccent` ("camara" encuentra "Cámara"; `SearchText.Normalize` prepara el texto buscado igual).
 
 ### 3. Concurrencia optimista en tablas de inventario
 **Fecha:** setiembre 2026

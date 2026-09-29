@@ -19,11 +19,12 @@ namespace ERP.Persistence.Queries
 
             if (!string.IsNullOrWhiteSpace(listBusinessPartnersDto.SearchTerm))
             {
-                var nameTerm = listBusinessPartnersDto.SearchTerm.ToLower();
+                var documentTerm = listBusinessPartnersDto.SearchTerm.Trim();
+                var nameTerm = SearchText.Normalize(listBusinessPartnersDto.SearchTerm);
 
                 query = query.Where(bp =>
-                    bp.DocumentNumber.StartsWith(listBusinessPartnersDto.SearchTerm) ||
-                    bp.Name.ToLower().Contains(nameTerm)
+                    bp.DocumentNumber.StartsWith(documentTerm) ||
+                    EF.Functions.Unaccent(bp.Name.ToLower()).Contains(nameTerm)
                     );
             }
 
