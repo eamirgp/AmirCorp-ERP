@@ -23,7 +23,8 @@ namespace ERP.Persistence.Queries
         public async Task<IReadOnlyCollection<UnitOfMeasureListItemDto>> ListAllAsync() =>
             await _context.UnitsOfMeasure
             .AsNoTracking()
-            .OrderBy(u => u.Name)
+            .OrderByDescending(u => u.IsActive)
+            .ThenBy(u => u.Name)
             .Select(u => new UnitOfMeasureListItemDto(
                 u.Id,
                 u.Code,

@@ -35,7 +35,7 @@ namespace ERP.Api.Controllers.UnitsOfMeasure
             _deactivateUseCase = deactivateUseCase;
         }
 
-        /// <summary>Todo el catálogo, por nombre de la A a la Z.</summary>
+        /// <summary>Todo el catálogo: primero las activas y luego las demás, cada grupo por nombre de la A a la Z.</summary>
         [HttpGet]
         [ProducesResponseType<IReadOnlyCollection<UnitOfMeasureListItemDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> List() =>
