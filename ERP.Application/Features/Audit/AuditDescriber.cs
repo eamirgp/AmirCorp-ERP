@@ -24,7 +24,8 @@ namespace ERP.Application.Features.Audit
         public const string UnitOfMeasureCodeProperty = nameof(Product.UnitOfMeasureCode);
 
 
-        private sealed record Field(string Label, bool IsMoney = false);
+        // Map: para campos que guardan un código y se muestran con su nombre (el país "CN" → "China").
+        private sealed record Field(string Label, bool IsMoney = false, Func<string, string>? Map = null);
 
         // Solo se registran los campos que el usuario puede cambiar. Los de auditoría, los totales y la
         // versión de concurrencia quedan fuera. La contraseña se registra como acción, nunca su valor.
@@ -44,7 +45,7 @@ namespace ERP.Application.Features.Audit
                 {
                     [nameof(BusinessPartner.IdentityDocumentType)] = new("Tipo de documento"),
                     [nameof(BusinessPartner.DocumentNumber)] = new("Número de documento"),
-                    [nameof(BusinessPartner.Country)] = new("País"),
+                    [nameof(BusinessPartner.CountryCode)] = new("País", Map: Countries.NameOf),
                     [nameof(BusinessPartner.Name)] = new("Nombre o razón social"),
                     [nameof(BusinessPartner.IsClient)] = new("Cliente"),
                     [nameof(BusinessPartner.IsSupplier)] = new("Proveedor"),
@@ -110,13 +111,13 @@ namespace ERP.Application.Features.Audit
         {
             null => "—",
             string s when string.IsNullOrWhiteSpace(s) => "—",
+            string s when field.Map is not null => field.Map(s),
             string s => s,
             bool b => b ? "Sí" : "No",
             decimal d when field.IsMoney => NumberText.Money(d),
             decimal d => NumberText.Decimal(d),
             IgvAffectation i => i.Description,
             IdentityDocumentType t => t.Description,
-            Country c => c.Name,
             UserRole r => r.Description,
             _ => value.ToString() ?? "—"
         };

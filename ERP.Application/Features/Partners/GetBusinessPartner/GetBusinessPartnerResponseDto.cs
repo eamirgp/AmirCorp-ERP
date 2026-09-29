@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Catalogs;
 using ERP.Domain.Partners.Enums;
 
 namespace ERP.Application.Features.Partners.GetBusinessPartner
@@ -7,7 +7,7 @@ namespace ERP.Application.Features.Partners.GetBusinessPartner
         Guid Id,
         IdentityDocumentType IdentityDocumentType,
         string DocumentNumber,
-        Country Country,
+        string CountryCode,
         string Name,
         bool IsClient,
         bool IsSupplier,
@@ -19,7 +19,7 @@ namespace ERP.Application.Features.Partners.GetBusinessPartner
         )
     {
         public string IdentityDocumentTypeDescription => IdentityDocumentType.Description;
-        public string CountryName => Country.Name;
+        public string CountryName => Countries.NameOf(CountryCode);
         public string RoleDescription => BusinessPartnerRules.RoleDescription(IsClient, IsSupplier);
     }
 }

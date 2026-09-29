@@ -7,8 +7,8 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
     public sealed record UpdateBusinessPartnerRequest(
         DocType? IdentityDocumentType,
         string? DocumentNumber,
-        // Solo para documento extranjero. Con DNI o RUC se ignora: el país es Perú.
-        Country? Country,
+        // Código ISO del país (CN, US…), solo para documento extranjero. Con DNI o RUC se ignora: el país es Perú.
+        string? CountryCode,
         string? Name,
         bool? IsClient,
         bool? IsSupplier,
@@ -18,7 +18,7 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
     {
         public IReadOnlyCollection<string> Validate()
         {
-            var errors = BusinessPartnerRequestRules.Validate(IdentityDocumentType, DocumentNumber, Country, Name, IsClient, IsSupplier);
+            var errors = BusinessPartnerRequestRules.Validate(IdentityDocumentType, DocumentNumber, CountryCode, Name, IsClient, IsSupplier);
 
             if (RowVersion is null)
                 errors.Add("Falta la versión del registro. Vuelve a abrir el formulario.");
@@ -31,7 +31,7 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
                 id,
                 IdentityDocumentType!.Value,
                 DocumentNumber!,
-                BusinessPartnerRequestRules.CountryFor(IdentityDocumentType.Value, Country),
+                BusinessPartnerRequestRules.CountryFor(IdentityDocumentType.Value, CountryCode),
                 Name!,
                 IsClient!.Value,
                 IsSupplier!.Value,

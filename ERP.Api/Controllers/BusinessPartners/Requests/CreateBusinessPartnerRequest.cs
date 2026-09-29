@@ -7,21 +7,21 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
     public sealed record CreateBusinessPartnerRequest(
         DocType? IdentityDocumentType,
         string? DocumentNumber,
-        // Solo para documento extranjero. Con DNI o RUC se ignora: el país es Perú.
-        Country? Country,
+        // Código ISO del país (CN, US…), solo para documento extranjero. Con DNI o RUC se ignora: el país es Perú.
+        string? CountryCode,
         string? Name,
         bool? IsClient,
         bool? IsSupplier
         )
     {
         public IReadOnlyCollection<string> Validate() =>
-            BusinessPartnerRequestRules.Validate(IdentityDocumentType, DocumentNumber, Country, Name, IsClient, IsSupplier);
+            BusinessPartnerRequestRules.Validate(IdentityDocumentType, DocumentNumber, CountryCode, Name, IsClient, IsSupplier);
 
         public CreateBusinessPartnerDto ToDto() =>
             new(
                 IdentityDocumentType!.Value,
                 DocumentNumber!,
-                BusinessPartnerRequestRules.CountryFor(IdentityDocumentType.Value, Country),
+                BusinessPartnerRequestRules.CountryFor(IdentityDocumentType.Value, CountryCode),
                 Name!,
                 IsClient!.Value,
                 IsSupplier!.Value

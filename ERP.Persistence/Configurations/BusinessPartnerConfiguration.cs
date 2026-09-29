@@ -1,4 +1,5 @@
-﻿using ERP.Domain.Partners;
+﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Partners;
 using ERP.Domain.Partners.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -24,10 +25,9 @@ namespace ERP.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(BusinessPartner.NameMaxLength);
 
-            builder.Property(bp => bp.Country)
+            builder.Property(bp => bp.CountryCode)
                 .IsRequired()
-                .HasConversion<string>()
-                .HasMaxLength(2);
+                .HasMaxLength(Countries.CodeLength);
 
             builder.Property(bp => bp.IsClient)
                 .IsRequired();

@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Catalogs;
 using ERP.Domain.Partners.Enums;
 
 namespace ERP.Application.Features.Partners.CreateBusinessPartner
@@ -6,7 +6,7 @@ namespace ERP.Application.Features.Partners.CreateBusinessPartner
     public sealed record CreateBusinessPartnerDto(
         IdentityDocumentType IdentityDocumentType,
         string DocumentNumber,
-        Country Country,
+        string CountryCode,
         string Name,
         bool IsClient,
         bool IsSupplier

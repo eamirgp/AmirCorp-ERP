@@ -13,41 +13,44 @@ namespace ERP.Domain.Partners
 
         public IdentityDocumentType IdentityDocumentType { get; private set; }
         public string DocumentNumber { get; private set; }
-        public Country Country { get; private set; }
+        /// <summary>Código ISO del país (catálogo N.° 04 de SUNAT): PE con DNI o RUC; otro con documento extranjero.</summary>
+        public string CountryCode { get; private set; }
         public string Name { get; private set; }
         public bool IsClient { get; private set; }
         public bool IsSupplier { get; private set; }
         public bool IsActive { get; private set; }
 
-        private BusinessPartner(Guid id, IdentityDocumentType identityDocumentType, string documentNumber, Country country, string name, bool isClient, bool isSupplier, bool isActive) : base(id)
+        private BusinessPartner(Guid id, IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name, bool isClient, bool isSupplier, bool isActive) : base(id)
         {
             IdentityDocumentType = identityDocumentType;
             DocumentNumber = documentNumber;
-            Country = country;
+            CountryCode = countryCode;
             Name = name;
             IsClient = isClient;
             IsSupplier = isSupplier;
             IsActive = isActive;
         }
 
-        public static BusinessPartner Create(IdentityDocumentType identityDocumentType, string documentNumber, Country country, string name, bool isClient, bool isSupplier)
+        public static BusinessPartner Create(IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name, bool isClient, bool isSupplier)
         {
-            var normalizedDocument = ValidateIdentityDocument(identityDocumentType, documentNumber, country);
+            var normalizedDocument = ValidateIdentityDocument(identityDocumentType, documentNumber);
+            var normalizedCountry = ValidateCountry(identityDocumentType, countryCode);
             var normalizedName = ValidateName(name);
             ValidateRoles(isClient, isSupplier, identityDocumentType);
 
-            return new(Guid.CreateVersion7(), identityDocumentType, normalizedDocument, country, normalizedName, isClient, isSupplier, isActive: true);
+            return new(Guid.CreateVersion7(), identityDocumentType, normalizedDocument, normalizedCountry, normalizedName, isClient, isSupplier, isActive: true);
         }
 
-        public void Update(IdentityDocumentType identityDocumentType, string documentNumber, Country country, string name, bool isClient, bool isSupplier)
+        public void Update(IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name, bool isClient, bool isSupplier)
         {
-            var normalizedDocument = ValidateIdentityDocument(identityDocumentType, documentNumber, country);
+            var normalizedDocument = ValidateIdentityDocument(identityDocumentType, documentNumber);
+            var normalizedCountry = ValidateCountry(identityDocumentType, countryCode);
             var normalizedName = ValidateName(name);
             ValidateRoles(isClient, isSupplier, identityDocumentType);
 
             IdentityDocumentType = identityDocumentType;
             DocumentNumber = normalizedDocument;
-            Country = country;
+            CountryCode = normalizedCountry;
             Name = normalizedName;
             IsClient = isClient;
             IsSupplier = isSupplier;
@@ -64,10 +67,10 @@ namespace ERP.Domain.Partners
             Spaces.Replace(name.Trim(), " ");
 
         /// <summary>País que corresponde al documento: DNI y RUC son siempre de Perú; el extranjero, el que se indique.</summary>
-        public static Country? CountryFor(IdentityDocumentType identityDocumentType, Country? country) =>
-            identityDocumentType.RequiresPeruvianCountry ? Country.PE : country;
+        public static string? CountryFor(IdentityDocumentType identityDocumentType, string? countryCode) =>
+            identityDocumentType.RequiresPeruvianCountry ? Countries.Peru : countryCode;
 
-        private static string ValidateIdentityDocument(IdentityDocumentType identityDocumentType, string documentNumber, Country country)
+        private static string ValidateIdentityDocument(IdentityDocumentType identityDocumentType, string documentNumber)
         {
             if (!Enum.IsDefined(identityDocumentType))
                 throw new DomainException("El tipo de documento es inválido.");
@@ -76,13 +79,20 @@ namespace ERP.Domain.Partners
             if (identityDocumentType.DocumentNumberError(normalized) is { } error)
                 throw new DomainException(error);
 
-            if (!Enum.IsDefined(country))
+            return normalized;
+        }
+
+        private static string ValidateCountry(IdentityDocumentType identityDocumentType, string countryCode)
+        {
+            if (string.IsNullOrWhiteSpace(countryCode) || !Countries.Exists(countryCode))
                 throw new DomainException("El país es inválido.");
 
-            if (identityDocumentType.RequiresPeruvianCountry && !country.IsPeru)
+            var normalized = Countries.NormalizeCode(countryCode);
+
+            if (identityDocumentType.RequiresPeruvianCountry && normalized != Countries.Peru)
                 throw new DomainException("Para DNI o RUC el país debe ser Perú.");
 
-            if (!identityDocumentType.RequiresPeruvianCountry && country.IsPeru)
+            if (!identityDocumentType.RequiresPeruvianCountry && normalized == Countries.Peru)
                 throw new DomainException("Un documento extranjero no puede ser de Perú. Elige el país del proveedor.");
 
             return normalized;

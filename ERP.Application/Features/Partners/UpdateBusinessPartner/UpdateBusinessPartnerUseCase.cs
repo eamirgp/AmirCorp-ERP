@@ -60,7 +60,7 @@ namespace ERP.Application.Features.Partners.UpdateBusinessPartner
             businessPartner.Update(
                 request.IdentityDocumentType,
                 request.DocumentNumber,
-                request.Country,
+                request.CountryCode,
                 request.Name,
                 request.IsClient,
                 request.IsSupplier

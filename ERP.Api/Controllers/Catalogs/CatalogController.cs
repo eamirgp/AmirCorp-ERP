@@ -38,6 +38,7 @@ namespace ERP.Api.Controllers.Catalogs
             _listInvoicePriceTypesUseCase = listInvoicePriceTypesUseCase;
         }
 
+        /// <summary>Países para un documento extranjero (sin Perú).</summary>
         [HttpGet("countries")]
         [ProducesResponseType<IReadOnlyCollection<ListCountriesResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListCountries() =>

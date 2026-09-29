@@ -7,7 +7,7 @@ namespace ERP.Application.Features.Partners.UpdateBusinessPartner
         Guid Id,
         IdentityDocumentType IdentityDocumentType,
         string DocumentNumber,
-        Country Country,
+        string CountryCode,
         string Name,
         bool IsClient,
         bool IsSupplier,

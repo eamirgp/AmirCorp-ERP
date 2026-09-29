@@ -27,7 +27,7 @@ namespace ERP.Application.Features.Partners.CreateBusinessPartner
             var businessPartner = BusinessPartner.Create(
                 request.IdentityDocumentType,
                 request.DocumentNumber,
-                request.Country,
+                request.CountryCode,
                 request.Name,
                 request.IsClient,
                 request.IsSupplier

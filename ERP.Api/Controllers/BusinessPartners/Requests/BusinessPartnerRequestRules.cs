@@ -13,7 +13,7 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
         public static List<string> Validate(
             IdentityDocumentType? identityDocumentType,
             string? documentNumber,
-            Country? country,
+            string? countryCode,
             string? name,
             bool? isClient,
             bool? isSupplier)
@@ -30,11 +30,11 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
             // Con DNI o RUC el país es Perú y no se pregunta; con documento extranjero se elige.
             if (identityDocumentType is { } type && Enum.IsDefined(type) && !type.RequiresPeruvianCountry)
             {
-                if (country is null)
+                if (string.IsNullOrWhiteSpace(countryCode))
                     errors.Add("Elige el país del proveedor.");
-                else if (!Enum.IsDefined(country.Value))
+                else if (!Countries.Exists(countryCode))
                     errors.Add("El país es inválido.");
-                else if (country.Value.IsPeru)
+                else if (Countries.IsPeru(countryCode))
                     errors.Add("Un documento extranjero no puede ser de Perú. Elige el país del proveedor.");
             }
 
@@ -54,7 +54,7 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
             return errors;
         }
 
-        public static Country CountryFor(IdentityDocumentType identityDocumentType, Country? country) =>
-            BusinessPartner.CountryFor(identityDocumentType, country)!.Value;
+        public static string CountryFor(IdentityDocumentType identityDocumentType, string? countryCode) =>
+            BusinessPartner.CountryFor(identityDocumentType, countryCode)!;
     }
 }
