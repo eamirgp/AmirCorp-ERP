@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
+using ERP.Application.Common.Formatting;
 using ERP.Application.Contracts.Infrastructure;
 using ERP.Domain.Catalogs;
 
@@ -44,7 +45,8 @@ namespace ERP.Infrastructure.Services.Spreadsheets
 
             // Código siempre como texto: así Excel no convierte "00123" en 123.
             sheet.Column(1).Style.NumberFormat.Format = "@";
-            sheet.Column(5).Style.NumberFormat.Format = "#,##0.00";
+            // Precio sin separador de miles ("1500.00"): en Excel el separador depende de la PC y a veces sale una coma.
+            sheet.Column(5).Style.NumberFormat.Format = "0.00";
 
             // Listas de valores válidos (hoja oculta) y validación en las celdas.
             var units = Enum.GetValues<UnitOfMeasure>().Select(u => u.Description).ToArray();
@@ -108,7 +110,7 @@ namespace ERP.Infrastructure.Services.Spreadsheets
 
                 var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
                 if (lastRow - 1 > MaxRows)
-                    return Fail($"El archivo tiene más de {MaxRows:N0} filas. Divídelo en varios archivos.");
+                    return Fail($"El archivo tiene más de {NumberText.Integer(MaxRows)} filas. Divídelo en varios archivos.");
 
                 var rows = new List<ProductSheetRow>();
                 for (var r = 2; r <= lastRow; r++)
@@ -175,21 +177,18 @@ namespace ERP.Infrastructure.Services.Spreadsheets
             return TryParsePrice(text, out var parsed) ? (parsed, null) : (null, text);
         }
 
-        // Precio escrito como texto, como se escribe en Perú:
-        //   "1,234.50" → 1234.50 (coma de miles y punto decimal)
-        //   "1,500"    → 1500    (coma seguida de grupos de 3 dígitos: es de miles)
-        //   "12,90"    → 12.90   (cualquier otra coma sola: es decimal)
-        private static readonly Regex ThousandsOnly = new(@"^-?\d{1,3}(,\d{3})+$", RegexOptions.Compiled);
+        // Precio escrito como texto: punto para los decimales y, si hay separador de miles, solo espacios
+        // ("1500.50", "1 500.50", "S/ 1 500.50"). Con coma no se adivina: la fila queda con error.
+        private static readonly Regex Spaces = new(@"[\s   ]", RegexOptions.Compiled);
 
         internal static bool TryParsePrice(string text, out decimal price)
         {
-            var clean = text.Replace(" ", "");
-            if (clean.Contains(',') && (clean.Contains('.') || ThousandsOnly.IsMatch(clean)))
-                clean = clean.Replace(",", "");
-            else
-                clean = clean.Replace(',', '.');
+            price = 0;
+            var clean = Spaces.Replace(text.Replace("S/", "", StringComparison.OrdinalIgnoreCase), "");
+            if (clean.Contains(','))
+                return false;
 
-            return decimal.TryParse(clean, NumberStyles.Number, CultureInfo.InvariantCulture, out price);
+            return decimal.TryParse(clean, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out price);
         }
 
         private static void WriteHelp(IXLWorksheet help, string[] units, string[] igvs)
@@ -202,7 +201,7 @@ namespace ERP.Infrastructure.Services.Spreadsheets
                 "2. No cambies ni borres la fila de títulos.",
                 "3. Código: único para cada producto. Se guarda en mayúsculas.",
                 "4. Unidad de medida y Afectación IGV: elígelos de la lista desplegable de cada celda.",
-                "5. Precio de venta: en soles e incluye IGV. Usa números, por ejemplo 25.50",
+                "5. Precio de venta: en soles e incluye IGV. Usa punto para los decimales y no uses comas, por ejemplo 1500.50",
                 "6. Sube el archivo en el sistema: antes de guardar verás qué productos se crean, cuáles se actualizan y los errores.",
                 "",
                 "Si el código ya existe, el producto se omite. Para actualizar productos existentes (por ejemplo, sus precios),",

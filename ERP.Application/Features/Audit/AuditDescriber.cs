@@ -1,4 +1,4 @@
-using System.Globalization;
+using ERP.Application.Common.Formatting;
 using ERP.Domain.Catalogs;
 using ERP.Domain.Companies;
 using ERP.Domain.Partners;
@@ -20,8 +20,6 @@ namespace ERP.Application.Features.Audit
         public const string IsCancelledProperty = "IsCancelled";
         public const string PasswordProperty = "PasswordHash";
 
-        // Miles con coma y decimales con punto, como se escriben los montos en Perú: 1,234.50.
-        private static readonly CultureInfo Numbers = CultureInfo.InvariantCulture;
 
         private sealed record Field(string Label, bool IsMoney = false);
 
@@ -101,8 +99,8 @@ namespace ERP.Application.Features.Audit
             string s when string.IsNullOrWhiteSpace(s) => "—",
             string s => s,
             bool b => b ? "Sí" : "No",
-            decimal d when field.IsMoney => "S/ " + d.ToString("#,##0.00", Numbers),
-            decimal d => d.ToString("#,##0.######", Numbers),
+            decimal d when field.IsMoney => NumberText.Money(d),
+            decimal d => NumberText.Decimal(d),
             UnitOfMeasure u => u.Description,
             IgvAffectation i => i.Description,
             IdentityDocumentType t => t.Description,

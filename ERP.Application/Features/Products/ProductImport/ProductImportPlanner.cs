@@ -1,4 +1,4 @@
-using System.Globalization;
+using ERP.Application.Common.Formatting;
 using ERP.Application.Contracts.Infrastructure;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Catalogs;
@@ -134,7 +134,7 @@ namespace ERP.Application.Features.Products.ProductImport
             new("Precio de venta", null, FormatPrice(next.SalePrice)),
         ];
 
-        private static string FormatPrice(decimal price) => "S/ " + price.ToString("#,##0.00", CultureInfo.InvariantCulture);
+        private static string FormatPrice(decimal price) => NumberText.Money(price);
 
         private static UnitOfMeasure? ParseUnit(string? text, List<string> errors)
         {
@@ -174,7 +174,9 @@ namespace ERP.Application.Features.Products.ProductImport
             if (row.SalePrice is not null)
                 return Math.Round(row.SalePrice.Value, 6, MidpointRounding.AwayFromZero);
 
-            if (!string.IsNullOrWhiteSpace(row.SalePriceText))
+            if (!string.IsNullOrWhiteSpace(row.SalePriceText) && row.SalePriceText.Contains(','))
+                errors.Add($"El precio de venta '{row.SalePriceText.Trim()}' tiene coma. Usa punto para los decimales y no separes los miles con comas, por ejemplo 1500.50.");
+            else if (!string.IsNullOrWhiteSpace(row.SalePriceText))
                 errors.Add($"El precio de venta '{row.SalePriceText.Trim()}' no es un número.");
             else
                 errors.Add("El precio de venta es requerido.");
