@@ -7,7 +7,7 @@ namespace ERP.Application.Features.UnitsOfMeasure.ListAllUnitsOfMeasure
         Task<IReadOnlyCollection<UnitOfMeasureListItemDto>> ExecuteAsync();
     }
 
-    /// <summary>Todo el catálogo: primero las activas y luego por nombre.</summary>
+    /// <summary>Todo el catálogo, por nombre de la A a la Z.</summary>
     internal sealed class ListAllUnitsOfMeasureUseCase : IListAllUnitsOfMeasureUseCase
     {
         private readonly IUnitOfMeasureQueries _unitOfMeasureQueries;
