@@ -87,7 +87,7 @@ El frontend (`AmirCorp-ERP-Web`) no valida, no calcula, no normaliza y no decide
 
 Los productos se pueden cargar desde un Excel (`/api/products/import/...`). Se eligió el camino más seguro:
 
-- **Plantilla generada por la API** (`GET import/template`), con listas desplegables de unidad e IGV e instrucciones. También se pueden exportar los productos actuales (`GET export`) para editarlos y volver a subirlos.
+- **Plantilla generada por la API** (`GET import/template`), con listas desplegables de unidad e IGV e instrucciones. También se pueden exportar los productos actuales (`GET export`) para editarlos y volver a subirlos. La exportación acepta los mismos filtros y orden que la lista (`SearchTerm`, `IsActive`, `SortBy`, `SortDescending`) y usa la misma consulta: el Excel trae exactamente lo que se ve. Con filtros, el archivo se llama `productos-filtrados-…`.
 - **Revisión antes de guardar** (`POST import/preview`): dice fila por fila si se creará, se actualizará, se omitirá, no tiene cambios o tiene errores, con el detalle de cada cambio. No guarda nada.
 - **Todo o nada** (`POST import`): vuelve a leer el archivo y, si hay un solo error, no guarda nada. Si todo está bien, guarda en una sola transacción.
 - **Los códigos existentes no se tocan por defecto.** Solo se actualizan si el usuario marca "Actualizar los productos que ya existen". Así una carga de productos nuevos no puede cambiar precios por accidente.

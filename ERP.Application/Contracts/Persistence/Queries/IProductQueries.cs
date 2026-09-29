@@ -9,6 +9,6 @@ namespace ERP.Application.Contracts.Persistence.Queries
     {
         Task<SortedPagedResult<ListProductsResponseDto, ProductSortBy>> ListProductsAsync(ListProductsDto listProductsDto);
         Task<GetProductResponseDto?> GetProductAsync(GetProductDto getProductDto);
-        Task<IReadOnlyCollection<ProductExportRowDto>> ListForExportAsync();
+        Task<IReadOnlyCollection<ProductExportRowDto>> ListForExportAsync(ExportProductsDto exportProductsDto);
     }
 }

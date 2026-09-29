@@ -17,35 +17,11 @@ namespace ERP.Persistence.Queries
 
         public async Task<SortedPagedResult<ListProductsResponseDto, ProductSortBy>> ListProductsAsync(ListProductsDto listProductsDto)
         {
-            var query = _context.Products.AsNoTracking();
-
-            if (!string.IsNullOrWhiteSpace(listProductsDto.SearchTerm))
-            {
-                var codeTerm = Product.NormalizeCode(listProductsDto.SearchTerm);
-                var nameTerm = listProductsDto.SearchTerm.ToLower();
-
-                query = query
-                    .Where(p =>
-                    p.Code.StartsWith(codeTerm) ||
-                    p.Name.ToLower().Contains(nameTerm)
-                    );
-            }
-
-            if (listProductsDto.IsActive is not null)
-                query = query
-                    .Where(p => p.IsActive == listProductsDto.IsActive);
+            var query = Filter(_context.Products.AsNoTracking(), listProductsDto.SearchTerm, listProductsDto.IsActive);
 
             var totalCount = await query.CountAsync();
 
-            query = (listProductsDto.SortBy, listProductsDto.SortDescending) switch
-            {
-                (ProductSortBy.Name, false) => query.OrderBy(p => p.Name).ThenBy(p => p.Id),
-                (ProductSortBy.Name, true) => query.OrderByDescending(p => p.Name).ThenByDescending(p => p.Id),
-                (ProductSortBy.CreatedAt, false) => query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id),
-                _ => query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id)
-            };
-
-            var items = await query
+            var items = await Sort(query, listProductsDto.SortBy, listProductsDto.SortDescending)
                 .Skip((listProductsDto.Page - 1) * listProductsDto.PageSize)
                 .Take(listProductsDto.PageSize)
                 .Select(p => new ListProductsResponseDto(
@@ -88,11 +64,40 @@ namespace ERP.Persistence.Queries
                 ))
             .FirstOrDefaultAsync();
 
-        public async Task<IReadOnlyCollection<ProductExportRowDto>> ListForExportAsync() =>
-            await _context.Products
-            .AsNoTracking()
-            .OrderBy(p => p.Code)
+        public async Task<IReadOnlyCollection<ProductExportRowDto>> ListForExportAsync(ExportProductsDto exportProductsDto) =>
+            await Sort(Filter(_context.Products.AsNoTracking(), exportProductsDto.SearchTerm, exportProductsDto.IsActive), exportProductsDto.SortBy, exportProductsDto.SortDescending)
             .Select(p => new ProductExportRowDto(p.Code, p.Name, p.UnitOfMeasure, p.IgvAffectation, p.SalePrice))
             .ToArrayAsync();
+
+        // La lista y la exportación filtran y ordenan igual: el Excel trae exactamente lo que se ve en la pantalla.
+        private static IQueryable<Product> Filter(IQueryable<Product> query, string? searchTerm, bool? isActive)
+        {
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var codeTerm = Product.NormalizeCode(searchTerm);
+                var nameTerm = searchTerm.ToLower();
+
+                query = query
+                    .Where(p =>
+                    p.Code.StartsWith(codeTerm) ||
+                    p.Name.ToLower().Contains(nameTerm)
+                    );
+            }
+
+            if (isActive is not null)
+                query = query
+                    .Where(p => p.IsActive == isActive);
+
+            return query;
+        }
+
+        private static IQueryable<Product> Sort(IQueryable<Product> query, ProductSortBy sortBy, bool sortDescending) =>
+            (sortBy, sortDescending) switch
+            {
+                (ProductSortBy.Name, false) => query.OrderBy(p => p.Name).ThenBy(p => p.Id),
+                (ProductSortBy.Name, true) => query.OrderByDescending(p => p.Name).ThenByDescending(p => p.Id),
+                (ProductSortBy.CreatedAt, false) => query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id),
+                _ => query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id)
+            };
     }
 }

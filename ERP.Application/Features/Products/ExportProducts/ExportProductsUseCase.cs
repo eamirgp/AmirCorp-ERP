@@ -15,9 +15,9 @@ namespace ERP.Application.Features.Products.ExportProducts
             _spreadsheet = spreadsheet;
         }
 
-        public async Task<byte[]> ExecuteAsync()
+        public async Task<byte[]> ExecuteAsync(ExportProductsDto request)
         {
-            var products = await _productQueries.ListForExportAsync();
+            var products = await _productQueries.ListForExportAsync(request);
 
             // La primera fila de la planilla es la cabecera: los productos empiezan en la fila 2.
             var rows = products

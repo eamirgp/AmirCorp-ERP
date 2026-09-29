@@ -44,11 +44,18 @@ namespace ERP.Api.Controllers.Products
         public async Task<IActionResult> Template() =>
             File(await _getTemplateUseCase.ExecuteAsync(), XlsxContentType, "plantilla-productos.xlsx");
 
-        /// <summary>Todos los productos en el formato de la plantilla, para editarlos y volver a subirlos.</summary>
+        /// <summary>
+        /// Productos en el formato de la plantilla, para editarlos y volver a subirlos. Acepta los mismos
+        /// filtros y orden que la lista: sin filtros exporta todos; con filtros, solo los que coinciden.
+        /// </summary>
         [HttpGet("export")]
         [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK, XlsxContentType)]
-        public async Task<IActionResult> Export() =>
-            File(await _exportProductsUseCase.ExecuteAsync(), XlsxContentType, $"productos-{DateTime.Now:yyyy-MM-dd}.xlsx");
+        public async Task<IActionResult> Export([FromQuery]ExportProductsRequest exportProductsRequest)
+        {
+            var name = exportProductsRequest.HasFilters() ? "productos-filtrados" : "productos";
+            var content = await _exportProductsUseCase.ExecuteAsync(exportProductsRequest.ToDto());
+            return File(content, XlsxContentType, $"{name}-{DateTime.Now:yyyy-MM-dd}.xlsx");
+        }
 
         /// <summary>Lee la planilla y devuelve qué pasará con cada fila. No guarda nada.</summary>
         [HttpPost("import/preview")]
