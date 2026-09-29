@@ -4,6 +4,7 @@ using ERP.Domain.Inventory;
 using ERP.Domain.Partners;
 using ERP.Domain.Products;
 using ERP.Domain.Purchases;
+using ERP.Domain.SavedViews;
 using ERP.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,5 +27,6 @@ namespace ERP.Persistence.Context
         public DbSet<Purchase> Purchases => Set<Purchase>();
         public DbSet<PurchaseLine> PurchaseLines => Set<PurchaseLine>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<SavedView> SavedViews => Set<SavedView>();
     }
 }

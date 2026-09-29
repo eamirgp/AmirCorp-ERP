@@ -104,3 +104,13 @@ Cada cambio en productos, clientes y proveedores, empresas, usuarios y compras q
 - **Consulta:** `GET /api/audit` con filtros por módulo, registro, usuario, acción, rango de fechas (días en hora de Perú) y texto. Solo SuperAdmin y Admin.
 - **Pantallas:** no va en las tablas ni en los formularios. Cada registro tiene su acción "Historial" (panel lateral) y hay una pantalla "Auditoría" en Administración.
 - El historial empieza a registrarse desde la migración `AddAuditLogs`. Lo anterior solo conserva `CreatedBy` y `UpdatedBy` en cada tabla.
+
+### 13. Vistas guardadas por usuario
+**Fecha:** setiembre 2026
+
+Cada usuario puede guardar con un nombre los filtros, el orden y las filas por página de una lista (tabla `SavedViews`), y marcar una por pantalla como predeterminada.
+
+- **En la API, no en el navegador:** así el usuario tiene sus vistas en cualquier equipo. Cada usuario ve y modifica solo las suyas (`/api/saved-views`, cualquier rol).
+- **Filtros opacos:** la API guarda el texto que envía la pantalla (JSON de los parámetros de la URL, máx. 2000 caracteres) y no lo interpreta. Al aplicarse, la pantalla lo valida como cualquier URL.
+- **Reglas:** nombre único por usuario y pantalla (sin distinguir mayúsculas), máximo 20 por pantalla, una sola predeterminada.
+- **No se audita:** es una preferencia personal, no un dato del negocio.

@@ -38,6 +38,10 @@ using ERP.Application.Features.Purchases.CreatePurchase;
 using ERP.Application.Features.Purchases.GetPurchase;
 using ERP.Application.Features.Purchases.ListPurchases;
 using ERP.Application.Features.Purchases.PreviewPurchase;
+using ERP.Application.Features.SavedViews.CreateSavedView;
+using ERP.Application.Features.SavedViews.DeleteSavedView;
+using ERP.Application.Features.SavedViews.ListSavedViews;
+using ERP.Application.Features.SavedViews.UpdateSavedView;
 using ERP.Application.Features.Users.ActivateUser;
 using ERP.Application.Features.Users.ChangeUserRole;
 using ERP.Application.Features.Users.CreateUser;
@@ -115,7 +119,12 @@ namespace ERP.Application
 
                     .AddScoped<IListAuditEntriesUseCase, ListAuditEntriesUseCase>()
                     .AddScoped<IListAuditEntityTypesUseCase, ListAuditEntityTypesUseCase>()
-                    .AddScoped<IListAuditActionsUseCase, ListAuditActionsUseCase>();
+                    .AddScoped<IListAuditActionsUseCase, ListAuditActionsUseCase>()
+
+                    .AddScoped<IListSavedViewsUseCase, ListSavedViewsUseCase>()
+                    .AddScoped<ICreateSavedViewUseCase, CreateSavedViewUseCase>()
+                    .AddScoped<IUpdateSavedViewUseCase, UpdateSavedViewUseCase>()
+                    .AddScoped<IDeleteSavedViewUseCase, DeleteSavedViewUseCase>();
 
                 return services;
             }

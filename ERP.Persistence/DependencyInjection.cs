@@ -50,6 +50,9 @@ namespace ERP.Persistence
 
                     .AddScoped<IAuditQueries, AuditQueries>()
 
+                    .AddScoped<ISavedViewRepository, SavedViewRepository>()
+                    .AddScoped<ISavedViewQueries, SavedViewQueries>()
+
                     .AddScoped<IUnitOfWork, UnitOfWork>();
 
                 return services;
