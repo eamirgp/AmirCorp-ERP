@@ -3,9 +3,8 @@ using ERP.Application.Common.Pagination;
 using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.BusinessPartners.Requests;
 using ERP.Api.Extensions;
-using ERP.Application.Features.Partners.ActivateBusinessPartner;
+using ERP.Application.Features.Partners.BlockBusinessPartnerRole;
 using ERP.Application.Features.Partners.CreateBusinessPartner;
-using ERP.Application.Features.Partners.DeactivateBusinessPartner;
 using ERP.Application.Features.Partners.GetBusinessPartner;
 using ERP.Application.Features.Partners.ListBusinessPartners;
 using ERP.Application.Features.Partners.ListIdentityDocumentTypes;
@@ -27,8 +26,7 @@ namespace ERP.Api.Controllers.BusinessPartners
         private readonly ICreateBusinessPartnerUseCase _createBusinessPartnerUseCase;
         private readonly IListIdentityDocumentTypesUseCase _listIdentityDocumentTypesUseCase;
         private readonly IListBusinessPartnersUseCase _listBusinessPartnersUseCase;
-        private readonly IActivateBusinessPartnerUseCase _activateBusinessPartnerUseCase;
-        private readonly IDeactivateBusinessPartnerUseCase _deactivateBusinessPartnerUseCase;
+        private readonly IBlockBusinessPartnerRoleUseCase _blockRoleUseCase;
         private readonly IUpdateBusinessPartnerUseCase _updateBusinessPartnerUseCase;
         private readonly IGetBusinessPartnerUseCase _getBusinessPartnerUseCase;
         private readonly ILookupRucUseCase _lookupRucUseCase;
@@ -39,8 +37,7 @@ namespace ERP.Api.Controllers.BusinessPartners
             ICreateBusinessPartnerUseCase createBusinessPartnerUseCase,
             IListIdentityDocumentTypesUseCase listIdentityDocumentTypesUseCase,
             IListBusinessPartnersUseCase listBusinessPartnersUseCase,
-            IActivateBusinessPartnerUseCase activateBusinessPartnerUseCase,
-            IDeactivateBusinessPartnerUseCase deactivateBusinessPartnerUseCase,
+            IBlockBusinessPartnerRoleUseCase blockRoleUseCase,
             IUpdateBusinessPartnerUseCase updateBusinessPartnerUseCase,
             IGetBusinessPartnerUseCase getBusinessPartnerUseCase,
             ILookupRucUseCase lookupRucUseCase,
@@ -54,8 +51,7 @@ namespace ERP.Api.Controllers.BusinessPartners
             _createBusinessPartnerUseCase = createBusinessPartnerUseCase;
             _listIdentityDocumentTypesUseCase = listIdentityDocumentTypesUseCase;
             _listBusinessPartnersUseCase = listBusinessPartnersUseCase;
-            _activateBusinessPartnerUseCase = activateBusinessPartnerUseCase;
-            _deactivateBusinessPartnerUseCase = deactivateBusinessPartnerUseCase;
+            _blockRoleUseCase = blockRoleUseCase;
             _updateBusinessPartnerUseCase = updateBusinessPartnerUseCase;
             _getBusinessPartnerUseCase = getBusinessPartnerUseCase;
         }
@@ -117,19 +113,22 @@ namespace ERP.Api.Controllers.BusinessPartners
             return Ok(response);
         }
 
-        [HttpPatch("{id:guid}/activate")]
+        /// <summary>
+        /// Bloquea un rol: Supplier bloquea las compras y Client las ventas. El otro rol no cambia. El motivo es opcional.
+        /// </summary>
+        [HttpPatch("{id:guid}/roles/{role}/block")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<IActionResult> Activate(Guid id)
+        public async Task<IActionResult> BlockRole(Guid id, BusinessPartnerRole role, [FromBody] BlockBusinessPartnerRoleRequest request)
         {
-            var result = await _activateBusinessPartnerUseCase.ExecuteAsync(new ActivateBusinessPartnerDto(id));
+            var result = await _blockRoleUseCase.ExecuteAsync(new BlockBusinessPartnerRoleDto(id, role, Blocked: true, request.Reason));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }
 
-        [HttpPatch("{id:guid}/deactivate")]
+        [HttpPatch("{id:guid}/roles/{role}/unblock")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<IActionResult> Deactivate(Guid id)
+        public async Task<IActionResult> UnblockRole(Guid id, BusinessPartnerRole role)
         {
-            var result = await _deactivateBusinessPartnerUseCase.ExecuteAsync(new DeactivateBusinessPartnerDto(id));
+            var result = await _blockRoleUseCase.ExecuteAsync(new BlockBusinessPartnerRoleDto(id, role, Blocked: false, Reason: null));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }
 

@@ -38,9 +38,6 @@ namespace ERP.Application.Features.Partners.AddBusinessPartnerRole
             if (businessPartner is null)
                 return Result.Failure(["El cliente o proveedor no existe."], ErrorType.NotFound);
 
-            if (!businessPartner.IsActive)
-                return Result.Failure([$"{businessPartner.Name} está desactivado. Actívalo primero."], ErrorType.BadRequest);
-
             if (role == BusinessPartnerRole.Client)
                 businessPartner.AddClientRole();
             else

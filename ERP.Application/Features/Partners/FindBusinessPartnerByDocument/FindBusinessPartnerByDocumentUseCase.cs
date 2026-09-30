@@ -12,8 +12,8 @@ namespace ERP.Application.Features.Partners.FindBusinessPartnerByDocument
         string Name,
         bool IsClient,
         bool IsSupplier,
-        bool IsActive,
-        // Si se le puede agregar ese rol: no lo tiene todavía y su documento lo permite.
+        // Si se le puede agregar ese rol: no lo tiene todavía y su documento lo permite. Un bloqueo en el otro rol
+        // no impide agregarlo: cada rol se bloquea por separado.
         bool CanAddClientRole,
         bool CanAddSupplierRole
         )
@@ -46,9 +46,8 @@ namespace ERP.Application.Features.Partners.FindBusinessPartnerByDocument
                 partner.Name,
                 partner.IsClient,
                 partner.IsSupplier,
-                partner.IsActive,
-                partner.IsActive && !partner.IsClient && partner.IdentityDocumentType.CanBeClient,
-                partner.IsActive && !partner.IsSupplier && partner.IdentityDocumentType.CanIssueTaxDocuments
+                !partner.IsClient && partner.IdentityDocumentType.CanBeClient,
+                !partner.IsSupplier && partner.IdentityDocumentType.CanIssueTaxDocuments
                 );
         }
     }

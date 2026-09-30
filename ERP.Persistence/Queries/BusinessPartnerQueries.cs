@@ -28,13 +28,20 @@ namespace ERP.Persistence.Queries
                     );
             }
 
-            if (listBusinessPartnersDto.IsActive is not null)
-                query = query.Where(bp => bp.IsActive == listBusinessPartnersDto.IsActive);
-
             if (listBusinessPartnersDto.PartnerRoleFilter == PartnerRoleFilter.Client)
                 query = query.Where(bp => bp.IsClient);
             else if (listBusinessPartnersDto.PartnerRoleFilter == PartnerRoleFilter.Supplier)
                 query = query.Where(bp => bp.IsSupplier);
+
+            // El bloqueo que cuenta es el del rol de la lista: en Proveedores, el de compras; en Clientes, el de
+            // ventas. Sin rol, cualquiera de los dos.
+            if (listBusinessPartnersDto.IsBlocked is { } blocked)
+                query = listBusinessPartnersDto.PartnerRoleFilter switch
+                {
+                    PartnerRoleFilter.Supplier => query.Where(bp => bp.IsPurchasingBlocked == blocked),
+                    PartnerRoleFilter.Client => query.Where(bp => bp.IsSalesBlocked == blocked),
+                    _ => query.Where(bp => (bp.IsPurchasingBlocked || bp.IsSalesBlocked) == blocked)
+                };
 
             if (listBusinessPartnersDto.IdentityDocumentType is not null)
                 query = query.Where(bp => bp.IdentityDocumentType == listBusinessPartnersDto.IdentityDocumentType);
@@ -63,7 +70,10 @@ namespace ERP.Persistence.Queries
                     bp.Name,
                     bp.IsClient,
                     bp.IsSupplier,
-                    bp.IsActive,
+                    bp.IsPurchasingBlocked,
+                    bp.PurchasingBlockReason,
+                    bp.IsSalesBlocked,
+                    bp.SalesBlockReason,
                     EF.Property<uint>(bp, "RowVersion")
                     ))
                 .ToArrayAsync();
@@ -90,7 +100,10 @@ namespace ERP.Persistence.Queries
                 bp.Name,
                 bp.IsClient,
                 bp.IsSupplier,
-                bp.IsActive,
+                bp.IsPurchasingBlocked,
+                bp.PurchasingBlockReason,
+                bp.IsSalesBlocked,
+                bp.SalesBlockReason,
                 bp.CreatedAt,
                 _context.Users.Where(u => u.Id == bp.CreatedBy).Select(u => u.Name).FirstOrDefault(),
                 bp.UpdatedAt,

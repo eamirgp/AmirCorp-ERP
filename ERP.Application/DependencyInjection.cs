@@ -15,9 +15,8 @@ using ERP.Application.Features.Companies.Deactivate;
 using ERP.Application.Features.Companies.GetCompany;
 using ERP.Application.Features.Companies.ListCompanies;
 using ERP.Application.Features.Companies.UpdateCompany;
-using ERP.Application.Features.Partners.ActivateBusinessPartner;
+using ERP.Application.Features.Partners.BlockBusinessPartnerRole;
 using ERP.Application.Features.Partners.CreateBusinessPartner;
-using ERP.Application.Features.Partners.DeactivateBusinessPartner;
 using ERP.Application.Features.Partners.GetBusinessPartner;
 using ERP.Application.Features.Partners.ListBusinessPartners;
 using ERP.Application.Features.Partners.ListIdentityDocumentTypes;
@@ -116,8 +115,7 @@ namespace ERP.Application
                     .AddScoped<ICreateBusinessPartnerUseCase, CreateBusinessPartnerUseCase>()
                     .AddScoped<IListIdentityDocumentTypesUseCase, ListIdentityDocumentTypesUseCase>()
                     .AddScoped<IListBusinessPartnersUseCase, ListBusinessPartnersUseCase>()
-                    .AddScoped<IActivateBusinessPartnerUseCase, ActivateBusinessPartnerUseCase>()
-                    .AddScoped<IDeactivateBusinessPartnerUseCase, DeactivateBusinessPartnerUseCase>()
+                    .AddScoped<IBlockBusinessPartnerRoleUseCase, BlockBusinessPartnerRoleUseCase>()
                     .AddScoped<IUpdateBusinessPartnerUseCase, UpdateBusinessPartnerUseCase>()
                     .AddScoped<IGetBusinessPartnerUseCase, GetBusinessPartnerUseCase>()
                     .AddScoped<ILookupRucUseCase, LookupRucUseCase>()

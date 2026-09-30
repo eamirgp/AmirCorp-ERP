@@ -6,7 +6,8 @@ namespace ERP.Application.Features.Partners.ListBusinessPartners
         int Page,
         int PageSize,
         string? SearchTerm,
-        bool? IsActive,
+        // Bloqueado en el rol que se lista (compras en proveedores, ventas en clientes).
+        bool? IsBlocked,
         PartnerRoleFilter? PartnerRoleFilter,
         IdentityDocumentType? IdentityDocumentType,
         BusinessPartnerSortBy SortBy,

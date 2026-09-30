@@ -19,6 +19,11 @@ namespace ERP.Application.Features.Partners
             $"{partner.Name} ya tiene {Count(purchases, "compra", "compras")} con {partner.IdentityDocumentType.Description} {partner.DocumentNumber}, " +
             "así que el documento no se puede cambiar. Si es otra empresa, regístrala como un cliente o proveedor nuevo.";
 
+        /// <summary>"Las compras a ACME S.A.C. están bloqueadas (motivo: …)."</summary>
+        public static string PurchasingBlocked(BusinessPartner supplier) =>
+            $"Las compras a {supplier.Name} están bloqueadas" +
+            (supplier.PurchasingBlockReason is { } reason ? $" (motivo: {reason})." : ".");
+
         /// <summary>"Cliente", "Proveedor" o "Cliente y proveedor", para las tablas.</summary>
         public static string RoleDescription(bool isClient, bool isSupplier) => (isClient, isSupplier) switch
         {

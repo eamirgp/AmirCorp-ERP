@@ -35,8 +35,17 @@ namespace ERP.Persistence.Configurations
             builder.Property(bp => bp.IsSupplier)
                 .IsRequired();
 
-            builder.Property(bp => bp.IsActive)
+            builder.Property(bp => bp.IsPurchasingBlocked)
                 .IsRequired();
+
+            builder.Property(bp => bp.PurchasingBlockReason)
+                .HasMaxLength(BusinessPartner.BlockReasonMaxLength);
+
+            builder.Property(bp => bp.IsSalesBlocked)
+                .IsRequired();
+
+            builder.Property(bp => bp.SalesBlockReason)
+                .HasMaxLength(BusinessPartner.BlockReasonMaxLength);
 
             builder.Property(bp => bp.CreatedAt)
                 .IsRequired();

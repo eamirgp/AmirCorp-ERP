@@ -49,7 +49,10 @@ namespace ERP.Application.Features.Audit
                     [nameof(BusinessPartner.Name)] = new("Nombre o razón social"),
                     [nameof(BusinessPartner.IsClient)] = new("Cliente"),
                     [nameof(BusinessPartner.IsSupplier)] = new("Proveedor"),
-                    [IsActiveProperty] = new("Activo"),
+                    [nameof(BusinessPartner.IsPurchasingBlocked)] = new("Compras bloqueadas"),
+                    [nameof(BusinessPartner.PurchasingBlockReason)] = new("Motivo del bloqueo de compras"),
+                    [nameof(BusinessPartner.IsSalesBlocked)] = new("Ventas bloqueadas"),
+                    [nameof(BusinessPartner.SalesBlockReason)] = new("Motivo del bloqueo de ventas"),
                 },
                 [AuditEntityType.Company] = new Dictionary<string, Field>
                 {

@@ -11,7 +11,10 @@ namespace ERP.Application.Features.Partners.ListBusinessPartners
         string Name,
         bool IsClient,
         bool IsSupplier,
-        bool IsActive,
+        bool IsPurchasingBlocked,
+        string? PurchasingBlockReason,
+        bool IsSalesBlocked,
+        string? SalesBlockReason,
         // Versión del registro: el formulario la devuelve al editar para no pisar cambios de otra persona.
         uint RowVersion
         )
@@ -20,10 +23,16 @@ namespace ERP.Application.Features.Partners.ListBusinessPartners
         public string CountryName => Countries.NameOf(CountryCode);
         public string RoleDescription => BusinessPartnerRules.RoleDescription(IsClient, IsSupplier);
 
-        /// <summary>Si se puede "registrar también como cliente": activo, no lo es todavía y su documento lo permite.</summary>
-        public bool CanAddClientRole => IsActive && !IsClient && IdentityDocumentType.CanBeClient;
+        /// <summary>Estado en la lista de proveedores: "Activo" o "Compras bloqueadas".</summary>
+        public string SupplierStatus => IsPurchasingBlocked ? "Compras bloqueadas" : "Activo";
 
-        /// <summary>Si se puede "registrar también como proveedor": activo, no lo es todavía y su documento lo permite.</summary>
-        public bool CanAddSupplierRole => IsActive && !IsSupplier && IdentityDocumentType.CanIssueTaxDocuments;
+        /// <summary>Estado en la lista de clientes: "Activo" o "Ventas bloqueadas".</summary>
+        public string ClientStatus => IsSalesBlocked ? "Ventas bloqueadas" : "Activo";
+
+        /// <summary>Si se puede "registrar también como cliente": no lo es todavía y su documento lo permite.</summary>
+        public bool CanAddClientRole => !IsClient && IdentityDocumentType.CanBeClient;
+
+        /// <summary>Si se puede "registrar también como proveedor": no lo es todavía y su documento lo permite.</summary>
+        public bool CanAddSupplierRole => !IsSupplier && IdentityDocumentType.CanIssueTaxDocuments;
     }
 }

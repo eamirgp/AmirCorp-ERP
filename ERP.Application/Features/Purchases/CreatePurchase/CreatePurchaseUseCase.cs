@@ -3,6 +3,7 @@ using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Inventory;
 using ERP.Domain.Partners.Enums;
+using ERP.Application.Features.Partners;
 using ERP.Application.Features.UnitsOfMeasure;
 using ERP.Domain.Purchases;
 using ERP.Domain.UnitsOfMeasure;
@@ -54,8 +55,8 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             if (!supplier.IsSupplier)
                 return Result<CreatedResponseDto>.Failure(["El cliente elegido no está registrado como proveedor."], ErrorType.BadRequest);
 
-            if (!supplier.IsActive)
-                return Result<CreatedResponseDto>.Failure(["El proveedor está desactivado."], ErrorType.BadRequest);
+            if (supplier.IsPurchasingBlocked)
+                return Result<CreatedResponseDto>.Failure([BusinessPartnerRules.PurchasingBlocked(supplier)], ErrorType.BadRequest);
 
             if (!supplier.IdentityDocumentType.IsDomesticTaxpayer)
                 return Result<CreatedResponseDto>.Failure(["El proveedor de una compra nacional debe tener RUC."], ErrorType.BadRequest);

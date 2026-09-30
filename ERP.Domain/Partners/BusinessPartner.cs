@@ -18,9 +18,17 @@ namespace ERP.Domain.Partners
         public string Name { get; private set; }
         public bool IsClient { get; private set; }
         public bool IsSupplier { get; private set; }
-        public bool IsActive { get; private set; }
 
-        private BusinessPartner(Guid id, IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name, bool isClient, bool isSupplier, bool isActive) : base(id)
+        // Cada rol se bloquea por separado, como el bloqueo de compras y el de ventas del Business Partner de SAP:
+        // dejar de comprarle a alguien no impide seguir vendiéndole. No hay un "desactivar" general.
+        public bool IsPurchasingBlocked { get; private set; }
+        public string? PurchasingBlockReason { get; private set; }
+        public bool IsSalesBlocked { get; private set; }
+        public string? SalesBlockReason { get; private set; }
+
+        public const int BlockReasonMaxLength = 200;
+
+        private BusinessPartner(Guid id, IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name, bool isClient, bool isSupplier) : base(id)
         {
             IdentityDocumentType = identityDocumentType;
             DocumentNumber = documentNumber;
@@ -28,7 +36,6 @@ namespace ERP.Domain.Partners
             Name = name;
             IsClient = isClient;
             IsSupplier = isSupplier;
-            IsActive = isActive;
         }
 
         public static BusinessPartner Create(IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name, bool isClient, bool isSupplier)
@@ -38,7 +45,7 @@ namespace ERP.Domain.Partners
             var normalizedName = ValidateName(name);
             ValidateRoles(isClient, isSupplier, identityDocumentType);
 
-            return new(Guid.CreateVersion7(), identityDocumentType, normalizedDocument, normalizedCountry, normalizedName, isClient, isSupplier, isActive: true);
+            return new(Guid.CreateVersion7(), identityDocumentType, normalizedDocument, normalizedCountry, normalizedName, isClient, isSupplier);
         }
 
         /// <summary>
@@ -72,11 +79,37 @@ namespace ERP.Domain.Partners
             IsSupplier = true;
         }
 
-        public void Activate() =>
-            IsActive = true;
+        /// <summary>Deja de comprarle: ya no se puede elegir en compras nuevas. Las compras hechas no cambian.</summary>
+        public void BlockPurchasing(string? reason)
+        {
+            if (!IsSupplier)
+                throw new DomainException($"{Name} no es proveedor.");
 
-        public void Deactivate() =>
-            IsActive = false;
+            PurchasingBlockReason = ValidateBlockReason(reason);
+            IsPurchasingBlocked = true;
+        }
+
+        public void UnblockPurchasing()
+        {
+            IsPurchasingBlocked = false;
+            PurchasingBlockReason = null;
+        }
+
+        /// <summary>Deja de venderle: ya no se podrá elegir en ventas nuevas. Las ventas hechas no cambian.</summary>
+        public void BlockSales(string? reason)
+        {
+            if (!IsClient)
+                throw new DomainException($"{Name} no es cliente.");
+
+            SalesBlockReason = ValidateBlockReason(reason);
+            IsSalesBlocked = true;
+        }
+
+        public void UnblockSales()
+        {
+            IsSalesBlocked = false;
+            SalesBlockReason = null;
+        }
 
         /// <summary>El nombre tal como se guarda: sin espacios al inicio ni al final, ni dobles en medio.</summary>
         public static string NormalizeName(string name) =>
@@ -122,6 +155,19 @@ namespace ERP.Domain.Partners
             var normalized = NormalizeName(name);
             if (normalized.Length > NameMaxLength)
                 throw new DomainException($"El nombre no puede exceder los {NameMaxLength} caracteres.");
+
+            return normalized;
+        }
+
+        // El motivo es opcional; se guarda sin espacios de sobra y vacío cuenta como sin motivo.
+        private static string? ValidateBlockReason(string? reason)
+        {
+            if (string.IsNullOrWhiteSpace(reason))
+                return null;
+
+            var normalized = NormalizeName(reason);
+            if (normalized.Length > BlockReasonMaxLength)
+                throw new DomainException($"El motivo no puede exceder los {BlockReasonMaxLength} caracteres.");
 
             return normalized;
         }

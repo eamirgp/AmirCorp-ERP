@@ -39,10 +39,10 @@ namespace ERP.Application.Features.Products.SupplierCodes
                 if (!supplier.IsSupplier)
                     errors.Add($"{supplier.Name} no está registrado como proveedor.");
 
-                // Un proveedor desactivado conserva los códigos que ya tenía, pero no se le agregan nuevos.
+                // Un proveedor con compras bloqueadas conserva los códigos que ya tenía, pero no se le agregan nuevos.
                 var alreadyLinked = product?.SupplierCodes.Any(c => c.SupplierId == supplier.Id) ?? false;
-                if (!supplier.IsActive && !alreadyLinked)
-                    errors.Add($"{supplier.Name} está desactivado. Actívalo o elige otro proveedor.");
+                if (supplier.IsSupplier && supplier.IsPurchasingBlocked && !alreadyLinked)
+                    errors.Add($"Las compras a {supplier.Name} están bloqueadas. Desbloquéalas o elige otro proveedor.");
             }
 
             if (errors.Count > 0)
