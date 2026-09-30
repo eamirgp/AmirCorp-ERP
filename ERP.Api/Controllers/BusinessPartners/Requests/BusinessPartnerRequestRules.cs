@@ -7,6 +7,7 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
     /// <summary>
     /// Validación de los datos de un cliente o proveedor, igual al crear y al editar. Los mensajes del documento
     /// son los mismos del dominio (<see cref="IdentityDocumentTypeExtensions.DocumentNumberError"/>).
+    /// Los roles solo se piden al crear (<see cref="ValidateRoles"/>): después se agregan con su propia acción.
     /// </summary>
     internal static class BusinessPartnerRequestRules
     {
@@ -14,9 +15,7 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
             IdentityDocumentType? identityDocumentType,
             string? documentNumber,
             string? countryCode,
-            string? name,
-            bool? isClient,
-            bool? isSupplier)
+            string? name)
         {
             var errors = new List<string>();
 
@@ -42,6 +41,14 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
                 errors.Add("El nombre es requerido.");
             else if (BusinessPartner.NormalizeName(name).Length > BusinessPartner.NameMaxLength)
                 errors.Add($"El nombre no puede exceder los {BusinessPartner.NameMaxLength} caracteres.");
+
+            return errors;
+        }
+
+        /// <summary>Al crear: al menos un rol, y que el documento sirva para ese rol.</summary>
+        public static List<string> ValidateRoles(IdentityDocumentType? identityDocumentType, bool? isClient, bool? isSupplier)
+        {
+            var errors = new List<string>();
 
             if (isClient is null || isSupplier is null)
                 errors.Add("Marca si es cliente, proveedor o ambos.");

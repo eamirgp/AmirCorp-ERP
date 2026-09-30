@@ -19,16 +19,6 @@ namespace ERP.Application.Features.Partners
             $"{partner.Name} ya tiene {Count(purchases, "compra", "compras")} con {partner.IdentityDocumentType.Description} {partner.DocumentNumber}, " +
             "así que el documento no se puede cambiar. Si es otra empresa, regístrala como un cliente o proveedor nuevo.";
 
-        /// <summary>Quitar el rol de proveedor dejaría sus compras y sus códigos en productos sin proveedor.</summary>
-        public static string SupplierRoleLocked(BusinessPartner partner, int purchases, int productCodes)
-        {
-            var uses = new List<string>();
-            if (purchases > 0) uses.Add(Count(purchases, "compra", "compras"));
-            if (productCodes > 0) uses.Add(Count(productCodes, "producto con su código", "productos con su código"));
-
-            return $"No se puede quitar el rol de proveedor: {partner.Name} tiene {string.Join(" y ", uses)}. Si ya no le compras, desactívalo.";
-        }
-
         /// <summary>"Cliente", "Proveedor" o "Cliente y proveedor", para las tablas.</summary>
         public static string RoleDescription(bool isClient, bool isSupplier) => (isClient, isSupplier) switch
         {

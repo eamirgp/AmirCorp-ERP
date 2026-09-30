@@ -19,5 +19,11 @@ namespace ERP.Application.Features.Partners.ListBusinessPartners
         public string IdentityDocumentTypeDescription => IdentityDocumentType.Description;
         public string CountryName => Countries.NameOf(CountryCode);
         public string RoleDescription => BusinessPartnerRules.RoleDescription(IsClient, IsSupplier);
+
+        /// <summary>Si se puede "registrar también como cliente": activo, no lo es todavía y su documento lo permite.</summary>
+        public bool CanAddClientRole => IsActive && !IsClient && IdentityDocumentType.CanBeClient;
+
+        /// <summary>Si se puede "registrar también como proveedor": activo, no lo es todavía y su documento lo permite.</summary>
+        public bool CanAddSupplierRole => IsActive && !IsSupplier && IdentityDocumentType.CanIssueTaxDocuments;
     }
 }

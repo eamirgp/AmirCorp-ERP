@@ -41,19 +41,35 @@ namespace ERP.Domain.Partners
             return new(Guid.CreateVersion7(), identityDocumentType, normalizedDocument, normalizedCountry, normalizedName, isClient, isSupplier, isActive: true);
         }
 
-        public void Update(IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name, bool isClient, bool isSupplier)
+        /// <summary>
+        /// Corrige los datos. Los roles no cambian aquí (se agregan con <see cref="AddClientRole"/> y
+        /// <see cref="AddSupplierRole"/>), pero el documento nuevo debe servir para los roles que ya tiene.
+        /// </summary>
+        public void Update(IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name)
         {
             var normalizedDocument = ValidateIdentityDocument(identityDocumentType, documentNumber);
             var normalizedCountry = ValidateCountry(identityDocumentType, countryCode);
             var normalizedName = ValidateName(name);
-            ValidateRoles(isClient, isSupplier, identityDocumentType);
+            ValidateRoles(IsClient, IsSupplier, identityDocumentType);
 
             IdentityDocumentType = identityDocumentType;
             DocumentNumber = normalizedDocument;
             CountryCode = normalizedCountry;
             Name = normalizedName;
-            IsClient = isClient;
-            IsSupplier = isSupplier;
+        }
+
+        /// <summary>Un proveedor pasa a ser también cliente (si su documento lo permite).</summary>
+        public void AddClientRole()
+        {
+            ValidateRoles(isClient: true, IsSupplier, IdentityDocumentType);
+            IsClient = true;
+        }
+
+        /// <summary>Un cliente pasa a ser también proveedor (si su documento lo permite).</summary>
+        public void AddSupplierRole()
+        {
+            ValidateRoles(IsClient, isSupplier: true, IdentityDocumentType);
+            IsSupplier = true;
         }
 
         public void Activate() =>

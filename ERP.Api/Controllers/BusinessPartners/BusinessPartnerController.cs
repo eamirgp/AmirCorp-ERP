@@ -10,6 +10,9 @@ using ERP.Application.Features.Partners.GetBusinessPartner;
 using ERP.Application.Features.Partners.ListBusinessPartners;
 using ERP.Application.Features.Partners.ListIdentityDocumentTypes;
 using ERP.Application.Features.Partners.LookupRuc;
+using ERP.Application.Features.Partners.AddBusinessPartnerRole;
+using ERP.Application.Features.Partners.FindBusinessPartnerByDocument;
+using ERP.Domain.Partners.Enums;
 using ERP.Application.Features.Partners.UpdateBusinessPartner;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,6 +32,8 @@ namespace ERP.Api.Controllers.BusinessPartners
         private readonly IUpdateBusinessPartnerUseCase _updateBusinessPartnerUseCase;
         private readonly IGetBusinessPartnerUseCase _getBusinessPartnerUseCase;
         private readonly ILookupRucUseCase _lookupRucUseCase;
+        private readonly IAddBusinessPartnerRoleUseCase _addRoleUseCase;
+        private readonly IFindBusinessPartnerByDocumentUseCase _findByDocumentUseCase;
 
         public BusinessPartnerController(
             ICreateBusinessPartnerUseCase createBusinessPartnerUseCase,
@@ -38,10 +43,14 @@ namespace ERP.Api.Controllers.BusinessPartners
             IDeactivateBusinessPartnerUseCase deactivateBusinessPartnerUseCase,
             IUpdateBusinessPartnerUseCase updateBusinessPartnerUseCase,
             IGetBusinessPartnerUseCase getBusinessPartnerUseCase,
-            ILookupRucUseCase lookupRucUseCase
+            ILookupRucUseCase lookupRucUseCase,
+            IAddBusinessPartnerRoleUseCase addRoleUseCase,
+            IFindBusinessPartnerByDocumentUseCase findByDocumentUseCase
             )
         {
             _lookupRucUseCase = lookupRucUseCase;
+            _addRoleUseCase = addRoleUseCase;
+            _findByDocumentUseCase = findByDocumentUseCase;
             _createBusinessPartnerUseCase = createBusinessPartnerUseCase;
             _listIdentityDocumentTypesUseCase = listIdentityDocumentTypesUseCase;
             _listBusinessPartnersUseCase = listBusinessPartnersUseCase;
@@ -73,6 +82,26 @@ namespace ERP.Api.Controllers.BusinessPartners
         {
             var result = await _lookupRucUseCase.ExecuteAsync(ruc, ct);
             return result.ToActionResult(StatusCodes.Status200OK);
+        }
+
+        /// <summary>
+        /// Quién tiene ya ese documento (404 si nadie). Al crear, el formulario lo usa para ofrecer "agregarlo también
+        /// a esta lista" en vez de crear un duplicado.
+        /// </summary>
+        [HttpGet("by-document")]
+        [ProducesResponseType<FoundBusinessPartnerDto>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> FindByDocument([FromQuery] IdentityDocumentType identityDocumentType, [FromQuery] string documentNumber) =>
+            await _findByDocumentUseCase.ExecuteAsync(identityDocumentType, documentNumber) is { } found
+                ? Ok(found)
+                : NotFound(new ErrorResponse(["No hay ningún cliente ni proveedor con ese documento."]));
+
+        /// <summary>"Registrar también como cliente / proveedor": agrega el rol al mismo registro.</summary>
+        [HttpPatch("{id:guid}/roles/{role}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> AddRole(Guid id, BusinessPartnerRole role)
+        {
+            var result = await _addRoleUseCase.ExecuteAsync(id, role);
+            return result.ToActionResult(StatusCodes.Status204NoContent);
         }
 
         [HttpGet("identity-document-types")]

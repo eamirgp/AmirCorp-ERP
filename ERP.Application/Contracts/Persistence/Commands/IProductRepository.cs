@@ -15,9 +15,6 @@ namespace ERP.Application.Contracts.Persistence.Commands
         /// <summary>Códigos de proveedores que ya usa otro producto (el mismo código del mismo proveedor).</summary>
         Task<IReadOnlyCollection<SupplierCodeInUse>> SupplierCodesInUseAsync(IReadOnlyCollection<(Guid SupplierId, string Code)> codes, Guid? excludeProductId = null);
 
-        /// <summary>Cuántos productos tienen un código de este proveedor.</summary>
-        Task<int> CountWithSupplierCodeAsync(Guid supplierId);
-
         /// <summary>Versión actual del producto en la base (cambia con cada modificación).</summary>
         uint VersionOf(Product product);
     }

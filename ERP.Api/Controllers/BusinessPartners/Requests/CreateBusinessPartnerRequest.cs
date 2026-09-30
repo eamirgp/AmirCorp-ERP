@@ -15,7 +15,10 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
         )
     {
         public IReadOnlyCollection<string> Validate() =>
-            BusinessPartnerRequestRules.Validate(IdentityDocumentType, DocumentNumber, CountryCode, Name, IsClient, IsSupplier);
+            [
+                .. BusinessPartnerRequestRules.Validate(IdentityDocumentType, DocumentNumber, CountryCode, Name),
+                .. BusinessPartnerRequestRules.ValidateRoles(IdentityDocumentType, IsClient, IsSupplier),
+            ];
 
         public CreateBusinessPartnerDto ToDto() =>
             new(

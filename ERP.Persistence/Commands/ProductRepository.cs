@@ -63,10 +63,6 @@ namespace ERP.Persistence.Commands
                 .ToListAsync();
         }
 
-        public async Task<int> CountWithSupplierCodeAsync(Guid supplierId) =>
-            await _context.ProductSupplierCodes
-            .CountAsync(c => c.SupplierId == supplierId);
-
         public uint VersionOf(Product product) =>
             _context.Entry(product).Property<uint>("RowVersion").CurrentValue;
     }
