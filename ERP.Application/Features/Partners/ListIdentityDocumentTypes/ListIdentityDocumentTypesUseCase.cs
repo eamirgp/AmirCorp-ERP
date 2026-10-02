@@ -12,7 +12,7 @@ namespace ERP.Application.Features.Partners.ListIdentityDocumentTypes
         public Task<IReadOnlyCollection<ListIdentityDocumentTypesResponseDto>> ExecuteAsync()
         {
             IReadOnlyCollection<ListIdentityDocumentTypesResponseDto> types = Enum.GetValues<IdentityDocumentType>()
-                .Select(t => new ListIdentityDocumentTypesResponseDto(t, t.Description, t == IdentityDocumentType.Ruc && _rucLookup.IsConfigured))
+                .Select(t => new ListIdentityDocumentTypesResponseDto(t, t.Description, t.LookupSource is not null && _rucLookup.IsConfigured))
                 .ToArray();
 
             return Task.FromResult(types);

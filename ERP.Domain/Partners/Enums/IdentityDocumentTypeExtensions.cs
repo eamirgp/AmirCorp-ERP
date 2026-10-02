@@ -42,6 +42,14 @@ namespace ERP.Domain.Partners.Enums
             public bool IsDomesticTaxpayer =>
                 identityDocumentType is IdentityDocumentType.Ruc;
 
+            /// <summary>Quién conoce el nombre del titular: SUNAT para el RUC y RENIEC para el DNI; null si nadie.</summary>
+            public string? LookupSource => identityDocumentType switch
+            {
+                IdentityDocumentType.Ruc => "SUNAT",
+                IdentityDocumentType.Dni => "RENIEC",
+                _ => null
+            };
+
             public bool IsValidDocumentNumber(string documentNumber) =>
                 identityDocumentType.DocumentNumberError(documentNumber) is null;
 

@@ -8,7 +8,7 @@ using ERP.Application.Features.Partners.CreateBusinessPartner;
 using ERP.Application.Features.Partners.GetBusinessPartner;
 using ERP.Application.Features.Partners.ListBusinessPartners;
 using ERP.Application.Features.Partners.ListIdentityDocumentTypes;
-using ERP.Application.Features.Partners.LookupRuc;
+using ERP.Application.Features.Partners.LookupDocument;
 using ERP.Application.Features.Partners.AddBusinessPartnerRole;
 using ERP.Application.Features.Partners.FindBusinessPartnerByDocument;
 using ERP.Domain.Partners.Enums;
@@ -29,7 +29,7 @@ namespace ERP.Api.Controllers.BusinessPartners
         private readonly IBlockBusinessPartnerRoleUseCase _blockRoleUseCase;
         private readonly IUpdateBusinessPartnerUseCase _updateBusinessPartnerUseCase;
         private readonly IGetBusinessPartnerUseCase _getBusinessPartnerUseCase;
-        private readonly ILookupRucUseCase _lookupRucUseCase;
+        private readonly ILookupDocumentUseCase _lookupDocumentUseCase;
         private readonly IAddBusinessPartnerRoleUseCase _addRoleUseCase;
         private readonly IFindBusinessPartnerByDocumentUseCase _findByDocumentUseCase;
 
@@ -40,12 +40,12 @@ namespace ERP.Api.Controllers.BusinessPartners
             IBlockBusinessPartnerRoleUseCase blockRoleUseCase,
             IUpdateBusinessPartnerUseCase updateBusinessPartnerUseCase,
             IGetBusinessPartnerUseCase getBusinessPartnerUseCase,
-            ILookupRucUseCase lookupRucUseCase,
+            ILookupDocumentUseCase lookupDocumentUseCase,
             IAddBusinessPartnerRoleUseCase addRoleUseCase,
             IFindBusinessPartnerByDocumentUseCase findByDocumentUseCase
             )
         {
-            _lookupRucUseCase = lookupRucUseCase;
+            _lookupDocumentUseCase = lookupDocumentUseCase;
             _addRoleUseCase = addRoleUseCase;
             _findByDocumentUseCase = findByDocumentUseCase;
             _createBusinessPartnerUseCase = createBusinessPartnerUseCase;
@@ -69,14 +69,15 @@ namespace ERP.Api.Controllers.BusinessPartners
         }
 
         /// <summary>
-        /// Busca un RUC en SUNAT (razón social, estado, condición y dirección) para llenar el formulario.
-        /// 503 si la consulta no está configurada o el servicio no responde; el formulario sigue funcionando a mano.
+        /// Busca un RUC en SUNAT (razón social, estado, condición y dirección) o un DNI en RENIEC (apellidos y nombres)
+        /// para llenar el formulario. 503 si la consulta no está configurada o el servicio no responde; el formulario
+        /// sigue funcionando a mano.
         /// </summary>
-        [HttpGet("ruc-lookup/{ruc}")]
-        [ProducesResponseType<LookupRucResponseDto>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> LookupRuc(string ruc, CancellationToken ct)
+        [HttpGet("document-lookup")]
+        [ProducesResponseType<LookupDocumentResponseDto>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> LookupDocument([FromQuery] IdentityDocumentType identityDocumentType, [FromQuery] string documentNumber, CancellationToken ct)
         {
-            var result = await _lookupRucUseCase.ExecuteAsync(ruc, ct);
+            var result = await _lookupDocumentUseCase.ExecuteAsync(identityDocumentType, documentNumber, ct);
             return result.ToActionResult(StatusCodes.Status200OK);
         }
 

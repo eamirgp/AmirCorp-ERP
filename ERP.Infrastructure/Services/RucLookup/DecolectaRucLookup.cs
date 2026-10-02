@@ -15,8 +15,9 @@ namespace ERP.Infrastructure.Services.RucLookup
     }
 
     /// <summary>
-    /// Consulta de RUC con Decolecta (antes apis.net.pe): GET /v1/sunat/ruc?numero=… con el token como Bearer.
-    /// Documentación: https://decolecta.gitbook.io/docs/servicios/integrations
+    /// Consulta de RUC (SUNAT) y de DNI (RENIEC) con Decolecta (antes apis.net.pe), con el token como Bearer.
+    /// RUC: GET /v1/sunat/ruc?numero=… Documentación: https://decolecta.gitbook.io/docs/servicios/integrations
+    /// DNI: GET /v1/reniec/dni?numero=… Documentación: https://decolecta.gitbook.io/docs/servicios/integrations-2
     /// </summary>
     internal sealed class DecolectaRucLookup : IRucLookup
     {
@@ -71,6 +72,43 @@ namespace ERP.Infrastructure.Services.RucLookup
                 return RucLookupOutcome.Failed(RucLookupFailure.Unavailable);
             }
         }
+
+        /// <summary>DNI en RENIEC: GET /v1/reniec/dni?numero=… Decolecta responde 400 cuando el DNI no existe.</summary>
+        public async Task<DniLookupOutcome> FindDniAsync(string dni, CancellationToken ct = default)
+        {
+            if (!IsConfigured)
+                return DniLookupOutcome.Failed(RucLookupFailure.Unauthorized);
+
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, $"{_settings.BaseUrl.TrimEnd('/')}/v1/reniec/dni?numero={Uri.EscapeDataString(dni)}");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.Token);
+
+                using var response = await Http.SendAsync(request, ct);
+
+                if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+                    return DniLookupOutcome.Failed(RucLookupFailure.Unauthorized);
+
+                if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity)
+                    return DniLookupOutcome.Failed(RucLookupFailure.NotFound);
+
+                if (!response.IsSuccessStatusCode)
+                    return DniLookupOutcome.Failed(RucLookupFailure.Unavailable);
+
+                var body = await response.Content.ReadFromJsonAsync<DecolectaDni>(ct);
+                if (body is null || string.IsNullOrWhiteSpace(body.FullName))
+                    return DniLookupOutcome.Failed(RucLookupFailure.NotFound);
+
+                return DniLookupOutcome.Found(body.FullName.Trim());
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+            {
+                return DniLookupOutcome.Failed(RucLookupFailure.Unavailable);
+            }
+        }
+
+        // Apellidos y nombres, en el mismo orden que usa SUNAT para las personas con RUC.
+        private sealed record DecolectaDni([property: JsonPropertyName("full_name")] string? FullName);
 
         /// <summary>"AV. LOS OLIVOS 123, SAN ISIDRO - LIMA - LIMA", o null si SUNAT no tiene dirección ("-").</summary>
         private static string? Address(DecolectaRuc body)

@@ -1,14 +1,23 @@
 namespace ERP.Application.Contracts.Infrastructure
 {
     /// <summary>
-    /// Consulta de un RUC en SUNAT a través de un proveedor externo (hoy Decolecta). Si no hay clave configurada,
-    /// la consulta no está disponible y el formulario no muestra el botón: todo lo demás funciona igual.
+    /// Consulta de un RUC en SUNAT o de un DNI en RENIEC a través de un proveedor externo (hoy Decolecta). Si no hay
+    /// clave configurada, la consulta no está disponible y el formulario no muestra el botón: todo lo demás funciona igual.
     /// </summary>
     public interface IRucLookup
     {
         bool IsConfigured { get; }
 
         Task<RucLookupOutcome> FindAsync(string ruc, CancellationToken ct = default);
+
+        Task<DniLookupOutcome> FindDniAsync(string dni, CancellationToken ct = default);
+    }
+
+    /// <summary>Resultado de la consulta de DNI: el nombre como lo informa RENIEC (apellidos y nombres) o el motivo del fallo.</summary>
+    public sealed record DniLookupOutcome(string? Name, RucLookupFailure? Failure)
+    {
+        public static DniLookupOutcome Found(string name) => new(name, null);
+        public static DniLookupOutcome Failed(RucLookupFailure failure) => new(null, failure);
     }
 
     /// <summary>Datos del contribuyente tal como los informa SUNAT.</summary>
@@ -24,7 +33,7 @@ namespace ERP.Application.Contracts.Infrastructure
 
     public enum RucLookupFailure
     {
-        /// <summary>SUNAT no tiene ese RUC.</summary>
+        /// <summary>SUNAT no tiene ese RUC, o RENIEC no tiene ese DNI.</summary>
         NotFound,
         /// <summary>El proveedor rechazó la clave (vencida o mal copiada).</summary>
         Unauthorized,

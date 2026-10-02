@@ -20,7 +20,7 @@ using ERP.Application.Features.Partners.CreateBusinessPartner;
 using ERP.Application.Features.Partners.GetBusinessPartner;
 using ERP.Application.Features.Partners.ListBusinessPartners;
 using ERP.Application.Features.Partners.ListIdentityDocumentTypes;
-using ERP.Application.Features.Partners.LookupRuc;
+using ERP.Application.Features.Partners.LookupDocument;
 using ERP.Application.Features.Partners.AddBusinessPartnerRole;
 using ERP.Application.Features.Partners.FindBusinessPartnerByDocument;
 using ERP.Application.Features.Partners.UpdateBusinessPartner;
@@ -118,7 +118,7 @@ namespace ERP.Application
                     .AddScoped<IBlockBusinessPartnerRoleUseCase, BlockBusinessPartnerRoleUseCase>()
                     .AddScoped<IUpdateBusinessPartnerUseCase, UpdateBusinessPartnerUseCase>()
                     .AddScoped<IGetBusinessPartnerUseCase, GetBusinessPartnerUseCase>()
-                    .AddScoped<ILookupRucUseCase, LookupRucUseCase>()
+                    .AddScoped<ILookupDocumentUseCase, LookupDocumentUseCase>()
                     .AddScoped<IAddBusinessPartnerRoleUseCase, AddBusinessPartnerRoleUseCase>()
                     .AddScoped<IFindBusinessPartnerByDocumentUseCase, FindBusinessPartnerByDocumentUseCase>()
 
