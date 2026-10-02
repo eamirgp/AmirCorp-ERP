@@ -3,6 +3,7 @@ using ERP.Application.Features.Audit.ListAuditActions;
 using ERP.Application.Features.Audit.ListAuditEntityTypes;
 using ERP.Application.Features.Audit.ListAuditEntries;
 using ERP.Application.Features.Auth.Login;
+using ERP.Application.Features.Catalogs.GetExchangeRate;
 using ERP.Application.Features.Catalogs.ListCountries;
 using ERP.Application.Features.Catalogs.ListCurrencies;
 using ERP.Application.Features.Catalogs.ListIgvAffectations;
@@ -70,6 +71,7 @@ namespace ERP.Application
                 services
                     .AddScoped<IListCountriesUseCase, ListCountriesUseCase>()
                     .AddScoped<IListCurrenciesUseCase, ListCurrenciesUseCase>()
+                    .AddScoped<IGetExchangeRateUseCase, GetExchangeRateUseCase>()
                     .AddScoped<IListIgvAffectationsUseCase, ListIgvAffectationsUseCase>()
                     .AddScoped<IListTaxDocumentTypesUseCase, ListTaxDocumentTypesUseCase>()
                     .AddScoped<IListUnitsOfMeasureUseCase, ListUnitsOfMeasureUseCase>()

@@ -1,4 +1,5 @@
-﻿using ERP.Domain.Companies;
+﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Companies;
 using ERP.Persistence.Auditing;
 using ERP.Domain.Inventory;
 using ERP.Domain.Partners;
@@ -34,5 +35,6 @@ namespace ERP.Persistence.Context
         public DbSet<PurchaseLine> PurchaseLines => Set<PurchaseLine>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
         public DbSet<SavedView> SavedViews => Set<SavedView>();
+        public DbSet<ExchangeRate> ExchangeRates => Set<ExchangeRate>();
     }
 }

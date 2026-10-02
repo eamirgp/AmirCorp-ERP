@@ -1,9 +1,12 @@
-﻿using ERP.Application.Features.Catalogs.ListCountries;
+﻿using ERP.Api.Extensions;
+using ERP.Application.Features.Catalogs.GetExchangeRate;
+using ERP.Application.Features.Catalogs.ListCountries;
 using ERP.Application.Features.Catalogs.ListCurrencies;
 using ERP.Application.Features.Catalogs.ListIgvAffectations;
 using ERP.Application.Features.Catalogs.ListInvoicePriceTypes;
 using ERP.Application.Features.Catalogs.ListTaxDocumentTypes;
 using ERP.Application.Features.Catalogs.ListUnitsOfMeasure;
+using ERP.Domain.Catalogs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,6 +23,7 @@ namespace ERP.Api.Controllers.Catalogs
         private readonly IListTaxDocumentTypesUseCase _listTaxDocumentTypesUseCase;
         private readonly IListUnitsOfMeasureUseCase _listUnitsOfMeasureUseCase;
         private readonly IListInvoicePriceTypesUseCase _listInvoicePriceTypesUseCase;
+        private readonly IGetExchangeRateUseCase _getExchangeRateUseCase;
 
         public CatalogController(
             IListCountriesUseCase listCountriesUseCase,
@@ -27,9 +31,11 @@ namespace ERP.Api.Controllers.Catalogs
             IListIgvAffectationsUseCase listIgvAffectationsUseCase,
             IListTaxDocumentTypesUseCase listTaxDocumentTypesUseCase,
             IListUnitsOfMeasureUseCase listUnitsOfMeasureUseCase,
-            IListInvoicePriceTypesUseCase listInvoicePriceTypesUseCase
+            IListInvoicePriceTypesUseCase listInvoicePriceTypesUseCase,
+            IGetExchangeRateUseCase getExchangeRateUseCase
             )
         {
+            _getExchangeRateUseCase = getExchangeRateUseCase;
             _listCountriesUseCase = listCountriesUseCase;
             _listCurrenciesUseCase = listCurrenciesUseCase;
             _listIgvAffectationsUseCase = listIgvAffectationsUseCase;
@@ -48,6 +54,18 @@ namespace ERP.Api.Controllers.Catalogs
         [ProducesResponseType<IReadOnlyCollection<ListCurrenciesResponseDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListCurrencies() =>
             Ok(await _listCurrenciesUseCase.ExecuteAsync());
+
+        /// <summary>
+        /// Tipo de cambio venta que publica SUNAT para esa moneda y fecha, para llenar una compra en dólares.
+        /// 503 si la consulta no está configurada o el servicio no responde; el tipo de cambio se escribe a mano.
+        /// </summary>
+        [HttpGet("exchange-rate")]
+        [ProducesResponseType<GetExchangeRateResponseDto>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetExchangeRate([FromQuery] Currency currency, [FromQuery] DateOnly date, CancellationToken ct)
+        {
+            var result = await _getExchangeRateUseCase.ExecuteAsync(currency, date, ct);
+            return result.ToActionResult(StatusCodes.Status200OK);
+        }
 
         [HttpGet("igv-affectations")]
         [ProducesResponseType<IReadOnlyCollection<ListIgvAffectationsResponseDto>>(StatusCodes.Status200OK)]

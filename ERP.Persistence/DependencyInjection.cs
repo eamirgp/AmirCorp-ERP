@@ -55,6 +55,8 @@ namespace ERP.Persistence
                     .AddScoped<IUnitOfMeasureRepository, UnitOfMeasureRepository>()
                     .AddScoped<IUnitOfMeasureQueries, UnitOfMeasureQueries>()
 
+                    .AddScoped<IExchangeRateRepository, ExchangeRateRepository>()
+
                     .AddScoped<IUnitOfWork, UnitOfWork>();
 
                 return services;

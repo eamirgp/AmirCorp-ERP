@@ -21,7 +21,9 @@ namespace ERP.Infrastructure
                     .AddSingleton<IProductSpreadsheet, ProductSpreadsheet>()
                     // Consulta de RUC: sin RucLookup:Token la consulta no está disponible y el sistema funciona igual.
                     .Configure<RucLookupSettings>(configuration.GetSection("RucLookup"))
-                    .AddSingleton<IRucLookup, DecolectaRucLookup>();
+                    .AddSingleton<IRucLookup, DecolectaRucLookup>()
+                    // Tipo de cambio de SUNAT: el mismo proveedor y la misma clave.
+                    .AddSingleton<IExchangeRateLookup, DecolectaExchangeRateLookup>();
 
                 return services;
             }
