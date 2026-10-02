@@ -187,11 +187,11 @@ namespace ERP.Domain.Purchases
         private static void ValidateConversionFactor(decimal conversionFactor, UnitOfMeasure unitOfMeasure)
         {
             if (conversionFactor <= 0)
-                throw new DomainException("El factor de conversión debe ser mayor a cero.");
+                throw new DomainException($"Las unidades por {unitOfMeasure.Name.ToLowerInvariant()} deben ser mayores a cero.");
 
             var fixedFactor = unitOfMeasure.FixedConversionFactor;
             if (fixedFactor is not null && conversionFactor != fixedFactor)
-                throw new DomainException($"Cuando la unidad de medida es '{unitOfMeasure.Name}', el factor de conversión debe ser {fixedFactor.Value:0.######}.");
+                throw new DomainException($"Cada {unitOfMeasure.Name.ToLowerInvariant()} trae {fixedFactor.Value:0.######} unidades: no se puede indicar otra cantidad.");
         }
     }
 }

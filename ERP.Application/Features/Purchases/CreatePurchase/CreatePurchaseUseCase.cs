@@ -263,7 +263,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                         errors.Add($"Línea {number}: {unitError}");
                 }
                 else if (line.ConversionFactor != 1)
-                    errors.Add($"Línea {number}: El producto nuevo se compra con factor {NumberText.Decimal(line.ConversionFactor)}. Indica en qué unidad se lleva su inventario.");
+                    errors.Add($"Línea {number}: El producto nuevo se compra por caja o paquete de {NumberText.Decimal(line.ConversionFactor)} unidades. Indica en qué unidad se lleva su inventario.");
             }
 
             return errors;

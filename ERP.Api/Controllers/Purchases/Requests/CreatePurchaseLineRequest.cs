@@ -66,10 +66,10 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 errors.Add($"Línea {lineNumber}: {amountLabel} debe ser mayor a cero.");
 
             if (ConversionFactor is null)
-                errors.Add($"Línea {lineNumber}: El factor de conversión es requerido.");
+                errors.Add($"Línea {lineNumber}: Indica cuántas unidades trae cada caja o paquete.");
 
             if (ConversionFactor is not null && ConversionFactor <= 0)
-                errors.Add($"Línea {lineNumber}: El factor de conversión debe ser mayor a cero.");
+                errors.Add($"Línea {lineNumber}: Las unidades por caja o paquete deben ser mayores a cero.");
 
             return errors;
         }
