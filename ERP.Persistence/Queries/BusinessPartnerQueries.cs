@@ -2,6 +2,7 @@ using ERP.Application.Common.Pagination;
 using ERP.Application.Contracts.Persistence.Queries;
 using ERP.Application.Features.Partners.GetBusinessPartner;
 using ERP.Application.Features.Partners.ListBusinessPartners;
+using ERP.Domain.Partners.Enums;
 using ERP.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,7 +20,8 @@ namespace ERP.Persistence.Queries
 
             if (!string.IsNullOrWhiteSpace(listBusinessPartnersDto.SearchTerm))
             {
-                var documentTerm = listBusinessPartnersDto.SearchTerm.Trim();
+                // El documento se busca como se guarda: sin espacios y en mayúsculas ("abc-123" encuentra "ABC-123").
+                var documentTerm = IdentityDocumentTypeExtensions.NormalizeDocumentNumber(listBusinessPartnersDto.SearchTerm);
                 var nameTerm = SearchText.Normalize(listBusinessPartnersDto.SearchTerm);
 
                 query = query.Where(bp =>
