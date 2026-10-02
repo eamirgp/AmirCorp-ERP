@@ -5,7 +5,8 @@ namespace ERP.Domain.Companies
     public sealed class Company : AuditableEntity
     {
         public const int RucLength = 11;
-        public const int NameMaxLength = 100;
+        // Igual que clientes y proveedores: una razón social de SUNAT puede pasar de 100 caracteres.
+        public const int NameMaxLength = 200;
 
         public string Ruc { get; private set; }
         public string Name { get; private set; }

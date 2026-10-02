@@ -7,7 +7,8 @@ namespace ERP.Domain.Partners
 {
     public sealed class BusinessPartner : AuditableEntity
     {
-        public const int NameMaxLength = 100;
+        // Holgado a propósito: las razones sociales de SUNAT (consorcios, asociaciones) pueden pasar de 100 caracteres.
+        public const int NameMaxLength = 200;
 
         private static readonly Regex Spaces = new(@"\s+", RegexOptions.Compiled);
 
