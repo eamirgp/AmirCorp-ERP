@@ -82,7 +82,7 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 ProductId,
                 NewProduct is null
                     ? null
-                    : new CreatePurchaseNewProductDto(NewProduct.Code!.Trim(), NewProduct.Name!.Trim(), NullIfBlank(NewProduct.SupplierCode), NullIfBlank(NewProduct.UnitOfMeasureCode)),
+                    : new CreatePurchaseNewProductDto(NewProduct.Code!.Trim(), NewProduct.Name!.Trim(), NullIfBlank(NewProduct.SupplierCode)),
                 InvoiceIgvAffectation!.Value,
                 InvoiceUnitOfMeasureCode!,
                 InvoiceQuantity!.Value,
@@ -93,6 +93,5 @@ namespace ERP.Api.Controllers.Purchases.Requests
 
     /// <param name="Code">Código interno (la pantalla propone el de la factura).</param>
     /// <param name="SupplierCode">Código con que lo vende el proveedor de esta compra; opcional.</param>
-    /// <param name="UnitOfMeasureCode">Unidad en que se lleva su inventario; vacío si es la misma de la línea.</param>
-    public sealed record CreatePurchaseNewProductRequest(string? Code, string? Name, string? SupplierCode, string? UnitOfMeasureCode);
+    public sealed record CreatePurchaseNewProductRequest(string? Code, string? Name, string? SupplierCode);
 }

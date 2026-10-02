@@ -14,6 +14,12 @@ namespace ERP.Domain.UnitsOfMeasure
         public const int NameMaxLength = 40;
         public const int SunatNameMaxLength = 60;
 
+        /// <summary>
+        /// Unidad en que se cuenta el stock: "Unidad" (NIU). Se compra y se vende por caja, docena o suelto, y todo se
+        /// convierte a unidades.
+        /// </summary>
+        public const string BaseUnitCode = "NIU";
+
         /// <summary>Código SUNAT (NIU, DZN, BX…). Es el que va en la factura electrónica.</summary>
         public string Code { get; }
         /// <summary>Nombre oficial de SUNAT ("UNIDAD (BIENES)").</summary>

@@ -1,5 +1,4 @@
-﻿using ERP.Application.Common.Formatting;
-using ERP.Application.Common.Responses;
+﻿using ERP.Application.Common.Responses;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Catalogs;
@@ -101,11 +100,10 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             var products = await _productRepository.GetByIdsAsync(productIds);
             var productsDictionary = products.ToDictionary(p => p.Id);
 
-            // Unidades de las líneas y, para los productos nuevos, la de su inventario si es otra.
+            // Unidades de las líneas y, si hay productos nuevos, la unidad en que se cuenta su stock.
             var unitCodes = lines
-                .SelectMany(l => new[] { l.InvoiceUnitOfMeasureCode, l.NewProduct?.UnitOfMeasureCode })
-                .Where(c => !string.IsNullOrWhiteSpace(c))
-                .Select(c => UnitOfMeasure.NormalizeCode(c!))
+                .Select(l => UnitOfMeasure.NormalizeCode(l.InvoiceUnitOfMeasureCode))
+                .Append(UnitOfMeasure.BaseUnitCode)
                 .Distinct()
                 .ToArray();
             var units = (await _unitOfMeasureRepository.GetByCodesAsync(unitCodes)).ToDictionary(u => u.Code);
@@ -135,7 +133,8 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 return Result<CreatedResponseDto>.Failure(errors, ErrorType.BadRequest);
 
             // Productos nuevos: se registran con la compra, en la misma transacción. Toman la afectación al IGV de su
-            // línea y la unidad de su inventario (la de la línea, salvo que se indique otra), y nacen sin precio de venta.
+            // línea, se cuentan en unidades (lo comprado por caja o docena se convierte con las unidades por caja) y
+            // nacen sin precio de venta.
             var lineProducts = new Product[lines.Length];
             for (var i = 0; i < lines.Length; i++)
             {
@@ -148,7 +147,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 var created = Product.Create(
                     newProduct.Code,
                     newProduct.Name,
-                    newProduct.UnitOfMeasureCode ?? lines[i].InvoiceUnitOfMeasureCode,
+                    UnitOfMeasure.BaseUnitCode,
                     lines[i].InvoiceIgvAffectation,
                     salePrice: 0);
 
@@ -217,7 +216,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
 
         /// <summary>
         /// Reglas de los productos nuevos que necesitan datos: el código interno no lo usa otro producto ni otra línea,
-        /// el código del proveedor tampoco, y la unidad de su inventario existe y está clara.
+        /// el código del proveedor tampoco, y la unidad en que se cuenta su stock está activa.
         /// </summary>
         private async Task<List<string>> CheckNewProductsAsync(CreatePurchaseLineDto[] lines, BusinessPartner supplier, Dictionary<string, UnitOfMeasure> units)
         {
@@ -256,15 +255,11 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                         errors.Add($"Línea {number}: El código de proveedor {normalized} está en más de un producto nuevo de esta compra.");
                 }
 
-                // El inventario se lleva en la unidad del producto. Si se compra por otra (caja de 12), hay que decir cuál es.
-                if (newProduct.UnitOfMeasureCode is { } inventoryUnit)
-                {
-                    if (UnitOfMeasureRules.CheckUsable(units.GetValueOrDefault(UnitOfMeasure.NormalizeCode(inventoryUnit)), inventoryUnit) is { } unitError)
-                        errors.Add($"Línea {number}: {unitError}");
-                }
-                else if (line.ConversionFactor != 1)
-                    errors.Add($"Línea {number}: El producto nuevo se compra por caja o paquete de {NumberText.Decimal(line.ConversionFactor)} unidades. Indica en qué unidad se lleva su inventario.");
             }
+
+            // Los productos nuevos se cuentan en unidades: esa unidad tiene que estar activa.
+            if (UnitOfMeasureRules.CheckUsable(units.GetValueOrDefault(UnitOfMeasure.BaseUnitCode), UnitOfMeasure.BaseUnitCode) is { } unitError)
+                errors.Add($"Los productos nuevos se cuentan en unidades: {unitError}");
 
             return errors;
         }
