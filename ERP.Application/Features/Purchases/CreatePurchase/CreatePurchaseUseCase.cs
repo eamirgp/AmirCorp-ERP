@@ -1,10 +1,12 @@
-﻿using ERP.Application.Common.Responses;
+﻿using ERP.Application.Common.Formatting;
+using ERP.Application.Common.Responses;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Catalogs;
 using ERP.Domain.Inventory;
 using ERP.Domain.Partners;
 using ERP.Domain.Partners.Enums;
+using ERP.Domain.Products;
 using ERP.Application.Features.Partners;
 using ERP.Application.Features.UnitsOfMeasure;
 using ERP.Domain.Purchases;
@@ -95,11 +97,17 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 return Result<CreatedResponseDto>.Failure(["El comprobante ya se encuentra registrado para este proveedor."], ErrorType.Conflict);
 
             var lines = request.Lines.ToArray();
-            var productIds = lines.Select(l => l.ProductId).ToArray();
+            var productIds = lines.Where(l => l.ProductId is not null).Select(l => l.ProductId!.Value).ToArray();
             var products = await _productRepository.GetByIdsAsync(productIds);
             var productsDictionary = products.ToDictionary(p => p.Id);
 
-            var unitCodes = lines.Select(l => UnitOfMeasure.NormalizeCode(l.InvoiceUnitOfMeasureCode)).Distinct().ToArray();
+            // Unidades de las líneas y, para los productos nuevos, la de su inventario si es otra.
+            var unitCodes = lines
+                .SelectMany(l => new[] { l.InvoiceUnitOfMeasureCode, l.NewProduct?.UnitOfMeasureCode })
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => UnitOfMeasure.NormalizeCode(c!))
+                .Distinct()
+                .ToArray();
             var units = (await _unitOfMeasureRepository.GetByCodesAsync(unitCodes)).ToDictionary(u => u.Code);
 
             var errors = new List<string>();
@@ -108,18 +116,48 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             {
                 var lineNumber = i + 1;
 
-                if (!productsDictionary.TryGetValue(lines[i].ProductId, out var product))
-                    errors.Add($"Línea {lineNumber}: El producto no existe.");
-                else if (!product.IsActive)
-                    errors.Add($"Línea {lineNumber}: El producto '{product.Name}' está desactivado.");
+                if (lines[i].ProductId is { } productId)
+                {
+                    if (!productsDictionary.TryGetValue(productId, out var product))
+                        errors.Add($"Línea {lineNumber}: El producto no existe.");
+                    else if (!product.IsActive)
+                        errors.Add($"Línea {lineNumber}: El producto '{product.Name}' está desactivado.");
+                }
 
                 var code = lines[i].InvoiceUnitOfMeasureCode;
                 if (UnitOfMeasureRules.CheckUsable(units.GetValueOrDefault(UnitOfMeasure.NormalizeCode(code)), code) is { } unitError)
                     errors.Add($"Línea {lineNumber}: {unitError}");
             }
 
+            errors.AddRange(await CheckNewProductsAsync(lines, supplier, units));
+
             if (errors.Count > 0)
                 return Result<CreatedResponseDto>.Failure(errors, ErrorType.BadRequest);
+
+            // Productos nuevos: se registran con la compra, en la misma transacción. Toman la afectación al IGV de su
+            // línea y la unidad de su inventario (la de la línea, salvo que se indique otra), y nacen sin precio de venta.
+            var lineProducts = new Product[lines.Length];
+            for (var i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].NewProduct is not { } newProduct)
+                {
+                    lineProducts[i] = productsDictionary[lines[i].ProductId!.Value];
+                    continue;
+                }
+
+                var created = Product.Create(
+                    newProduct.Code,
+                    newProduct.Name,
+                    newProduct.UnitOfMeasureCode ?? lines[i].InvoiceUnitOfMeasureCode,
+                    lines[i].InvoiceIgvAffectation,
+                    salePrice: 0);
+
+                if (newProduct.SupplierCode is { } supplierCode)
+                    created.SetSupplierCodes([(supplier.Id, supplierCode)]);
+
+                _productRepository.Add(created);
+                lineProducts[i] = created;
+            }
 
             var purchase = Purchase.Create(
                 request.CompanyId,
@@ -138,9 +176,10 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
 
             var stockEntries = new List<StockEntry>();
 
-            foreach (var line in lines)
+            for (var i = 0; i < lines.Length; i++)
             {
-                var product = productsDictionary[line.ProductId];
+                var line = lines[i];
+                var product = lineProducts[i];
 
                 var purchaseLine = purchase.AddLine(
                     product.Id,
@@ -174,6 +213,60 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             await _unitOfWork.SaveChangesAsync();
 
             return Result<CreatedResponseDto>.Success(new CreatedResponseDto(purchase.Id));
+        }
+
+        /// <summary>
+        /// Reglas de los productos nuevos que necesitan datos: el código interno no lo usa otro producto ni otra línea,
+        /// el código del proveedor tampoco, y la unidad de su inventario existe y está clara.
+        /// </summary>
+        private async Task<List<string>> CheckNewProductsAsync(CreatePurchaseLineDto[] lines, BusinessPartner supplier, Dictionary<string, UnitOfMeasure> units)
+        {
+            var errors = new List<string>();
+            var news = lines.Select((line, i) => (Line: line, Number: i + 1)).Where(x => x.Line.NewProduct is not null).ToList();
+            if (news.Count == 0)
+                return errors;
+
+            var codes = news.Select(x => Product.NormalizeCode(x.Line.NewProduct!.Code)).ToArray();
+            var taken = (await _productRepository.GetByCodesAsync(codes.Distinct().ToArray())).ToDictionary(p => p.Code);
+
+            var supplierCodes = news
+                .Where(x => x.Line.NewProduct!.SupplierCode is not null)
+                .Select(x => (supplier.Id, Code: ProductSupplierCode.NormalizeCode(x.Line.NewProduct!.SupplierCode!)))
+                .ToArray();
+            var supplierCodesTaken = supplierCodes.Length == 0
+                ? []
+                : (await _productRepository.SupplierCodesInUseAsync(supplierCodes)).ToDictionary(c => c.Code);
+
+            foreach (var (line, number) in news)
+            {
+                var newProduct = line.NewProduct!;
+                var code = Product.NormalizeCode(newProduct.Code);
+
+                if (taken.TryGetValue(code, out var existing))
+                    errors.Add($"Línea {number}: El código interno {code} ya es de {existing.Name}. Elígelo de la lista o usa otro código.");
+                else if (codes.Count(c => c == code) > 1)
+                    errors.Add($"Línea {number}: El código interno {code} está en más de un producto nuevo de esta compra.");
+
+                if (newProduct.SupplierCode is { } supplierCode)
+                {
+                    var normalized = ProductSupplierCode.NormalizeCode(supplierCode);
+                    if (supplierCodesTaken.TryGetValue(normalized, out var used))
+                        errors.Add($"Línea {number}: El código {normalized} de {supplier.Name} ya está en el producto {used.ProductCode} · {used.ProductName}. Elígelo de la lista.");
+                    else if (supplierCodes.Count(c => c.Code == normalized) > 1)
+                        errors.Add($"Línea {number}: El código de proveedor {normalized} está en más de un producto nuevo de esta compra.");
+                }
+
+                // El inventario se lleva en la unidad del producto. Si se compra por otra (caja de 12), hay que decir cuál es.
+                if (newProduct.UnitOfMeasureCode is { } inventoryUnit)
+                {
+                    if (UnitOfMeasureRules.CheckUsable(units.GetValueOrDefault(UnitOfMeasure.NormalizeCode(inventoryUnit)), inventoryUnit) is { } unitError)
+                        errors.Add($"Línea {number}: {unitError}");
+                }
+                else if (line.ConversionFactor != 1)
+                    errors.Add($"Línea {number}: El producto nuevo se compra con factor {NumberText.Decimal(line.ConversionFactor)}. Indica en qué unidad se lleva su inventario.");
+            }
+
+            return errors;
         }
     }
 }

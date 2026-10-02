@@ -1,10 +1,13 @@
 ﻿using ERP.Application.Features.Purchases.CreatePurchase;
 using ERP.Domain.Catalogs;
+using ERP.Domain.Products;
 
 namespace ERP.Api.Controllers.Purchases.Requests
 {
     public sealed record CreatePurchaseLineRequest(
         Guid? ProductId,
+        // Producto que todavía no existe: se registra junto con la compra. Va en vez de ProductId.
+        CreatePurchaseNewProductRequest? NewProduct,
         IgvAffectation? InvoiceIgvAffectation,
         string? InvoiceUnitOfMeasureCode,
         decimal? InvoiceQuantity,
@@ -20,7 +23,25 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 ? "El precio unitario"
                 : "El valor unitario";
 
-            if (ProductId is null || ProductId == Guid.Empty)
+            // El producto: uno registrado o uno nuevo, no los dos. El nuevo se valida como en su propia pantalla.
+            if (NewProduct is not null && ProductId is not null)
+                errors.Add($"Línea {lineNumber}: Elige un producto registrado o indica uno nuevo, no los dos.");
+            else if (NewProduct is not null)
+            {
+                if (string.IsNullOrWhiteSpace(NewProduct.Code))
+                    errors.Add($"Línea {lineNumber}: El código interno del producto nuevo es requerido.");
+                else if (NewProduct.Code.Trim().Length > Product.CodeMaxLength)
+                    errors.Add($"Línea {lineNumber}: El código interno no puede exceder los {Product.CodeMaxLength} caracteres.");
+
+                if (string.IsNullOrWhiteSpace(NewProduct.Name))
+                    errors.Add($"Línea {lineNumber}: El nombre del producto nuevo es requerido.");
+                else if (NewProduct.Name.Trim().Length > Product.NameMaxLength)
+                    errors.Add($"Línea {lineNumber}: El nombre no puede exceder los {Product.NameMaxLength} caracteres.");
+
+                if (!string.IsNullOrWhiteSpace(NewProduct.SupplierCode) && NewProduct.SupplierCode.Trim().Length > ProductSupplierCode.CodeMaxLength)
+                    errors.Add($"Línea {lineNumber}: El código de proveedor no puede exceder los {ProductSupplierCode.CodeMaxLength} caracteres.");
+            }
+            else if (ProductId is null || ProductId == Guid.Empty)
                 errors.Add($"Línea {lineNumber}: El producto es requerido.");
 
             if (InvoiceIgvAffectation is null)
@@ -53,9 +74,15 @@ namespace ERP.Api.Controllers.Purchases.Requests
             return errors;
         }
 
+        private static string? NullIfBlank(string? text) =>
+            string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
         public CreatePurchaseLineDto ToDto() =>
             new(
-                ProductId!.Value,
+                ProductId,
+                NewProduct is null
+                    ? null
+                    : new CreatePurchaseNewProductDto(NewProduct.Code!.Trim(), NewProduct.Name!.Trim(), NullIfBlank(NewProduct.SupplierCode), NullIfBlank(NewProduct.UnitOfMeasureCode)),
                 InvoiceIgvAffectation!.Value,
                 InvoiceUnitOfMeasureCode!,
                 InvoiceQuantity!.Value,
@@ -63,4 +90,9 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 ConversionFactor!.Value
                 );
     }
+
+    /// <param name="Code">Código interno (la pantalla propone el de la factura).</param>
+    /// <param name="SupplierCode">Código con que lo vende el proveedor de esta compra; opcional.</param>
+    /// <param name="UnitOfMeasureCode">Unidad en que se lleva su inventario; vacío si es la misma de la línea.</param>
+    public sealed record CreatePurchaseNewProductRequest(string? Code, string? Name, string? SupplierCode, string? UnitOfMeasureCode);
 }
