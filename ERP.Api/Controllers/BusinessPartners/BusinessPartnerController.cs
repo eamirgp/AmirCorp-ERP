@@ -75,9 +75,10 @@ namespace ERP.Api.Controllers.BusinessPartners
         /// </summary>
         [HttpGet("document-lookup")]
         [ProducesResponseType<LookupDocumentResponseDto>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> LookupDocument([FromQuery] IdentityDocumentType identityDocumentType, [FromQuery] string documentNumber, CancellationToken ct)
+        public async Task<IActionResult> LookupDocument([FromQuery] IdentityDocumentType identityDocumentType, [FromQuery] string documentNumber, [FromQuery] Guid? partnerId, CancellationToken ct)
         {
-            var result = await _lookupDocumentUseCase.ExecuteAsync(identityDocumentType, documentNumber, ct);
+            // partnerId: el registro que se está editando; así no se avisa "ya está registrado" por él mismo.
+            var result = await _lookupDocumentUseCase.ExecuteAsync(identityDocumentType, documentNumber, partnerId, ct);
             return result.ToActionResult(StatusCodes.Status200OK);
         }
 

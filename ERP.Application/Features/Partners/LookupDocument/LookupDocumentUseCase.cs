@@ -21,7 +21,8 @@ namespace ERP.Application.Features.Partners.LookupDocument
 
     public interface ILookupDocumentUseCase
     {
-        Task<Result<LookupDocumentResponseDto>> ExecuteAsync(IdentityDocumentType identityDocumentType, string documentNumber, CancellationToken ct = default);
+        /// <param name="partnerId">El registro que se está editando, si lo hay: tener ese documento él mismo no es un duplicado.</param>
+        Task<Result<LookupDocumentResponseDto>> ExecuteAsync(IdentityDocumentType identityDocumentType, string documentNumber, Guid? partnerId = null, CancellationToken ct = default);
     }
 
     internal sealed class LookupDocumentUseCase : ILookupDocumentUseCase
@@ -38,7 +39,7 @@ namespace ERP.Application.Features.Partners.LookupDocument
             _businessPartnerRepository = businessPartnerRepository;
         }
 
-        public async Task<Result<LookupDocumentResponseDto>> ExecuteAsync(IdentityDocumentType identityDocumentType, string documentNumber, CancellationToken ct = default)
+        public async Task<Result<LookupDocumentResponseDto>> ExecuteAsync(IdentityDocumentType identityDocumentType, string documentNumber, Guid? partnerId = null, CancellationToken ct = default)
         {
             if (identityDocumentType.LookupSource is not { } source)
                 return Failure(["Este tipo de documento no se puede consultar. Escribe el nombre a mano."], ErrorType.BadRequest);
@@ -83,7 +84,7 @@ namespace ERP.Application.Features.Partners.LookupDocument
             if (ruc is not null && (!ruc.Status.Equals(ActiveStatus, StringComparison.OrdinalIgnoreCase) || !ruc.Condition.Equals(LocatedCondition, StringComparison.OrdinalIgnoreCase)))
                 warnings.Add($"Según SUNAT está {ruc.Status} y {ruc.Condition}. Revisa antes de comprarle: sus facturas podrían no servir para el crédito fiscal del IGV.");
 
-            if (await _businessPartnerRepository.FindByDocumentAsync(identityDocumentType, normalized) is { } existing)
+            if (await _businessPartnerRepository.FindByDocumentAsync(identityDocumentType, normalized) is { } existing && existing.Id != partnerId)
                 warnings.Add($"Ya está registrado en el sistema como {existing.Name}.");
 
             return Result<LookupDocumentResponseDto>.Success(
