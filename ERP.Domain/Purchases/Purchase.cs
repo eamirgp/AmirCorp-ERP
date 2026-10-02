@@ -82,6 +82,8 @@ namespace ERP.Domain.Purchases
             ValidateCompany(companyId);
             ValidateTaxDocumentType(taxDocumentType);
             var normalizedSerie = ValidateSerie(serie);
+            if (SerieError(taxDocumentType, normalizedSerie) is { } serieError)
+                throw new DomainException(serieError);
             var normalizedNumber = ValidateNumber(number);
             ValidateIssueDate(issueDate);
             ValidateCurrency(currency);
@@ -203,6 +205,27 @@ namespace ERP.Domain.Purchases
                 throw new DomainException("La serie debe contener solo letras y números.");
 
             return NormalizeSerie(serie);
+        }
+
+        /// <summary>
+        /// Qué tiene de malo la serie para ese comprobante, o null si corresponde. Los electrónicos empiezan con la
+        /// letra de su tipo (factura F001 o E001; boleta B001 o EB01) y los físicos son numéricos (0001). Una factura
+        /// con serie B, o una boleta con serie F, es un error de tipeo o un comprobante mal elegido.
+        /// </summary>
+        public static string? SerieError(TaxDocumentType taxDocumentType, string serie)
+        {
+            var normalized = NormalizeSerie(serie);
+            if (normalized.All(char.IsDigit))
+                return null;
+
+            return taxDocumentType switch
+            {
+                TaxDocumentType.Factura when normalized[0] is not ('F' or 'E') || normalized.StartsWith("EB") =>
+                    $"La serie {normalized} no es de una factura: debe empezar con F (o E), o ser numérica si es física.",
+                TaxDocumentType.Boleta when normalized[0] != 'B' && !normalized.StartsWith("EB") =>
+                    $"La serie {normalized} no es de una boleta: debe empezar con B (o EB), o ser numérica si es física.",
+                _ => null
+            };
         }
 
         private static string ValidateNumber(string number)

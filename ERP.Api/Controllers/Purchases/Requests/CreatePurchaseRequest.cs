@@ -45,6 +45,12 @@ namespace ERP.Api.Controllers.Purchases.Requests
             if (!string.IsNullOrWhiteSpace(Serie) && !Serie.All(char.IsLetterOrDigit))
                 errors.Add("La serie debe contener solo letras y números.");
 
+            // La serie debe corresponder al comprobante (factura F…, boleta B…): la misma regla del dominio.
+            if (TaxDocumentType is { } type && Enum.IsDefined(type)
+                && !string.IsNullOrWhiteSpace(Serie) && Serie.Length == Purchase.SerieMaxLength && Serie.All(char.IsLetterOrDigit)
+                && Purchase.SerieError(type, Serie) is { } serieError)
+                errors.Add(serieError);
+
             if (string.IsNullOrWhiteSpace(Number))
                 errors.Add("El número es requerido.");
 

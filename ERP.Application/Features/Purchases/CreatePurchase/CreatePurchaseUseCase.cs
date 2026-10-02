@@ -78,6 +78,11 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             if (!supplier.IsSupplier)
                 return Result<CreatedResponseDto>.Failure(["El cliente elegido no está registrado como proveedor."], ErrorType.BadRequest);
 
+            // Una empresa no se compra a sí misma: casi siempre es el RUC propio escrito por error en vez del proveedor.
+            if (supplier.IdentityDocumentType.IsDomesticTaxpayer && supplier.DocumentNumber == company.Ruc)
+                return Result<CreatedResponseDto>.Failure(
+                    [$"El proveedor tiene el mismo RUC que la empresa que compra ({company.Ruc}). Revisa cuál de los dos está mal elegido."], ErrorType.BadRequest);
+
             if (supplier.IsPurchasingBlocked)
                 return Result<CreatedResponseDto>.Failure([BusinessPartnerRules.PurchasingBlocked(supplier)], ErrorType.BadRequest);
 
