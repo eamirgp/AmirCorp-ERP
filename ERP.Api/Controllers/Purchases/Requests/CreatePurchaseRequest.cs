@@ -1,5 +1,7 @@
-﻿using ERP.Application.Features.Purchases.CreatePurchase;
+﻿using ERP.Api.Controllers.BusinessPartners.Requests;
+using ERP.Application.Features.Purchases.CreatePurchase;
 using ERP.Domain.Catalogs;
+using ERP.Domain.Partners.Enums;
 using ERP.Domain.Purchases;
 
 namespace ERP.Api.Controllers.Purchases.Requests
@@ -14,6 +16,8 @@ namespace ERP.Api.Controllers.Purchases.Requests
         decimal? ExchangeRate,
         InvoicePriceType? InvoicePriceType,
         Guid? SupplierId,
+        // Proveedor que todavía no existe (RUC y razón social): se registra junto con la compra. Va en vez de SupplierId.
+        CreatePurchaseNewSupplierRequest? NewSupplier,
         IReadOnlyCollection<CreatePurchaseLineRequest>? Lines
         )
     {
@@ -77,7 +81,13 @@ namespace ERP.Api.Controllers.Purchases.Requests
             if (InvoicePriceType is not null && !Enum.IsDefined(InvoicePriceType.Value))
                 errors.Add("El tipo de precio es inválido.");
 
-            if (SupplierId is null || SupplierId == Guid.Empty)
+            // El proveedor: uno registrado o uno nuevo, no los dos. El nuevo se valida como en su propia pantalla.
+            if (NewSupplier is not null && SupplierId is not null)
+                errors.Add("Elige un proveedor registrado o indica uno nuevo, no los dos.");
+            else if (NewSupplier is not null)
+                errors.AddRange(BusinessPartnerRequestRules.Validate(IdentityDocumentType.Ruc, NewSupplier.Ruc, countryCode: null, NewSupplier.Name)
+                    .Select(e => $"Proveedor nuevo: {e}"));
+            else if (SupplierId is null || SupplierId == Guid.Empty)
                 errors.Add("El proveedor es requerido.");
 
             if (Lines is null || Lines.Count == 0)
@@ -111,8 +121,11 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 Currency!.Value,
                 ExchangeRate,
                 InvoicePriceType!.Value,
-                SupplierId!.Value,
+                SupplierId,
+                NewSupplier is null ? null : new CreatePurchaseNewSupplierDto(NewSupplier.Ruc!, NewSupplier.Name!),
                 Lines!.Select(l => l.ToDto()).ToArray()
                 );
     }
+
+    public sealed record CreatePurchaseNewSupplierRequest(string? Ruc, string? Name);
 }

@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Catalogs;
 
 namespace ERP.Application.Features.Purchases.CreatePurchase
 {
@@ -11,7 +11,12 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
         Currency Currency,
         decimal? ExchangeRate,
         InvoicePriceType InvoicePriceType,
-        Guid SupplierId,
+        // El proveedor: uno ya registrado (SupplierId) o uno nuevo que se registra con la compra (NewSupplier).
+        Guid? SupplierId,
+        CreatePurchaseNewSupplierDto? NewSupplier,
         IReadOnlyCollection<CreatePurchaseLineDto> Lines
         );
+
+    /// <summary>Proveedor que todavía no existe: se registra junto con la compra, o no se registra ninguno de los dos.</summary>
+    public sealed record CreatePurchaseNewSupplierDto(string Ruc, string Name);
 }

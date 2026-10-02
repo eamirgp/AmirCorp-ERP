@@ -1,7 +1,9 @@
 ﻿using ERP.Application.Common.Responses;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Domain.Catalogs;
 using ERP.Domain.Inventory;
+using ERP.Domain.Partners;
 using ERP.Domain.Partners.Enums;
 using ERP.Application.Features.Partners;
 using ERP.Application.Features.UnitsOfMeasure;
@@ -48,7 +50,28 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             if (!company.IsActive)
                 return Result<CreatedResponseDto>.Failure(["La empresa está desactivada."], ErrorType.BadRequest);
 
-            var supplier = await _businessPartnerRepository.GetByIdAsync(request.SupplierId);
+            BusinessPartner? supplier;
+
+            if (request.NewSupplier is { } newSupplier)
+            {
+                // Proveedor nuevo: se registra con la compra, en la misma transacción. Si entretanto alguien ya lo
+                // registró (o existía solo como cliente), se usa ese registro en vez de duplicarlo.
+                var existing = await _businessPartnerRepository.FindByDocumentAsync(IdentityDocumentType.Ruc, newSupplier.Ruc);
+                if (existing is null)
+                {
+                    supplier = BusinessPartner.Create(IdentityDocumentType.Ruc, newSupplier.Ruc, Countries.Peru, newSupplier.Name, isClient: false, isSupplier: true);
+                    _businessPartnerRepository.Add(supplier);
+                }
+                else
+                {
+                    supplier = await _businessPartnerRepository.GetByIdAsync(existing.Id);
+                    if (supplier is { IsSupplier: false })
+                        supplier.AddSupplierRole();
+                }
+            }
+            else
+                supplier = await _businessPartnerRepository.GetByIdAsync(request.SupplierId!.Value);
+
             if (supplier is null)
                 return Result<CreatedResponseDto>.Failure(["El proveedor no existe."], ErrorType.NotFound);
 
@@ -63,7 +86,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
 
             var number = Purchase.NormalizeNumber(request.Number);
 
-            if (await _purchaseRepository.DocumentExistsAsync(request.CompanyId, request.TaxDocumentType, request.SupplierId, request.Serie, number))
+            if (await _purchaseRepository.DocumentExistsAsync(request.CompanyId, request.TaxDocumentType, supplier.Id, request.Serie, number))
                 return Result<CreatedResponseDto>.Failure(["El comprobante ya se encuentra registrado para este proveedor."], ErrorType.Conflict);
 
             var lines = request.Lines.ToArray();
