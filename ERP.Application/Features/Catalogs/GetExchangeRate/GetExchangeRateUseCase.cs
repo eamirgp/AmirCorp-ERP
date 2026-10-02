@@ -18,7 +18,11 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
 
     public interface IGetExchangeRateUseCase
     {
-        Task<Result<GetExchangeRateResponseDto>> ExecuteAsync(Currency currency, DateOnly date, CancellationToken ct = default);
+        /// <param name="storedOnly">
+        /// Solo lo que ya está guardado, sin consultar al servicio externo: la pantalla lo usa para llenar el campo sola
+        /// al elegir la fecha, sin gastar consultas. Si no está guardado responde "no encontrado" y lo pide el usuario.
+        /// </param>
+        Task<Result<GetExchangeRateResponseDto>> ExecuteAsync(Currency currency, DateOnly date, bool storedOnly = false, CancellationToken ct = default);
     }
 
     /// <summary>
@@ -46,7 +50,7 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Result<GetExchangeRateResponseDto>> ExecuteAsync(Currency currency, DateOnly date, CancellationToken ct = default)
+        public async Task<Result<GetExchangeRateResponseDto>> ExecuteAsync(Currency currency, DateOnly date, bool storedOnly = false, CancellationToken ct = default)
         {
             // SUNAT publica el tipo de cambio del dólar; es la única moneda extranjera del sistema.
             if (currency is not Currency.USD)
@@ -58,6 +62,9 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
 
             if (await _exchangeRateRepository.GetAsync(currency, date) is { } stored)
                 return Success(stored.SellRate, stored.PublishedDate, date);
+
+            if (storedOnly)
+                return Failure([$"El tipo de cambio del {Text(date)} todavía no está guardado."], ErrorType.NotFound);
 
             if (!_exchangeRateLookup.IsConfigured)
                 return Failure([$"La consulta del tipo de cambio en {Source} no está configurada. Escríbelo a mano."], ErrorType.Unavailable);
