@@ -7,17 +7,23 @@ namespace ERP.Application.Features.Users.DeactivateUser
     internal sealed class DeactivateUserUseCase : IDeactivateUserUseCase
     {
         private readonly IUserRepository _userRepository;
+        private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly ICurrentUser _currentUser;
+        private readonly TimeProvider _timeProvider;
         private readonly IUnitOfWork _unitOfWork;
 
         public DeactivateUserUseCase(
             IUserRepository userRepository,
+            IRefreshTokenRepository refreshTokenRepository,
             ICurrentUser currentUser,
+            TimeProvider timeProvider,
             IUnitOfWork unitOfWork
             )
         {
             _userRepository = userRepository;
+            _refreshTokenRepository = refreshTokenRepository;
             _currentUser = currentUser;
+            _timeProvider = timeProvider;
             _unitOfWork = unitOfWork;
         }
 
@@ -32,6 +38,9 @@ namespace ERP.Application.Features.Users.DeactivateUser
                 return Result.Failure([permissionError], ErrorType.Forbidden);
 
             user.Deactivate(_currentUser.Role);
+
+            // Sus sesiones abiertas dejan de poder renovarse: al volver a activarlo tendrá que iniciar sesión.
+            await _refreshTokenRepository.RevokeAllForUserAsync(user.Id, _timeProvider.GetUtcNow().UtcDateTime);
 
             await _unitOfWork.SaveChangesAsync();
 

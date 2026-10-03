@@ -32,6 +32,7 @@ namespace ERP.Persistence
                         options.AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
                     })
                     .AddScoped<IUserRepository, UserRepository>()
+                    .AddScoped<IRefreshTokenRepository, RefreshTokenRepository>()
                     .AddScoped<IUserQueries, UserQueries>()
 
                     .AddScoped<ICompanyRepository, CompanyRepository>()

@@ -35,6 +35,8 @@ namespace ERP.Api
                                 )
                             .AllowAnyHeader()
                             .AllowAnyMethod()
+                            // La cookie del refresh token solo viaja si el origen está permitido con credenciales.
+                            .AllowCredentials()
                             // El frontend lee aquí el nombre de los archivos que descarga (plantillas, exportaciones).
                             .WithExposedHeaders("Content-Disposition");
                         });

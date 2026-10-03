@@ -25,6 +25,7 @@ namespace ERP.Persistence.Context
         }
 
         public DbSet<User> Users => Set<User>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<Company> Companies => Set<Company>();
         public DbSet<Product> Products => Set<Product>();
         public DbSet<ProductSupplierCode> ProductSupplierCodes => Set<ProductSupplierCode>();
