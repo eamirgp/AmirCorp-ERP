@@ -63,7 +63,7 @@ namespace ERP.Persistence.Queries
                 .Select(p => new ListPurchasesResponseDto(
                     p.Id,
                     p.CompanyId,
-                    _context.Companies.Where(c => c.Id == p.CompanyId).Select(c => c.Name).FirstOrDefault(),
+                    p.CompanyName,
                     p.TaxDocumentType,
                     p.Serie,
                     p.Number,
@@ -110,7 +110,7 @@ namespace ERP.Persistence.Queries
             .Select(p => new GetPurchaseResponseDto(
                 p.Id,
                 p.CompanyId,
-                _context.Companies.Where(c => c.Id == p.CompanyId).Select(c => c.Name).FirstOrDefault(),
+                p.CompanyName,
                 p.TaxDocumentType,
                 p.Serie,
                 p.Number,

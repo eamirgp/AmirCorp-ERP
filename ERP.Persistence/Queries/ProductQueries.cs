@@ -54,14 +54,14 @@ namespace ERP.Persistence.Queries
                     SupplierCode = supplierId == null
                         ? null
                         : p.SupplierCodes.Where(c => c.SupplierId == supplierId).Select(c => c.Code).FirstOrDefault(),
-                    // Solo si no coincidió el código interno ni el nombre: el primer código de proveedor que coincide.
-                    Match = !hasTerm || p.Code.Contains(codeTerm) || EF.Functions.Unaccent(p.Name.ToLower()).Contains(nameTerm)
+                    // Solo si no coincidió el código interno ni el nombre: el proveedor del primer código que coincide.
+                    MatchedSupplierId = !hasTerm || p.Code.Contains(codeTerm) || EF.Functions.Unaccent(p.Name.ToLower()).Contains(nameTerm)
                         ? null
                         : _context.ProductSupplierCodes
                             .Where(c => c.ProductId == p.Id && c.Code.Contains(codeTerm))
-                            .Join(_context.BusinessPartners, c => c.SupplierId, s => s.Id, (c, s) => new { c.Code, s.Name })
+                            .Join(_context.BusinessPartners, c => c.SupplierId, s => s.Id, (c, s) => new { c.SupplierId, s.Name })
                             .OrderBy(x => x.Name)
-                            .Select(x => "Encontrado por el código " + x.Code + " de " + x.Name)
+                            .Select(x => (Guid?)x.SupplierId)
                             .FirstOrDefault(),
                     RowVersion = EF.Property<uint>(p, "RowVersion")
                 })
@@ -79,7 +79,7 @@ namespace ERP.Persistence.Queries
                     r.Product.IsActive,
                     r.SupplierCodes,
                     r.SupplierCode,
-                    r.Match,
+                    r.MatchedSupplierId,
                     r.RowVersion
                     ))
                 .ToArray();

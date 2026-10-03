@@ -40,7 +40,7 @@ namespace ERP.Application.Features.Products.SupplierCodes
                     errors.Add($"{supplier.Name} no está registrado como proveedor.");
 
                 // Un proveedor con compras bloqueadas conserva los códigos que ya tenía, pero no se le agregan nuevos.
-                var alreadyLinked = product?.SupplierCodes.Any(c => c.SupplierId == supplier.Id) ?? false;
+                var alreadyLinked = product?.SupplierCodeOf(supplier.Id) is not null;
                 if (supplier.IsSupplier && supplier.IsPurchasingBlocked && !alreadyLinked)
                     errors.Add($"Las compras a {supplier.Name} están bloqueadas. Desbloquéalas o elige otro proveedor.");
             }

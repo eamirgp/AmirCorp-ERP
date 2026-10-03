@@ -15,10 +15,13 @@ namespace ERP.Persistence.Commands
             _context.Companies
             .Add(company);
 
-        public async Task<bool> RucExistsAsync(string ruc, Guid? excludeId = null) =>
-            await _context.Companies
-            .Where(c => excludeId == null || c.Id != excludeId)
-            .AnyAsync(c => c.Ruc == ruc);
+        public async Task<bool> RucExistsAsync(string ruc, Guid? excludeId = null)
+        {
+            var normalized = Company.NormalizeRuc(ruc);
+            return await _context.Companies
+                .Where(c => excludeId == null || c.Id != excludeId)
+                .AnyAsync(c => c.Ruc == normalized);
+        }
 
         public async Task<Company?> GetByIdAsync(Guid id) =>
             await _context.Companies

@@ -127,6 +127,9 @@ namespace ERP.Application
                     .AddScoped<IFindBusinessPartnerByDocumentUseCase, FindBusinessPartnerByDocumentUseCase>()
 
                     .AddScoped<ICreatePurchaseUseCase, CreatePurchaseUseCase>()
+                    .AddScoped<PurchaseSupplierResolver>()
+                    .AddScoped<PurchaseLinesChecker>()
+                    .AddScoped<PurchaseLineProducts>()
                     .AddScoped<IListPurchasesUseCase, ListPurchasesUseCase>()
                     .AddScoped<IGetPurchaseUseCase, GetPurchaseUseCase>()
                     .AddScoped<ICancelPurchaseUseCase, CancelPurchaseUseCase>()

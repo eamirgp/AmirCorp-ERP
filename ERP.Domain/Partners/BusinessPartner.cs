@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
 using ERP.Domain.Partners.Enums;
@@ -9,8 +8,6 @@ namespace ERP.Domain.Partners
     {
         // Holgado a propósito: las razones sociales de SUNAT (consorcios, asociaciones) pueden pasar de 100 caracteres.
         public const int NameMaxLength = 200;
-
-        private static readonly Regex Spaces = new(@"\s+", RegexOptions.Compiled);
 
         public IdentityDocumentType IdentityDocumentType { get; private set; }
         public string DocumentNumber { get; private set; }
@@ -90,6 +87,12 @@ namespace ERP.Domain.Partners
             IsPurchasingBlocked = true;
         }
 
+        /// <summary>"Las compras a ACME S.A.C. están bloqueadas (motivo: …).", o null si no lo están.</summary>
+        public string? PurchasingBlockedError() =>
+            IsPurchasingBlocked
+                ? $"Las compras a {Name} están bloqueadas" + (PurchasingBlockReason is { } reason ? $" (motivo: {reason})." : ".")
+                : null;
+
         public void UnblockPurchasing()
         {
             IsPurchasingBlocked = false;
@@ -114,7 +117,7 @@ namespace ERP.Domain.Partners
 
         /// <summary>El nombre tal como se guarda: sin espacios al inicio ni al final, ni dobles en medio.</summary>
         public static string NormalizeName(string name) =>
-            Spaces.Replace(name.Trim(), " ");
+            TextNormalizer.CollapseSpaces(name);
 
         /// <summary>País que corresponde al documento: DNI y RUC son siempre de Perú; el extranjero, el que se indique.</summary>
         public static string? CountryFor(IdentityDocumentType identityDocumentType, string? countryCode) =>

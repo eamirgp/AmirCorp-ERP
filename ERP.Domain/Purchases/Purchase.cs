@@ -1,6 +1,9 @@
 ﻿using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
+using ERP.Domain.Companies;
+using ERP.Domain.Partners;
 using ERP.Domain.Partners.Enums;
+using ERP.Domain.Products;
 using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Domain.Purchases
@@ -14,6 +17,9 @@ namespace ERP.Domain.Purchases
         private static readonly TimeZoneInfo PeruTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
 
         public Guid CompanyId { get; }
+        /// <summary>Copia del RUC y la razón social de la empresa al registrar la compra (el comprador del comprobante).</summary>
+        public string CompanyRuc { get; }
+        public string CompanyName { get; }
         public TaxDocumentType TaxDocumentType { get; }
         public string Serie { get; }
         public string Number { get; }
@@ -37,6 +43,8 @@ namespace ERP.Domain.Purchases
         private Purchase(
             Guid id,
             Guid companyId,
+            string companyRuc,
+            string companyName,
             TaxDocumentType taxDocumentType,
             string serie,
             string number,
@@ -51,6 +59,8 @@ namespace ERP.Domain.Purchases
             ) : base(id)
         {
             CompanyId = companyId;
+            CompanyRuc = companyRuc;
+            CompanyName = companyName;
             TaxDocumentType = taxDocumentType;
             Serie = serie;
             Number = number;
@@ -64,22 +74,24 @@ namespace ERP.Domain.Purchases
             SupplierName = supplierName;
         }
 
+        /// <summary>
+        /// Registra la compra que la empresa le hace al proveedor. Guarda una copia del RUC y la razón social que la
+        /// empresa y el proveedor tienen hoy: si después cambian, la compra sigue mostrando lo que decía su comprobante.
+        /// </summary>
         public static Purchase Create(
-            Guid companyId,
+            Company company,
+            BusinessPartner supplier,
             TaxDocumentType taxDocumentType,
             string serie,
             string number,
             DateOnly issueDate,
             Currency currency,
             decimal? exchangeRate,
-            InvoicePriceType invoicePriceType,
-            Guid supplierId,
-            IdentityDocumentType supplierIdentityDocumentType,
-            string supplierDocumentNumber,
-            string supplierName
+            InvoicePriceType invoicePriceType
             )
         {
-            ValidateCompany(companyId);
+            if (PartiesError(company, supplier) is { } partiesError)
+                throw new DomainException(partiesError);
             ValidateTaxDocumentType(taxDocumentType);
             var normalizedSerie = ValidateSerie(serie);
             if (SerieError(taxDocumentType, normalizedSerie) is { } serieError)
@@ -89,11 +101,12 @@ namespace ERP.Domain.Purchases
             ValidateCurrency(currency);
             ValidateExchangeRate(currency, exchangeRate);
             ValidateInvoicePriceType(invoicePriceType);
-            ValidateSupplier(supplierId, supplierIdentityDocumentType);
 
             return new(
                 Guid.CreateVersion7(),
-                companyId,
+                company.Id,
+                company.Ruc,
+                company.Name,
                 taxDocumentType,
                 normalizedSerie,
                 normalizedNumber,
@@ -101,19 +114,44 @@ namespace ERP.Domain.Purchases
                 currency,
                 exchangeRate,
                 invoicePriceType,
-                supplierId,
-                supplierIdentityDocumentType,
-                supplierDocumentNumber,
-                supplierName
+                supplier.Id,
+                supplier.IdentityDocumentType,
+                supplier.DocumentNumber,
+                supplier.Name
                 );
         }
 
+        /// <summary>
+        /// Qué impide que la empresa le compre a ese proveedor, o null si puede. La usa <see cref="Create"/> y el
+        /// registro de la compra para responder con un mensaje claro antes de crearla.
+        /// </summary>
+        public static string? PartiesError(Company company, BusinessPartner supplier)
+        {
+            if (!company.IsActive)
+                return "La empresa está desactivada.";
+
+            if (!supplier.IsSupplier)
+                return "El cliente elegido no está registrado como proveedor.";
+
+            // Una empresa no se compra a sí misma: casi siempre es el RUC propio escrito por error en vez del proveedor.
+            if (supplier.IdentityDocumentType.IsDomesticTaxpayer && supplier.DocumentNumber == company.Ruc)
+                return $"El proveedor tiene el mismo RUC que la empresa que compra ({company.Ruc}). Revisa cuál de los dos está mal elegido.";
+
+            if (supplier.PurchasingBlockedError() is { } blocked)
+                return blocked;
+
+            if (!supplier.IdentityDocumentType.IsDomesticTaxpayer)
+                return "El proveedor de una compra nacional debe tener RUC.";
+
+            return null;
+        }
+
+        /// <summary>
+        /// Agrega el producto con lo que dice la factura. La línea guarda una copia del código interno y el nombre del
+        /// producto, y el código que este proveedor usa para él (null si no tiene uno enlazado).
+        /// </summary>
         public PurchaseLine AddLine(
-            Guid productId,
-            string productCode,
-            string productName,
-            // Código del producto en la factura del proveedor; null si la factura no trae código.
-            string? supplierProductCode,
+            Product product,
             IgvAffectation invoiceIgvAffectation,
             UnitOfMeasure invoiceUnitOfMeasure,
             decimal invoiceQuantity,
@@ -122,16 +160,19 @@ namespace ERP.Domain.Purchases
             decimal? conversionFactor
             )
         {
-            if (_lines.Any(l => l.ProductId == productId))
-                throw new DomainException($"El producto con ID '{productId}' está duplicado en la compra.");
+            if (ProductError(product) is { } productError)
+                throw new DomainException(productError);
+
+            if (_lines.Any(l => l.ProductId == product.Id))
+                throw new DomainException($"El producto {product.Code} está más de una vez en la compra.");
 
             var purchaseLine = PurchaseLine.Create(
                 Id,
                 _lines.Count + 1,
-                productId,
-                productCode,
-                productName,
-                supplierProductCode,
+                product.Id,
+                product.Code,
+                product.Name,
+                product.SupplierCodeOf(SupplierId)?.Code,
                 InvoicePriceType,
                 invoiceIgvAffectation,
                 invoiceUnitOfMeasure,
@@ -148,6 +189,10 @@ namespace ERP.Domain.Purchases
             RecalculateTotals();
             return purchaseLine;
         }
+
+        /// <summary>Qué impide comprar el producto, o null si se puede.</summary>
+        public static string? ProductError(Product product) =>
+            product.IsActive ? null : $"El producto '{product.Name}' está desactivado.";
 
         public void EnsureHasLines()
         {
@@ -189,12 +234,6 @@ namespace ERP.Domain.Purchases
 
         public static string NormalizeNumber(string number) =>
             number.Trim().PadLeft(NumberMaxLength, '0');
-
-        private static void ValidateCompany(Guid companyId)
-        {
-            if (companyId == Guid.Empty)
-                throw new DomainException("La empresa es requerida.");
-        }
 
         private static void ValidateTaxDocumentType(TaxDocumentType taxDocumentType)
         {
@@ -288,15 +327,6 @@ namespace ERP.Domain.Purchases
         {
             if (!Enum.IsDefined(invoicePriceType))
                 throw new DomainException("El tipo de precio es inválido.");
-        }
-
-        private static void ValidateSupplier(Guid supplierId, IdentityDocumentType supplierIdentityDocumentType)
-        {
-            if (supplierId == Guid.Empty)
-                throw new DomainException("El proveedor es requerido.");
-
-            if (!supplierIdentityDocumentType.IsDomesticTaxpayer)
-                throw new DomainException("El proveedor de una compra nacional debe tener RUC.");
         }
 
         private static string ValidateCancellationReason(string cancellationReason)

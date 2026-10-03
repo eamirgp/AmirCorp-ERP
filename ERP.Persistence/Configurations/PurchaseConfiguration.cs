@@ -19,6 +19,14 @@ namespace ERP.Persistence.Configurations
             builder.Property(p => p.CompanyId)
                 .IsRequired();
 
+            builder.Property(p => p.CompanyRuc)
+                .IsRequired()
+                .HasMaxLength(Company.RucLength);
+
+            builder.Property(p => p.CompanyName)
+                .IsRequired()
+                .HasMaxLength(Company.NameMaxLength);
+
             builder.Property(p => p.TaxDocumentType)
                 .IsRequired()
                 .HasMaxLength(20)

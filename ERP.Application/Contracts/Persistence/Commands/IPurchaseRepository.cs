@@ -11,5 +11,8 @@ namespace ERP.Application.Contracts.Persistence.Commands
 
         /// <summary>Cuántas compras tiene el proveedor, anuladas incluidas.</summary>
         Task<int> CountBySupplierAsync(Guid supplierId);
+
+        /// <summary>Si la empresa tiene alguna compra, anuladas incluidas.</summary>
+        Task<bool> ExistsByCompanyAsync(Guid companyId);
     }
 }

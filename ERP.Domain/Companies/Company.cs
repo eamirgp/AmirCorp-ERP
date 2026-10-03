@@ -1,10 +1,11 @@
-﻿using ERP.Domain.Common;
+using ERP.Domain.Common;
+using ERP.Domain.Partners.Enums;
 
 namespace ERP.Domain.Companies
 {
     public sealed class Company : AuditableEntity
     {
-        public const int RucLength = 11;
+        public const int RucLength = IdentityDocumentTypeExtensions.RucLength;
         // Igual que clientes y proveedores: una razón social de SUNAT puede pasar de 100 caracteres.
         public const int NameMaxLength = 200;
 
@@ -22,8 +23,19 @@ namespace ERP.Domain.Companies
         public static Company Create(string ruc, string name) =>
             new(Guid.CreateVersion7(), ValidateRuc(ruc), ValidateName(name), isActive: true);
 
-        public void UpdateRuc(string ruc) =>
-            Ruc = ValidateRuc(ruc);
+        /// <summary>
+        /// Corrige el RUC. Solo mientras la empresa no tenga compras: el RUC identifica al contribuyente, y cambiarlo
+        /// con compras registradas mezclaría dos empresas. Cada compra guarda su propia copia del RUC.
+        /// </summary>
+        /// <param name="hasPurchases">Si la empresa ya tiene compras registradas (también las anuladas).</param>
+        public void UpdateRuc(string ruc, bool hasPurchases)
+        {
+            var normalized = ValidateRuc(ruc);
+            if (RucChangeError(normalized, hasPurchases) is { } error)
+                throw new DomainException(error);
+
+            Ruc = normalized;
+        }
 
         public void UpdateName(string name) =>
             Name = ValidateName(name);
@@ -34,26 +46,51 @@ namespace ERP.Domain.Companies
         public void Deactivate() =>
             IsActive = false;
 
+        /// <summary>El RUC tal como se guarda: sin espacios.</summary>
+        public static string NormalizeRuc(string ruc) =>
+            IdentityDocumentTypeExtensions.NormalizeDocumentNumber(ruc);
+
+        /// <summary>
+        /// Qué tiene de malo el RUC, o null si es válido. Se valida como el de un proveedor: 11 dígitos, prefijo y dígito
+        /// verificador. La usan el dominio y la API, que avisa todos los errores juntos.
+        /// </summary>
+        public static string? RucError(string? ruc) =>
+            string.IsNullOrWhiteSpace(ruc)
+                ? "El RUC es requerido."
+                : IdentityDocumentType.Ruc.DocumentNumberError(NormalizeRuc(ruc));
+
+        /// <summary>Qué tiene de malo la razón social, o null si está bien.</summary>
+        public static string? NameError(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return "El nombre es requerido.";
+
+            if (TextNormalizer.CollapseSpaces(name).Length > NameMaxLength)
+                return $"El nombre no puede exceder los {NameMaxLength} caracteres.";
+
+            return null;
+        }
+
+        /// <summary>Qué impide cambiar el RUC por ese, o null si se puede (o si no cambia).</summary>
+        public string? RucChangeError(string ruc, bool hasPurchases) =>
+            hasPurchases && NormalizeRuc(ruc) != Ruc
+                ? $"{Name} ya tiene compras registradas con el RUC {Ruc}, así que el RUC no se puede cambiar. Si es otra empresa, regístrala como una empresa nueva."
+                : null;
+
         private static string ValidateRuc(string ruc)
         {
-            if (string.IsNullOrWhiteSpace(ruc))
-                throw new DomainException("El RUC es requerido.");
+            if (RucError(ruc) is { } error)
+                throw new DomainException(error);
 
-            if (ruc.Length != RucLength || !ruc.All(char.IsDigit))
-                throw new DomainException($"El RUC debe tener {RucLength} dígitos.");
-
-            return ruc;
+            return NormalizeRuc(ruc);
         }
 
         private static string ValidateName(string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new DomainException("El nombre es requerido.");
+            if (NameError(name) is { } error)
+                throw new DomainException(error);
 
-            if (name.Length > NameMaxLength)
-                throw new DomainException($"El nombre no puede exceder los {NameMaxLength} caracteres.");
-
-            return name;
+            return TextNormalizer.CollapseSpaces(name);
         }
     }
 }

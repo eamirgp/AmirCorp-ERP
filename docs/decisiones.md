@@ -186,7 +186,18 @@ La compra se registra copiando la factura del proveedor, sin tener que ir antes 
   - La serie debe corresponder al comprobante: factura F o E, boleta B o EB, o numérica si es física.
   - El proveedor no puede tener el RUC de la empresa que compra.
   - El código interno y el código del proveedor de un producto nuevo no pueden ser de otro producto.
+- **Dónde viven las reglas:** en el dominio. `Purchase.Create` recibe la empresa y el proveedor (no solo sus datos) y rechaza la compra si la empresa está desactivada, si no es proveedor, si tiene las compras bloqueadas, si no tiene RUC o si es el RUC de la empresa (`Purchase.PartiesError`). `AddLine` recibe el producto: rechaza uno desactivado y copia su código, nombre y el código de ese proveedor. Enlazar un código lo valida `Product.AddSupplierCode` (`SupplierCodeError`). El registro revisa antes esas mismas funciones para responder con todos los errores juntos. Solo quedan fuera del dominio las reglas que miran otros registros (un código ya usado por otro producto), en `PurchaseLinesChecker`. El registro se divide en `PurchaseSupplierResolver` (proveedor elegido o nuevo), `PurchaseLinesChecker` (errores de las líneas) y `PurchaseLineProducts` (producto de cada línea, existente o nuevo).
 - **Pendiente:**
   - Facturas sin código de producto.
   - Importar el XML de la factura.
   - El costo en soles de las compras en dólares y el IGV de las boletas como costo (a revisar con el contador).
+
+### 18. Empresas propias: RUC verificado y protegido
+**Fecha:** octubre 2026
+
+Las mismas reglas que el documento de un proveedor (decisión 16), aplicadas a las empresas que compran y venden.
+
+- **RUC verificado como SUNAT:** 11 dígitos, prefijo y dígito verificador, con la misma función del dominio (`DocumentNumberError`). Antes solo se revisaba que tuviera 11 dígitos. Se guarda sin espacios, y la razón social sin espacios de sobra.
+- **El RUC no cambia si la empresa tiene compras** (anuladas incluidas): se puede corregir un error de tipeo mientras no tenga compras; después no, porque las compras quedarían a nombre de otro contribuyente. Si es otra empresa, se registra como nueva. La regla está en el dominio (`Company.UpdateRuc` y `RucChangeError`); el caso de uso solo averigua si hay compras. Cuando exista Ventas, las ventas cuentan igual.
+- **La compra guarda una copia** del RUC y la razón social de la empresa (`CompanyRuc`, `CompanyName`), como ya lo hacía con el proveedor. El detalle y la lista muestran esa copia, no el nombre actual de la empresa. La migración `AddPurchaseCompanyCopy` llenó las compras anteriores con los datos que la empresa tenía ese día.
+- **Una sola regla para la API y el dominio:** el dominio expone `Company.RucError` y `NameError`, que devuelven el mensaje o null. El dominio lanza el error con ellas, y la API las usa para avisar todos los errores juntos. Es el patrón que se irá aplicando al resto de los módulos.

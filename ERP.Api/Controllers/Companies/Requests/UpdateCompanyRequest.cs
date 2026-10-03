@@ -10,17 +10,14 @@ namespace ERP.Api.Controllers.Companies.Requests
     {
         public IReadOnlyCollection<string> Validate()
         {
+            // Las mismas reglas del dominio, revisadas antes para avisar todos los errores juntos.
             var errors = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(Ruc))
-                errors.Add("El RUC es requerido.");
-            else if (Ruc.Length != Company.RucLength || !Ruc.All(char.IsDigit))
-                errors.Add($"El RUC debe tener {Company.RucLength} dígitos.");
+            if (Company.RucError(Ruc) is { } rucError)
+                errors.Add(rucError);
 
-            if (string.IsNullOrWhiteSpace(Name))
-                errors.Add("El nombre es requerido.");
-            else if (Name.Length > Company.NameMaxLength)
-                errors.Add($"El nombre no puede exceder los {Company.NameMaxLength} caracteres.");
+            if (Company.NameError(Name) is { } nameError)
+                errors.Add(nameError);
 
             return errors;
         }

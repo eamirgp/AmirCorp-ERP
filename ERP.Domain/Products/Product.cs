@@ -1,5 +1,6 @@
 ﻿using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
+using ERP.Domain.Partners;
 using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Domain.Products
@@ -71,7 +72,7 @@ namespace ERP.Domain.Products
 
             foreach (var (supplierId, code) in normalized)
             {
-                var existing = _supplierCodes.FirstOrDefault(c => c.SupplierId == supplierId);
+                var existing = SupplierCodeOf(supplierId);
                 if (existing is null)
                     _supplierCodes.Add(ProductSupplierCode.Create(Id, supplierId, code));
                 else if (existing.Code != code)
@@ -79,20 +80,40 @@ namespace ERP.Domain.Products
             }
         }
 
+        /// <summary>El código con que ese proveedor identifica al producto, o null si no está enlazado.</summary>
+        public ProductSupplierCode? SupplierCodeOf(Guid supplierId) =>
+            _supplierCodes.FirstOrDefault(c => c.SupplierId == supplierId);
+
         /// <summary>
-        /// Enlaza el código con que un proveedor vende este producto (por ejemplo, desde una compra a un proveedor nuevo).
+        /// Enlaza el código con que un proveedor vende este producto (por ejemplo, desde una compra).
         /// Si ya tiene ese mismo código no cambia nada; si tiene otro de ese proveedor, se corrige desde Productos.
         /// </summary>
-        public void AddSupplierCode(Guid supplierId, string code)
+        public void AddSupplierCode(BusinessPartner supplier, string code)
         {
-            var normalized = ValidateSupplierCode(supplierId, code);
-            var existing = _supplierCodes.FirstOrDefault(c => c.SupplierId == supplierId);
+            var normalized = ValidateSupplierCode(supplier.Id, code);
+            if (SupplierCodeError(supplier, normalized) is { } error)
+                throw new DomainException(error);
 
-            if (existing is not null && existing.Code != normalized)
-                throw new DomainException($"El producto {Code} ya tiene el código {existing.Code} de este proveedor. Si cambió, corrígelo desde Productos.");
+            if (SupplierCodeOf(supplier.Id) is null)
+                _supplierCodes.Add(ProductSupplierCode.Create(Id, supplier.Id, normalized));
+        }
 
-            if (existing is null)
-                _supplierCodes.Add(ProductSupplierCode.Create(Id, supplierId, normalized));
+        /// <summary>
+        /// Qué impide enlazar ese código del proveedor al producto, o null si se puede. Un producto tiene un solo código
+        /// por proveedor, y a un proveedor con compras bloqueadas no se le agregan códigos nuevos (conserva los que tenía).
+        /// La usa <see cref="AddSupplierCode"/> y el registro de la compra para avisar antes, junto con los demás errores.
+        /// </summary>
+        public string? SupplierCodeError(BusinessPartner supplier, string code)
+        {
+            if (SupplierCodeOf(supplier.Id) is { } existing)
+                return existing.Code == ProductSupplierCode.NormalizeCode(code)
+                    ? null
+                    : $"El producto {Code} ya tiene el código {existing.Code} de {supplier.Name}. Si cambió, corrígelo desde Productos.";
+
+            if (!supplier.IsSupplier)
+                return $"{supplier.Name} no está registrado como proveedor.";
+
+            return supplier.PurchasingBlockedError();
         }
 
         public void Activate() =>

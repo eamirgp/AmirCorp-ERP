@@ -5,7 +5,8 @@ namespace ERP.Application.Features.Purchases.ListPurchases
     public sealed record ListPurchasesResponseDto(
         Guid Id,
         Guid CompanyId,
-        string? CompanyName,
+        // Copia guardada en la compra: la razón social que la empresa tenía al registrarla.
+        string CompanyName,
         TaxDocumentType TaxDocumentType,
         string Serie,
         string Number,
