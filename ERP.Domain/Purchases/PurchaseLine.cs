@@ -76,7 +76,7 @@ namespace ERP.Domain.Purchases
             UnitOfMeasure invoiceUnitOfMeasure,
             decimal invoiceQuantity,
             decimal invoiceAmount,
-            decimal conversionFactor
+            decimal? conversionFactor
             )
         {
             ValidateProduct(productId);
@@ -99,7 +99,7 @@ namespace ERP.Domain.Purchases
                 invoiceQuantity,
                 amounts.InvoiceUnitValue,
                 amounts.InvoiceUnitPrice,
-                conversionFactor,
+                amounts.ConversionFactor,
                 amounts.InventoryQuantity,
                 amounts.InventoryUnitCost,
                 amounts.BaseAmount,
@@ -118,14 +118,18 @@ namespace ERP.Domain.Purchases
             UnitOfMeasure invoiceUnitOfMeasure,
             decimal invoiceQuantity,
             decimal invoiceAmount,
-            decimal conversionFactor
+            decimal? requestedConversionFactor
             )
         {
             ValidateInvoicePriceType(invoicePriceType);
             ValidateInvoiceIgvAffectation(invoiceIgvAffectation);
             ValidateInvoiceQuantity(invoiceQuantity);
             ValidateInvoiceAmount(invoiceAmount, invoicePriceType);
-            ValidateConversionFactor(conversionFactor, invoiceUnitOfMeasure);
+            if (ConversionFactorError(invoiceUnitOfMeasure, requestedConversionFactor) is { } factorError)
+                throw new DomainException(factorError);
+
+            // Con una unidad de cantidad fija (Unidad 1, Docena 12) la pone el catálogo; con una variable (Caja), la factura.
+            var conversionFactor = invoiceUnitOfMeasure.FixedConversionFactor ?? requestedConversionFactor!.Value;
 
             var rate = invoiceIgvAffectation.Rate;
 
@@ -151,7 +155,28 @@ namespace ERP.Domain.Purchases
             var inventoryQuantity = invoiceQuantity * conversionFactor;
             var inventoryUnitCost = Math.Round(baseAmount / inventoryQuantity, 6, MidpointRounding.AwayFromZero);
 
-            return new PurchaseLineAmounts(invoiceUnitValue, invoiceUnitPrice, inventoryQuantity, inventoryUnitCost, baseAmount, igvAmount, total);
+            return new PurchaseLineAmounts(invoiceUnitValue, invoiceUnitPrice, conversionFactor, inventoryQuantity, inventoryUnitCost, baseAmount, igvAmount, total);
+        }
+
+        /// <summary>
+        /// Qué tiene de malo la cantidad de unidades por cada unidad de la factura, o null si está bien. Con una unidad
+        /// de cantidad fija (Unidad 1, Docena 12) no hace falta indicarla: la pone el catálogo, y si se indica otra es
+        /// un error. Con una variable (Caja), es obligatoria: solo la factura dice cuántas trae.
+        /// La usa el dominio para rechazar la línea y el registro de la compra para avisar antes, junto con los demás errores.
+        /// </summary>
+        public static string? ConversionFactorError(UnitOfMeasure unitOfMeasure, decimal? conversionFactor)
+        {
+            var name = unitOfMeasure.Name.ToLowerInvariant();
+
+            if (unitOfMeasure.FixedConversionFactor is { } fixedFactor)
+                return conversionFactor is null || conversionFactor == fixedFactor
+                    ? null
+                    : $"Cada {name} trae {fixedFactor:0.######} unidades: no se puede indicar otra cantidad.";
+
+            if (conversionFactor is null)
+                return $"Indica cuántas unidades trae cada {name}.";
+
+            return conversionFactor <= 0 ? $"Las unidades por {name} deben ser mayores a cero." : null;
         }
 
         private static void ValidateProduct(Guid productId)
@@ -182,16 +207,6 @@ namespace ERP.Domain.Purchases
         {
             if (invoiceAmount <= 0)
                 throw new DomainException($"El {invoicePriceType.Description.ToLowerInvariant()} debe ser mayor a cero.");
-        }
-
-        private static void ValidateConversionFactor(decimal conversionFactor, UnitOfMeasure unitOfMeasure)
-        {
-            if (conversionFactor <= 0)
-                throw new DomainException($"Las unidades por {unitOfMeasure.Name.ToLowerInvariant()} deben ser mayores a cero.");
-
-            var fixedFactor = unitOfMeasure.FixedConversionFactor;
-            if (fixedFactor is not null && conversionFactor != fixedFactor)
-                throw new DomainException($"Cada {unitOfMeasure.Name.ToLowerInvariant()} trae {fixedFactor.Value:0.######} unidades: no se puede indicar otra cantidad.");
         }
     }
 }

@@ -6,6 +6,8 @@ namespace ERP.Domain.Purchases
     public sealed record PurchaseLineAmounts(
         decimal InvoiceUnitValue,
         decimal InvoiceUnitPrice,
+        // Unidades por cada unidad de la factura que se aplicaron (la fija del catálogo o la de la factura).
+        decimal ConversionFactor,
         decimal InventoryQuantity,
         decimal InventoryUnitCost,
         decimal BaseAmount,

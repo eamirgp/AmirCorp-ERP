@@ -116,7 +116,8 @@ namespace ERP.Domain.Purchases
             UnitOfMeasure invoiceUnitOfMeasure,
             decimal invoiceQuantity,
             decimal invoiceAmount,
-            decimal conversionFactor
+            // Null con una unidad de cantidad fija (Unidad, Docena): la pone el catálogo.
+            decimal? conversionFactor
             )
         {
             if (_lines.Any(l => l.ProductId == productId))

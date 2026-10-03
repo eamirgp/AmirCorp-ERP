@@ -123,8 +123,12 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 }
 
                 var code = lines[i].InvoiceUnitOfMeasureCode;
-                if (UnitOfMeasureRules.CheckUsable(units.GetValueOrDefault(UnitOfMeasure.NormalizeCode(code)), code) is { } unitError)
+                var unit = units.GetValueOrDefault(UnitOfMeasure.NormalizeCode(code));
+                if (UnitOfMeasureRules.CheckUsable(unit, code) is { } unitError)
                     errors.Add($"Línea {lineNumber}: {unitError}");
+                // La misma regla del dominio, revisada antes para avisar todos los errores juntos.
+                else if (PurchaseLine.ConversionFactorError(unit!, lines[i].ConversionFactor) is { } factorError)
+                    errors.Add($"Línea {lineNumber}: {factorError}");
             }
 
             errors.AddRange(await CheckNewProductsAsync(lines, supplier, units));

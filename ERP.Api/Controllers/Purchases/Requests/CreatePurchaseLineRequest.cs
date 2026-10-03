@@ -65,9 +65,8 @@ namespace ERP.Api.Controllers.Purchases.Requests
             if (InvoiceAmount is not null && InvoiceAmount <= 0)
                 errors.Add($"Línea {lineNumber}: {amountLabel} debe ser mayor a cero.");
 
-            if (ConversionFactor is null)
-                errors.Add($"Línea {lineNumber}: Indica cuántas unidades trae cada caja o paquete.");
-
+            // Las unidades por caja solo hacen falta con unidades variables (Caja): eso lo revisa el registro con el
+            // catálogo de unidades. Aquí solo se descarta un valor imposible.
             if (ConversionFactor is not null && ConversionFactor <= 0)
                 errors.Add($"Línea {lineNumber}: Las unidades por caja o paquete deben ser mayores a cero.");
 
@@ -87,7 +86,7 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 InvoiceUnitOfMeasureCode!,
                 InvoiceQuantity!.Value,
                 InvoiceAmount!.Value,
-                ConversionFactor!.Value
+                ConversionFactor
                 );
     }
 

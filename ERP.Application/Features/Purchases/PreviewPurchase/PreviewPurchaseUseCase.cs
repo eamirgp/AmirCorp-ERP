@@ -36,15 +36,14 @@ namespace ERP.Application.Features.Purchases.PreviewPurchase
                     ? null
                     : units.GetValueOrDefault(UnitOfMeasure.NormalizeCode(line.InvoiceUnitOfMeasureCode));
 
-                // Si la unidad tiene un factor fijo (NIU = 1, DZN = 12) y aún no se envió, se usa ese.
-                var conversionFactor = line.ConversionFactor ?? unit?.FixedConversionFactor;
-
+                // Con una unidad fija (Unidad 1, Docena 12) el dominio pone la cantidad; con una variable (Caja), la
+                // línea está incompleta hasta que se indiquen las unidades por caja.
                 if (request.InvoicePriceType is null
                     || line.InvoiceIgvAffectation is null
                     || unit is null
                     || line.InvoiceQuantity is null
                     || line.InvoiceAmount is null
-                    || conversionFactor is null)
+                    || (unit.FixedConversionFactor is null && line.ConversionFactor is null))
                 {
                     results.Add(new PreviewPurchaseLineResponseDto(lineNumber, null, null, null, null, null, null));
                     continue;
@@ -58,7 +57,7 @@ namespace ERP.Application.Features.Purchases.PreviewPurchase
                         unit,
                         line.InvoiceQuantity.Value,
                         line.InvoiceAmount.Value,
-                        conversionFactor.Value
+                        line.ConversionFactor
                         );
 
                     calculated.Add(amounts);
