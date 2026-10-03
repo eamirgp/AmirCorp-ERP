@@ -51,7 +51,13 @@ namespace ERP.Api
                         options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
                         options.JsonSerializerOptions.Converters.Add(new TrimmingStringConverter());
                     })
-                    .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = InvalidModelStateResponse.Create);
+                    .ConfigureApiBehaviorOptions(options =>
+                    {
+                        options.InvalidModelStateResponseFactory = InvalidModelStateResponse.Create;
+                        // Sin el "ProblemDetails" en inglés de ASP.NET (por ejemplo en un 415): esas respuestas salen
+                        // sin cuerpo y StatusCodeResponse les pone { errors: [...] } en español.
+                        options.SuppressMapClientErrors = true;
+                    });
 
                 // El generador de OpenAPI lee estas opciones: deben coincidir con las de los controladores
                 // para que documente los enums como texto y los números solo como números.
