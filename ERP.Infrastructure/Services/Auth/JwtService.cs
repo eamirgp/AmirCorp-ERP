@@ -17,7 +17,7 @@ namespace ERP.Infrastructure.Services.Auth
             _jwtSettings = jwtSettings.Value;
         }
 
-        public string GenerateToken(Guid userId, string name, string email, string role)
+        public string GenerateToken(Guid userId, string name, string email, string role, Guid sessionId)
         {
             var handler = new JsonWebTokenHandler();
 
@@ -26,7 +26,8 @@ namespace ERP.Infrastructure.Services.Auth
                 new(ClaimTypes.NameIdentifier, userId.ToString()),
                 new(ClaimTypes.Name, name),
                 new(ClaimTypes.Email, email),
-                new(ClaimTypes.Role, role)
+                new(ClaimTypes.Role, role),
+                new(IJwtService.SessionClaim, sessionId.ToString())
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor

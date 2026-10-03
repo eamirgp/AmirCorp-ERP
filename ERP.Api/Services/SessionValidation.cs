@@ -1,4 +1,5 @@
 using ERP.Api.Common;
+using ERP.Application.Contracts.Infrastructure;
 using ERP.Application.Features.Auth.Session;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Security.Claims;
@@ -19,14 +20,16 @@ namespace ERP.Api.Services
             OnTokenValidated = async context =>
             {
                 if (context.Principal?.Identity is not ClaimsIdentity identity
-                    || !Guid.TryParse(identity.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
+                    || !Guid.TryParse(identity.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId)
+                    || !Guid.TryParse(identity.FindFirst(IJwtService.SessionClaim)?.Value, out var sessionId))
                 {
-                    context.Fail("El token no tiene el identificador del usuario.");
+                    // Un token de antes de este cambio no dice su sesión: la pantalla lo renueva y sigue.
+                    context.Fail("El token no tiene el usuario o la sesión.");
                     return;
                 }
 
                 var useCase = context.HttpContext.RequestServices.GetRequiredService<IValidateSessionUseCase>();
-                var result = await useCase.ExecuteAsync(userId);
+                var result = await useCase.ExecuteAsync(userId, sessionId);
 
                 if (!result.IsSuccess)
                 {

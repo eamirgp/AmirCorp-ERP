@@ -1,3 +1,4 @@
+using ERP.Application.Common.Exceptions;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Users;
@@ -65,25 +66,62 @@ namespace ERP.Application.Features.Auth.Refresh
                 return Unauthorized(Expired);
             }
 
-            // Otra pestaña acaba de renovar con este mismo token: la cookie del navegador ya es la nueva, así que solo
-            // hace falta un token de acceso.
-            if (current.RevokedAt is { } revokedAt)
-                return Result<AuthSessionDto>.Success(_sessionTokens.AccessOnly(user, Min(revokedAt + RefreshToken.IdleLifetime, current.SessionExpiresAt)));
+            if (current.IsRevoked)
+                return await ContinueReplacedAsync(current, user, now);
 
             if (current.RefreshError(now) is { } error)
                 return Unauthorized(error);
 
+            return await RotateAsync(current, user, now);
+        }
+
+        private async Task<Result<AuthSessionDto>> RotateAsync(RefreshToken current, User user, DateTime now)
+        {
             var (session, next) = _sessionTokens.Rotate(current, user, now);
             _refreshTokenRepository.Add(next);
 
-            await _unitOfWork.SaveChangesAsync();
+            try
+            {
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (ConcurrencyException)
+            {
+                // Otro pedido renovó con este mismo token por milisegundos (la versión del token cambió): ese ganó y este
+                // no guarda nada. No es un error para el usuario: recibe un token de acceso y la cookie queda la del otro.
+                return await AccessOnlyIfOpenAsync(current.FamilyId, user, now);
+            }
 
             return Result<AuthSessionDto>.Success(session);
         }
 
+        /// <summary>Solo un token de acceso, sin tocar la cookie, si la sesión sigue abierta.</summary>
+        private async Task<Result<AuthSessionDto>> AccessOnlyIfOpenAsync(Guid familyId, User user, DateTime now)
+        {
+            var open = (await _refreshTokenRepository.ListUnrevokedInFamilyAsync(familyId)).FirstOrDefault(t => t.IsActive(now));
+            return open is null
+                ? Unauthorized(Expired)
+                : Result<AuthSessionDto>.Success(_sessionTokens.AccessOnly(user, familyId, open.ExpiresAt));
+        }
+
+        /// <summary>
+        /// Llegó un token que se reemplazó hace segundos (dentro del margen). Puede ser otra pestaña que renovó al mismo
+        /// tiempo, o el mismo navegador reintentando porque la respuesta con el token nuevo no le llegó (se cortó la
+        /// conexión). Solo se sigue si la sesión sigue abierta: si en esos segundos se cerró sesión o se restableció la
+        /// contraseña, ya no.
+        /// </summary>
+        private async Task<Result<AuthSessionDto>> ContinueReplacedAsync(RefreshToken current, User user, DateTime now)
+        {
+            // El siguiente nunca se usó: puede que no haya llegado al navegador. Se renueva desde él y la cookie queda al
+            // día; si sí había llegado, el navegador simplemente la reemplaza por esta.
+            var successor = await _refreshTokenRepository.GetByIdAsync(current.ReplacedById!.Value);
+            if (successor is not null && successor.IsActive(now))
+                return await RotateAsync(successor, user, now);
+
+            // El siguiente ya se usó en este navegador: basta un token de acceso, sin tocar la cookie.
+            return await AccessOnlyIfOpenAsync(current.FamilyId, user, now);
+        }
+
         private static Result<AuthSessionDto> Unauthorized(string message) =>
             Result<AuthSessionDto>.Failure([message], ErrorType.Unauthorized);
-
-        private static DateTime Min(DateTime a, DateTime b) => a < b ? a : b;
     }
 }

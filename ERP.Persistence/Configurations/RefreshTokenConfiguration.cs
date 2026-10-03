@@ -38,6 +38,11 @@ namespace ERP.Persistence.Configurations
 
             builder.Ignore(t => t.IsRevoked);
 
+            // Dos renovaciones al mismo tiempo con el mismo token no pueden reemplazarlo las dos (quedarían dos sesiones
+            // abiertas): la segunda choca con la versión (xmin) y se responde 409 sin guardar nada.
+            builder.Property<uint>("RowVersion")
+                .IsRowVersion();
+
             builder.HasOne<User>()
                 .WithMany()
                 .HasForeignKey(t => t.UserId)

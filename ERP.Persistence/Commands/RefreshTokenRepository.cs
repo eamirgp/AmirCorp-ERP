@@ -21,6 +21,16 @@ namespace ERP.Persistence.Commands
             await _context.RefreshTokens
             .SingleOrDefaultAsync(t => t.TokenHash == tokenHash);
 
+        public async Task<RefreshToken?> GetByIdAsync(Guid id) =>
+            await _context.RefreshTokens
+            .FindAsync(id);
+
+        public async Task<IReadOnlyCollection<RefreshToken>> ListUnrevokedInFamilyAsync(Guid familyId) =>
+            await _context.RefreshTokens
+            .AsNoTracking()
+            .Where(t => t.FamilyId == familyId && t.RevokedAt == null)
+            .ToListAsync();
+
         public async Task RevokeFamilyAsync(Guid familyId, DateTime now)
         {
             foreach (var token in await _context.RefreshTokens.Where(t => t.FamilyId == familyId && t.RevokedAt == null).ToListAsync())

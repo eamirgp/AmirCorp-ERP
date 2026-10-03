@@ -36,8 +36,9 @@ namespace ERP.Application.Features.Auth.Login
 
         public async Task<Result<AuthSessionDto>> ExecuteAsync(LoginDto request)
         {
-            // Después de varias contraseñas equivocadas seguidas hay que esperar: así no se pueden probar muchas.
-            if (_loginThrottle.WaitFor(request.Email, request.ClientIp) is { } wait)
+            // Después de varias contraseñas equivocadas seguidas hay que esperar: así no se pueden probar muchas. El
+            // intento se cuenta antes de revisar la contraseña, para que varios enviados a la vez no se salten el límite.
+            if (_loginThrottle.TryBegin(request.Email, request.ClientIp) is { } wait)
                 return Result<AuthSessionDto>.Failure(
                     [$"Demasiados intentos fallidos. Espera {Math.Max(1, (int)Math.Ceiling(wait.TotalSeconds))} segundos e inténtalo de nuevo."],
                     ErrorType.TooManyRequests);
@@ -47,17 +48,13 @@ namespace ERP.Application.Features.Auth.Login
             if (user is null)
             {
                 _passwordService.VerifyDummy(request.Password);
-                _loginThrottle.RecordFailure(request.Email, request.ClientIp);
                 return Result<AuthSessionDto>.Failure(["Credenciales incorrectas."], ErrorType.Unauthorized);
             }
 
             if (!_passwordService.Verify(request.Password, user.PasswordHash))
-            {
-                _loginThrottle.RecordFailure(request.Email, request.ClientIp);
                 return Result<AuthSessionDto>.Failure(["Credenciales incorrectas."], ErrorType.Unauthorized);
-            }
 
-            _loginThrottle.Reset(request.Email, request.ClientIp);
+            _loginThrottle.Succeeded(request.Email, request.ClientIp);
 
             if (!user.IsActive)
                 return Result<AuthSessionDto>.Failure([User.DeactivatedError], ErrorType.Unauthorized);

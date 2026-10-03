@@ -105,7 +105,11 @@ namespace ERP.Api
                             ValidateIssuerSigningKey = true,
                             ValidIssuer = configuration["JwtSettings:Issuer"],
                             ValidAudience = configuration["JwtSettings:Audience"],
-                            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+                            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+                            // Solo el algoritmo con que se firman, y 30 segundos de tolerancia en el reloj (por defecto
+                            // son 5 minutos: un token de 15 minutos serviría 20).
+                            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+                            ClockSkew = TimeSpan.FromSeconds(30)
                         };
                         // En cada pedido: el usuario sigue activo y se usa su rol actual (decisión 22).
                         options.Events = SessionValidation.Events();

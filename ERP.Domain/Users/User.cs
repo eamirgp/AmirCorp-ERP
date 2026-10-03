@@ -124,7 +124,8 @@ namespace ERP.Domain.Users
             if (normalized.Length > EmailMaxLength)
                 return $"El correo no puede exceder los {EmailMaxLength} caracteres.";
 
-            if (!MailAddress.TryCreate(normalized, out _))
+            // MailAddress también acepta "Juan <juan@empresa.pe>": se exige que lo escrito sea solo la dirección.
+            if (!MailAddress.TryCreate(normalized, out var parsed) || parsed.Address != normalized)
                 return "El formato del correo es inválido.";
 
             return null;

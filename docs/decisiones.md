@@ -298,3 +298,16 @@ Completa las decisiones 10 y 20: un dato mal enviado recibe un mensaje claro y n
 - **Fechas fuera de rango:** el tipo de cambio sin moneda o sin fecha, o con una fecha anterior al 2000, y el historial con una fecha fuera de 2000–2100, responden 400 con el motivo.
 - **Toda respuesta de error trae `{ errors: [...] }`:** también 401 (sesión vencida), 403 (sin permiso), 404 (dirección que no existe), 405 y 415 (`StatusCodeResponse`).
 - **Enums solo como texto:** `"PEN"` sí, `99` no. Antes un número cualquiera llegaba al dominio como un valor inexistente.
+
+### 28. Sesión: cerrar es inmediato y renovar no falla por la red
+**Fecha:** octubre 2026
+
+Completa la decisión 24.
+
+- **Cerrar sesión deja de servir al momento:** el token de acceso dice a qué sesión pertenece (`erp_session`, el `FamilyId` del refresh token) y en cada pedido la API revisa que esa sesión siga abierta (`ValidateSessionUseCase`). Antes, después de "Cerrar sesión" o de restablecer la contraseña, el token de la pestaña seguía sirviendo hasta que vencía. La tolerancia del reloj bajó de 5 minutos a 30 segundos y solo se acepta la firma HS256.
+- **Renovar dentro del margen de 30 segundos:** si el token presentado ya se reemplazó y el siguiente nunca se usó (la respuesta no llegó al navegador), se renueva desde el siguiente y la cookie queda al día; antes, el siguiente intento se tomaba como robo y cerraba la sesión. Si el siguiente ya se usó, se entrega solo un token de acceso, y solo si la sesión sigue abierta (antes servía aunque se hubiera cerrado sesión en esos segundos). Pasado el margen sigue siendo robo y se anula la sesión entera.
+- **Dos renovaciones a la vez con el mismo token:** el refresh token tiene versión (`xmin`, migración `AddRefreshTokenRowVersion`, sin cambios en la tabla): una gana y la otra recibe solo un token de acceso, sin error y sin detener el depurador. La pantalla además renueva de a una entre todas las pestañas (`navigator.locks`).
+- **La pantalla solo cierra la sesión si la API dice 401.** Un corte de conexión o un error del servidor al renovar no la cierra. Si un pedido recibe 401 (por ejemplo, el reloj del equipo no coincide con el de la API), la pantalla renueva una vez y repite el pedido antes de mandar al inicio de sesión.
+- **Varias pestañas:** "Cerrar sesión" en una cierra las demás (`BroadcastChannel`). Una pestaña sin usar, al cumplirse su plazo, primero pregunta a la API: si la sesión se siguió usando en otra pestaña, sigue abierta.
+- **Límite de intentos (cambia la decisión 22):** el intento se cuenta antes de revisar la contraseña, así varios enviados a la vez no se saltan el límite. Hay tres cuentas y basta llegar a una para esperar 1 minuto: el mismo correo desde el mismo equipo (5 fallos), el mismo correo desde cualquier equipo (20) y el mismo equipo con cualquier correo (20). Así un tercero ya no deja a alguien sin entrar con 5 intentos, y entrar bien solo borra los fallos de ese correo en ese equipo. Mientras hay que esperar, los intentos no alargan la espera.
+- **Correo:** se rechaza "Juan <juan@empresa.pe>"; se escribe solo la dirección.

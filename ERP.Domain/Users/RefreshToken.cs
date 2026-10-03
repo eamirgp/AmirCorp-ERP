@@ -76,6 +76,17 @@ namespace ERP.Domain.Users
 
         public bool IsRevoked => RevokedAt is not null;
 
+        /// <summary>Si todavía sirve para renovar: no está anulado ni vencido. Una sesión está abierta mientras tenga uno así.</summary>
+        public bool IsActive(DateTime now) =>
+            RefreshError(now) is null;
+
+        /// <summary>
+        /// Si este token, ya reemplazado, se presentó dentro del margen de las pestañas (o del reintento tras una respuesta
+        /// que no llegó): entonces no es un robo.
+        /// </summary>
+        public bool IsWithinReuseInterval(DateTime now) =>
+            RevokedAt is { } revokedAt && ReplacedById is not null && now - revokedAt <= ReuseInterval;
+
         /// <summary>Qué impide renovar con este token, o null si se puede.</summary>
         public string? RefreshError(DateTime now) =>
             IsRevoked || now >= ExpiresAt ? "Tu sesión venció. Vuelve a iniciar sesión." : null;
@@ -85,7 +96,7 @@ namespace ERP.Domain.Users
         /// la sesión entera.
         /// </summary>
         public bool IsReuse(DateTime now) =>
-            RevokedAt is { } revokedAt && (ReplacedById is null || now - revokedAt > ReuseInterval);
+            IsRevoked && !IsWithinReuseInterval(now);
 
         private static void ValidateHash(string tokenHash)
         {

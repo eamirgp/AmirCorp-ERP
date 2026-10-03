@@ -20,7 +20,7 @@ namespace ERP.Application.Features.Auth
         {
             var (token, hash) = _refreshTokenGenerator.Generate();
             var stored = RefreshToken.Start(user.Id, hash, now);
-            return (new AuthSessionDto(AccessFor(user), token, stored.ExpiresAt), stored);
+            return (new AuthSessionDto(AccessFor(user, stored.FamilyId), token, stored.ExpiresAt), stored);
         }
 
         /// <summary>Al renovar: anula el token actual y entrega el siguiente de la misma sesión.</summary>
@@ -28,18 +28,18 @@ namespace ERP.Application.Features.Auth
         {
             var (token, hash) = _refreshTokenGenerator.Generate();
             var stored = current.Rotate(hash, now);
-            return (new AuthSessionDto(AccessFor(user), token, stored.ExpiresAt), stored);
+            return (new AuthSessionDto(AccessFor(user, stored.FamilyId), token, stored.ExpiresAt), stored);
         }
 
         /// <summary>Solo un token de acceso nuevo, sin tocar la cookie (otra pestaña ya renovó la sesión).</summary>
-        public AuthSessionDto AccessOnly(User user, DateTime sessionExpiresAt) =>
-            new(AccessFor(user), null, sessionExpiresAt);
+        public AuthSessionDto AccessOnly(User user, Guid sessionId, DateTime sessionExpiresAt) =>
+            new(AccessFor(user, sessionId), null, sessionExpiresAt);
 
         public string HashOf(string refreshToken) =>
             _refreshTokenGenerator.Hash(refreshToken);
 
         // Lleva los datos de hoy: si cambió el nombre o el rol, el token nuevo ya los tiene.
-        private string AccessFor(User user) =>
-            _jwtService.GenerateToken(user.Id, user.Name, user.Email, user.Role.ToString());
+        private string AccessFor(User user, Guid sessionId) =>
+            _jwtService.GenerateToken(user.Id, user.Name, user.Email, user.Role.ToString(), sessionId);
     }
 }
