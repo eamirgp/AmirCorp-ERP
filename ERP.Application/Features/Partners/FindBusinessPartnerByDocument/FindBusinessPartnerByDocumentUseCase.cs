@@ -1,4 +1,5 @@
 using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Domain.Partners;
 using ERP.Domain.Partners.Enums;
 
 namespace ERP.Application.Features.Partners.FindBusinessPartnerByDocument
@@ -46,8 +47,8 @@ namespace ERP.Application.Features.Partners.FindBusinessPartnerByDocument
                 partner.Name,
                 partner.IsClient,
                 partner.IsSupplier,
-                !partner.IsClient && partner.IdentityDocumentType.CanBeClient,
-                !partner.IsSupplier && partner.IdentityDocumentType.CanIssueTaxDocuments
+                BusinessPartner.CanAddClientRole(partner.IdentityDocumentType, partner.IsClient),
+                BusinessPartner.CanAddSupplierRole(partner.IdentityDocumentType, partner.IsSupplier)
                 );
         }
     }

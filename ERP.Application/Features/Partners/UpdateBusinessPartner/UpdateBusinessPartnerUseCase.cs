@@ -36,18 +36,18 @@ namespace ERP.Application.Features.Partners.UpdateBusinessPartner
             if (await _businessPartnerRepository.FindByDocumentAsync(request.IdentityDocumentType, request.DocumentNumber, request.Id) is { } existing)
                 return Result.Failure([BusinessPartnerRules.AlreadyExists(existing)], ErrorType.Conflict);
 
-            if (BusinessPartnerRules.DocumentChanges(businessPartner, request.IdentityDocumentType, request.DocumentNumber))
-            {
-                var purchases = await _purchaseRepository.CountBySupplierAsync(businessPartner.Id);
-                if (purchases > 0)
-                    return Result.Failure([BusinessPartnerRules.DocumentLocked(businessPartner, purchases)], ErrorType.Conflict);
-            }
+            var hasPurchases = await _purchaseRepository.ExistsBySupplierAsync(businessPartner.Id);
+
+            // La misma regla del dominio, revisada antes para responder con el mensaje en vez de una excepción.
+            if (businessPartner.DocumentChangeError(request.IdentityDocumentType, request.DocumentNumber, hasPurchases) is { } documentError)
+                return Result.Failure([documentError], ErrorType.Conflict);
 
             businessPartner.Update(
                 request.IdentityDocumentType,
                 request.DocumentNumber,
                 request.CountryCode,
-                request.Name
+                request.Name,
+                hasPurchases
                 );
 
             await _unitOfWork.SaveChangesAsync();

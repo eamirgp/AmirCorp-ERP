@@ -9,8 +9,8 @@ namespace ERP.Application.Contracts.Persistence.Commands
         Task<bool> DocumentExistsAsync(Guid companyId, TaxDocumentType taxDocumentType, Guid supplierId, string serie, string number);
         Task<Purchase?> GetByIdWithLinesAsync(Guid id);
 
-        /// <summary>Cuántas compras tiene el proveedor, anuladas incluidas.</summary>
-        Task<int> CountBySupplierAsync(Guid supplierId);
+        /// <summary>Si el proveedor tiene alguna compra, anuladas incluidas.</summary>
+        Task<bool> ExistsBySupplierAsync(Guid supplierId);
 
         /// <summary>Si la empresa tiene alguna compra, anuladas incluidas.</summary>
         Task<bool> ExistsByCompanyAsync(Guid companyId);

@@ -123,6 +123,10 @@ namespace ERP.Api.Controllers.BusinessPartners
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> BlockRole(Guid id, BusinessPartnerRole role, [FromBody] BlockBusinessPartnerRoleRequest request)
         {
+            var errors = request.Validate();
+            if (errors.Count > 0)
+                return errors.ToBadRequest();
+
             var result = await _blockRoleUseCase.ExecuteAsync(new BlockBusinessPartnerRoleDto(id, role, Blocked: true, request.Reason));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }

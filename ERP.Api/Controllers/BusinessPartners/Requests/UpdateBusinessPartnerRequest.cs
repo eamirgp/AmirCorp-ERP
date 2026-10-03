@@ -1,4 +1,5 @@
 using ERP.Application.Features.Partners.UpdateBusinessPartner;
+using ERP.Domain.Partners;
 using DocType = ERP.Domain.Partners.Enums.IdentityDocumentType;
 
 namespace ERP.Api.Controllers.BusinessPartners.Requests
@@ -29,7 +30,7 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
                 id,
                 IdentityDocumentType!.Value,
                 DocumentNumber!,
-                BusinessPartnerRequestRules.CountryFor(IdentityDocumentType.Value, CountryCode),
+                BusinessPartner.CountryFor(IdentityDocumentType.Value, CountryCode)!,
                 Name!,
                 RowVersion!.Value
                 );

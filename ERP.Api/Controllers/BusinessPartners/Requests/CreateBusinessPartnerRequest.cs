@@ -1,5 +1,5 @@
 using ERP.Application.Features.Partners.CreateBusinessPartner;
-using ERP.Domain.Catalogs;
+using ERP.Domain.Partners;
 using DocType = ERP.Domain.Partners.Enums.IdentityDocumentType;
 
 namespace ERP.Api.Controllers.BusinessPartners.Requests
@@ -24,7 +24,7 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
             new(
                 IdentityDocumentType!.Value,
                 DocumentNumber!,
-                BusinessPartnerRequestRules.CountryFor(IdentityDocumentType.Value, CountryCode),
+                BusinessPartner.CountryFor(IdentityDocumentType.Value, CountryCode)!,
                 Name!,
                 IsClient!.Value,
                 IsSupplier!.Value

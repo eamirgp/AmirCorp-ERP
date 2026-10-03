@@ -1,4 +1,5 @@
 using ERP.Domain.Catalogs;
+using ERP.Domain.Partners;
 using ERP.Domain.Partners.Enums;
 
 namespace ERP.Application.Features.Partners.ListBusinessPartners
@@ -30,9 +31,9 @@ namespace ERP.Application.Features.Partners.ListBusinessPartners
         public string ClientStatus => IsSalesBlocked ? "Ventas bloqueadas" : "Activo";
 
         /// <summary>Si se puede "registrar también como cliente": no lo es todavía y su documento lo permite.</summary>
-        public bool CanAddClientRole => !IsClient && IdentityDocumentType.CanBeClient;
+        public bool CanAddClientRole => BusinessPartner.CanAddClientRole(IdentityDocumentType, IsClient);
 
         /// <summary>Si se puede "registrar también como proveedor": no lo es todavía y su documento lo permite.</summary>
-        public bool CanAddSupplierRole => !IsSupplier && IdentityDocumentType.CanIssueTaxDocuments;
+        public bool CanAddSupplierRole => BusinessPartner.CanAddSupplierRole(IdentityDocumentType, IsSupplier);
     }
 }

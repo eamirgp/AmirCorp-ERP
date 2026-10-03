@@ -38,6 +38,12 @@ namespace ERP.Application.Features.Partners.AddBusinessPartnerRole
             if (businessPartner is null)
                 return Result.Failure(["El cliente o proveedor no existe."], ErrorType.NotFound);
 
+            // La misma regla del dominio, revisada antes para responder con el mensaje: ya tiene ese rol o su documento
+            // no sirve para él.
+            var error = role == BusinessPartnerRole.Client ? businessPartner.AddClientRoleError() : businessPartner.AddSupplierRoleError();
+            if (error is not null)
+                return Result.Failure([error], ErrorType.BadRequest);
+
             if (role == BusinessPartnerRole.Client)
                 businessPartner.AddClientRole();
             else

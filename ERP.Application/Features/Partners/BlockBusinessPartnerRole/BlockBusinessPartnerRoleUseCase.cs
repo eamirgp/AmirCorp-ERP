@@ -36,6 +36,17 @@ namespace ERP.Application.Features.Partners.BlockBusinessPartnerRole
             if (businessPartner is null)
                 return Result.Failure(["El cliente o proveedor no existe."], ErrorType.NotFound);
 
+            // Las mismas reglas del dominio, revisadas antes para responder con el mensaje en vez de una excepción.
+            // Desbloquear algo que no estaba bloqueado no es un error: no cambia nada.
+            var error = (request.Role, request.Blocked) switch
+            {
+                (BusinessPartnerRole.Supplier, true) => businessPartner.BlockPurchasingError(request.Reason),
+                (BusinessPartnerRole.Client, true) => businessPartner.BlockSalesError(request.Reason),
+                _ => null
+            };
+            if (error is not null)
+                return Result.Failure([error], ErrorType.BadRequest);
+
             switch (request.Role, request.Blocked)
             {
                 case (BusinessPartnerRole.Supplier, true): businessPartner.BlockPurchasing(request.Reason); break;

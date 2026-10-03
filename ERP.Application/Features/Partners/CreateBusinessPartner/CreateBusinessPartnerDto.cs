@@ -1,4 +1,3 @@
-using ERP.Domain.Catalogs;
 using ERP.Domain.Partners.Enums;
 
 namespace ERP.Application.Features.Partners.CreateBusinessPartner

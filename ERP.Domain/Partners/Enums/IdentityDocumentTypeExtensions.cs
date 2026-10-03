@@ -50,9 +50,6 @@ namespace ERP.Domain.Partners.Enums
                 _ => null
             };
 
-            public bool IsValidDocumentNumber(string documentNumber) =>
-                identityDocumentType.DocumentNumberError(documentNumber) is null;
-
             /// <summary>
             /// Qué tiene de malo el número (ya normalizado), o null si es válido. El RUC se valida como lo hace SUNAT:
             /// 11 dígitos, un prefijo válido y el dígito verificador (módulo 11).

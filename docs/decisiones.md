@@ -213,3 +213,11 @@ Completa la decisión 5. Antes, varias entidades solo cambiaban mayúsculas o mi
 - **Correo:** sin espacios alrededor y en minúsculas.
 - **El largo máximo se mide sobre el texto ya normalizado:** un nombre de 100 letras con un espacio de sobra al final no se rechaza.
 - **Datos existentes:** al hacer el cambio se revisaron los productos, usuarios, empresas, unidades, vistas guardadas y motivos de anulación, y ninguno tenía espacios de sobra, así que no hizo falta una migración. Clientes y proveedores ya se normalizaban desde la decisión 16.
+
+### 20. Reglas en el dominio con funciones `…Error`, y acciones repetidas
+**Fecha:** octubre 2026
+
+- **Una regla, un solo lugar:** cada entidad expone funciones que devuelven el mensaje de error o null (`BusinessPartner.DocumentError`, `CountryError`, `NameError`, `RolesError`, `BlockReasonError`; antes `Company.RucError` y `DocumentNumberError`). El dominio lanza el error con ellas; la API y los casos de uso las llaman antes para avisar todos los errores juntos y no llegar a la excepción (que detiene el depurador). La API ya no escribe sus propias copias de las reglas, que con el tiempo decían cosas distintas.
+- **El caso de uso consulta, el dominio decide:** cuando una regla necesita un dato de la base, el caso de uso lo consulta y se lo pasa al dominio. Por ejemplo, "el documento de un cliente o proveedor no cambia si tiene compras": el caso de uso averigua si hay compras y `BusinessPartner.Update` decide (igual que el RUC de la empresa, decisión 18).
+- **Acciones repetidas:** activar algo ya activo, desactivar algo ya inactivo, desbloquear algo que no estaba bloqueado o bloquear de nuevo (cambia el motivo) no son errores: no cambian nada, como archivar algo ya archivado en Odoo. Para un usuario que hizo clic dos veces, un error solo confunde. La excepción es **agregar un rol que ya tiene** ("X ya es proveedor."), porque casi siempre significa que se eligió otro registro.
+- **Se aplica por módulo:** primero clientes y proveedores; después productos y usuarios.
