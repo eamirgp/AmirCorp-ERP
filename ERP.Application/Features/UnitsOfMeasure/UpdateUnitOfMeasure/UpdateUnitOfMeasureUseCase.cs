@@ -1,18 +1,10 @@
+using ERP.Application.Common.Exceptions;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Application.Features.UnitsOfMeasure.UpdateUnitOfMeasure
 {
-    /// <summary>Solo el nombre corto se puede cambiar: el código y el nombre oficial son de SUNAT.</summary>
-    /// <param name="RowVersion">La versión que se vio en la lista.</param>
-    public sealed record UpdateUnitOfMeasureDto(Guid Id, string Name, uint RowVersion);
-
-    public interface IUpdateUnitOfMeasureUseCase
-    {
-        Task<Result> ExecuteAsync(UpdateUnitOfMeasureDto request);
-    }
-
     internal sealed class UpdateUnitOfMeasureUseCase : IUpdateUnitOfMeasureUseCase
     {
         private readonly IUnitOfMeasureRepository _unitOfMeasureRepository;
@@ -32,7 +24,7 @@ namespace ERP.Application.Features.UnitsOfMeasure.UpdateUnitOfMeasure
 
             if (_unitOfMeasureRepository.VersionOf(unit) != request.RowVersion)
                 return Result.Failure(
-                    ["Otra persona modificó esta unidad mientras la editabas. Cierra el formulario y vuelve a abrirlo para ver los datos actuales."],
+                    [ConcurrencyException.EditedWhileOpenMessage("esta unidad")],
                     ErrorType.Conflict
                     );
 

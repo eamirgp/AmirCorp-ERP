@@ -40,5 +40,11 @@ namespace ERP.Application.Features.Purchases.GetPurchase
         public string FullNumber => Serie + "-" + Number;
         /// <summary>"Registrada" o "Anulada", junto al título del comprobante.</summary>
         public string StatusDescription => IsCancelled ? "Anulada" : "Registrada";
+
+        /// <summary>
+        /// Por qué no se puede anular (ya anulada, o su mercadería tuvo salidas), o null si se puede. La pantalla muestra
+        /// "Anular compra" solo cuando es null.
+        /// </summary>
+        public string? CancelError { get; init; }
     }
 }

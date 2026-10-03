@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using ERP.Application.Contracts.Infrastructure;
 using ERP.Domain.Catalogs;
+using ERP.Domain.Products;
 
 namespace ERP.Infrastructure.Services.Spreadsheets
 {
@@ -241,7 +242,7 @@ namespace ERP.Infrastructure.Services.Spreadsheets
                 "",
                 "1. Llena la hoja \"Productos\": una fila por producto, desde la fila 2.",
                 "2. No cambies ni borres la fila de títulos.",
-                "3. Código interno: el código de la empresa, único para cada producto, de hasta 30 caracteres. Se guarda en mayúsculas.",
+                $"3. Código interno: el código de la empresa, único para cada producto, de hasta {Product.CodeMaxLength} caracteres. Se guarda en mayúsculas.",
                 "   Los códigos de los proveedores se agregan en el sistema, en la ficha de cada producto.",
                 "4. Unidad de medida y Afectación IGV: elígelos de la lista desplegable de cada celda.",
                 "   La lista trae las unidades activas. Para usar otra, actívala en el sistema: Administración > Unidades de medida.",

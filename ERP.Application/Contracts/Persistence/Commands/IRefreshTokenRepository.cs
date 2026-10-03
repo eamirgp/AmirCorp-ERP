@@ -22,6 +22,9 @@ namespace ERP.Application.Contracts.Persistence.Commands
         /// <summary>Anula todas las sesiones del usuario (desactivado, contraseña restablecida).</summary>
         Task RevokeAllForUserAsync(Guid userId, DateTime now);
 
+        /// <summary>Los tokens del usuario que todavía no se anularon, para que el dominio los anule.</summary>
+        Task<IReadOnlyCollection<RefreshToken>> ListUnrevokedForUserAsync(Guid userId);
+
         /// <summary>
         /// Borra los tokens del usuario que vencieron hace más de un día: ya no sirven ni para detectar robos. Es limpieza:
         /// se borran en ese momento, sin esperar al guardado, y si dos inicios de sesión los borran a la vez no hay conflicto.

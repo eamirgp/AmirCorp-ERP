@@ -95,6 +95,15 @@ namespace ERP.Api
                         "Falta 'JwtSettings:Secret' o tiene menos de 32 caracteres. Configúralo en User Secrets (desarrollo) o en las variables de entorno (producción)."
                         );
 
+                // Sin emisor o audiencia todos los tokens se rechazarían, y sin duración nacerían vencidos: el inicio de
+                // sesión funcionaría pero cada pedido daría 401 sin pista de la causa. Mejor no arrancar.
+                foreach (var key in new[] { "JwtSettings:Issuer", "JwtSettings:Audience" })
+                    if (string.IsNullOrWhiteSpace(configuration[key]))
+                        throw new InvalidOperationException($"Falta '{key}'. Configúralo en appsettings o en las variables de entorno.");
+
+                if (!int.TryParse(configuration["JwtSettings:ExpirationInMinutes"], out var minutes) || minutes <= 0)
+                    throw new InvalidOperationException("Falta 'JwtSettings:ExpirationInMinutes' o no es un número de minutos mayor a cero.");
+
                 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     .AddJwtBearer(options =>
                     {

@@ -30,7 +30,7 @@
 |---|---|
 | Costo en dólares | `PurchaseLine.InventoryUnitCost` y `StockEntry.UnitCost` quedan en la moneda de la factura, sin aplicar el tipo de cambio: el stock mezcla soles y dólares. **Resolver antes de importaciones.** |
 | Logs con Serilog | Archivo de logs y consola sin el SQL de cada consulta |
-| Tests de los cálculos | IGV, conversión de unidades y costeo: es dinero |
+| Tests del costeo | `ERP.Domain.Tests` ya prueba el IGV, la conversión de unidades y las reglas principales (72 pruebas, decisión 34); falta el costeo cuando exista el kárdex |
 | Excel con los errores (opcional) | En la carga masiva, descargar el mismo archivo con una columna que explique el error de cada fila |
 
 ## Después: módulos del negocio

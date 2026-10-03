@@ -16,5 +16,11 @@ namespace ERP.Application.Features.Users.ListUsers
 
         /// <summary>"Activo" o "Inactivo", para la columna Estado.</summary>
         public string StatusDescription => IsActive ? "Activo" : "Inactivo";
+
+        /// <summary>
+        /// Si quien mira la lista puede editar, cambiar el rol, restablecer la contraseña o desactivar a este usuario (la
+        /// regla de <see cref="Domain.Users.User.ManageError"/>): la pantalla solo muestra esas acciones si puede.
+        /// </summary>
+        public bool CanManage { get; init; }
     }
 }

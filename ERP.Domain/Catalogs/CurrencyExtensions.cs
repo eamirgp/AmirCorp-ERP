@@ -19,6 +19,9 @@
                 _ => currency.ToString()
             };
 
+            /// <summary>Si una compra en esta moneda lleva tipo de cambio: toda moneda extranjera; en soles no aplica.</summary>
+            public bool RequiresExchangeRate => currency is not Currency.PEN;
+
             /// <summary>Si SUNAT publica su tipo de cambio: solo el dólar (el sol no lo necesita).</summary>
             public bool HasPublishedExchangeRate => currency is Currency.USD;
         }

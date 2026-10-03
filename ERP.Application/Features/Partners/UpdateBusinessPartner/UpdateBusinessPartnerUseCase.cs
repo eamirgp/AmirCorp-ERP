@@ -1,3 +1,4 @@
+using ERP.Application.Common.Exceptions;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Partners;
@@ -30,7 +31,7 @@ namespace ERP.Application.Features.Partners.UpdateBusinessPartner
             // Si alguien lo modificó después de abrir el formulario, no se pisa su cambio.
             if (_businessPartnerRepository.VersionOf(businessPartner) != request.RowVersion)
                 return Result.Failure(
-                    ["Otra persona modificó este registro mientras lo editabas. Cierra el formulario y vuelve a abrirlo para ver los datos actuales."],
+                    [ConcurrencyException.EditedWhileOpenMessage("este registro")],
                     ErrorType.Conflict
                     );
 

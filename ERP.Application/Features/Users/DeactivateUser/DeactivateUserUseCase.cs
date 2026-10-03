@@ -37,10 +37,10 @@ namespace ERP.Application.Features.Users.DeactivateUser
             if (user.ManageError(_currentUser.Role) is { } permissionError)
                 return Result.Failure([permissionError], ErrorType.Forbidden);
 
-            user.Deactivate(_currentUser.Role);
-
-            // Sus sesiones abiertas dejan de poder renovarse: al volver a activarlo tendrá que iniciar sesión.
-            await _refreshTokenRepository.RevokeAllForUserAsync(user.Id, _timeProvider.GetUtcNow().UtcDateTime);
+            // Sus sesiones abiertas dejan de poder renovarse (lo hace el dominio): al volver a activarlo tendrá que
+            // iniciar sesión.
+            var openSessions = await _refreshTokenRepository.ListUnrevokedForUserAsync(user.Id);
+            user.Deactivate(_currentUser.Role, openSessions, _timeProvider.GetUtcNow().UtcDateTime);
 
             await _unitOfWork.SaveChangesAsync();
 

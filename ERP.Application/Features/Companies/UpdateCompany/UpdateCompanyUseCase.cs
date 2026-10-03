@@ -1,5 +1,7 @@
+using ERP.Application.Common.Exceptions;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Domain.Companies;
 
 namespace ERP.Application.Features.Companies.UpdateCompany
 {
@@ -29,7 +31,7 @@ namespace ERP.Application.Features.Companies.UpdateCompany
             // Si alguien la modificó después de abrir el formulario, no se pisa su cambio.
             if (_companyRepository.VersionOf(company) != request.RowVersion)
                 return Result.Failure(
-                    ["Otra persona modificó esta empresa mientras la editabas. Cierra el formulario y vuelve a abrirlo para ver los datos actuales."],
+                    [ConcurrencyException.EditedWhileOpenMessage("esta empresa")],
                     ErrorType.Conflict
                     );
 
@@ -39,8 +41,8 @@ namespace ERP.Application.Features.Companies.UpdateCompany
             if (company.RucChangeError(request.Ruc, hasPurchases) is { } rucError)
                 return Result.Failure([rucError], ErrorType.Conflict);
 
-            if (await _companyRepository.RucExistsAsync(request.Ruc, request.Id))
-                return Result.Failure(["El RUC ya se encuentra en uso."], ErrorType.Conflict);
+            if (await _companyRepository.FindByRucAsync(request.Ruc, request.Id) is { } owner)
+                return Result.Failure([Company.RucTakenError(owner)], ErrorType.Conflict);
 
             company.UpdateRuc(request.Ruc, hasPurchases);
             company.UpdateName(request.Name);

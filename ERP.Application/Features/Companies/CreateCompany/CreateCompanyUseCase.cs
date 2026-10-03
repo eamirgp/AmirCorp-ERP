@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Responses;
+using ERP.Application.Common.Responses;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Companies;
@@ -21,8 +21,8 @@ namespace ERP.Application.Features.Companies.CreateCompany
 
         public async Task<Result<CreatedResponseDto>> ExecuteAsync(CreateCompanyDto request)
         {
-            if (await _companyRepository.RucExistsAsync(request.Ruc))
-                return Result<CreatedResponseDto>.Failure(["El RUC ya se encuentra en uso."], ErrorType.Conflict);
+            if (await _companyRepository.FindByRucAsync(request.Ruc) is { } owner)
+                return Result<CreatedResponseDto>.Failure([Company.RucTakenError(owner)], ErrorType.Conflict);
 
             var company = Company.Create(
                 request.Ruc,

@@ -1,4 +1,4 @@
-﻿using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Users;
 using ERP.Domain.Users.Enums;
 using ERP.Persistence.Context;
@@ -20,13 +20,13 @@ namespace ERP.Persistence.Commands
             await _context.Users
             .FindAsync(id);
 
-        public async Task<bool> EmailExistsAsync(string email, Guid? excludeId = null)
+        public async Task<User?> FindByEmailAsync(string email, Guid? excludeId = null)
         {
             var normalizedEmail = User.NormalizeEmail(email);
 
             return await _context.Users
                 .Where(u => excludeId == null || u.Id != excludeId)
-                .AnyAsync(u => u.Email == normalizedEmail);
+                .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
         }
 
         public async Task<User?> GetByEmailAsync(string email)
@@ -42,6 +42,6 @@ namespace ERP.Persistence.Commands
             .AnyAsync(u => u.Role == role);
 
         public uint VersionOf(User user) =>
-            _context.Entry(user).Property<uint>("RowVersion").CurrentValue;
+            _context.VersionOf(user);
     }
 }

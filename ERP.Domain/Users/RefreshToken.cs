@@ -31,6 +31,9 @@ namespace ERP.Domain.Users
         /// <summary>Largo de la huella: SHA-256 en hexadecimal.</summary>
         public const int HashLength = 64;
 
+        /// <summary>El aviso cuando la sesión ya no sirve (vencida, anulada o desconocida): uno solo en el dominio y en la renovación.</summary>
+        public const string ExpiredError = "Tu sesión venció. Vuelve a iniciar sesión.";
+
         public Guid UserId { get; }
         public string TokenHash { get; }
         public Guid FamilyId { get; }
@@ -56,10 +59,8 @@ namespace ERP.Domain.Users
         /// <summary>El primer token de una sesión, al iniciar sesión.</summary>
         public static RefreshToken Start(Guid userId, string tokenHash, DateTime now)
         {
-            if (userId == Guid.Empty)
-                throw new DomainException("El usuario es requerido.");
-
-            ValidateHash(tokenHash);
+            DomainException.ThrowIf(userId == Guid.Empty ? "El usuario es requerido." : null);
+            DomainException.ThrowIf(HashError(tokenHash));
 
             var sessionExpiresAt = now + AbsoluteLifetime;
             return new(Guid.CreateVersion7(), userId, tokenHash, Guid.CreateVersion7(), now, Min(now + IdleLifetime, sessionExpiresAt), sessionExpiresAt);
@@ -68,10 +69,8 @@ namespace ERP.Domain.Users
         /// <summary>Renueva: anula este token y devuelve el siguiente de la misma sesión.</summary>
         public RefreshToken Rotate(string newTokenHash, DateTime now)
         {
-            if (RefreshError(now) is { } error)
-                throw new DomainException(error);
-
-            ValidateHash(newTokenHash);
+            DomainException.ThrowIf(RefreshError(now));
+            DomainException.ThrowIf(HashError(newTokenHash));
 
             var next = new RefreshToken(Guid.CreateVersion7(), UserId, newTokenHash, FamilyId, now, Min(now + IdleLifetime, SessionExpiresAt), SessionExpiresAt);
             RevokedAt = now;
@@ -98,7 +97,7 @@ namespace ERP.Domain.Users
 
         /// <summary>Qué impide renovar con este token, o null si se puede.</summary>
         public string? RefreshError(DateTime now) =>
-            IsRevoked || now >= ExpiresAt ? "Tu sesión venció. Vuelve a iniciar sesión." : null;
+            IsRevoked || now >= ExpiresAt ? ExpiredError : null;
 
         /// <summary>
         /// Si se presentó un token ya reemplazado fuera del margen de las pestañas: alguien lo copió y hay que anular
@@ -108,11 +107,10 @@ namespace ERP.Domain.Users
             IsRevoked && !IsWithinReuseInterval(now);
 
         // La huella es un SHA-256 en hexadecimal: 64 caracteres (lo mismo que guarda la columna).
-        private static void ValidateHash(string tokenHash)
-        {
-            if (string.IsNullOrWhiteSpace(tokenHash) || tokenHash.Length != HashLength || !tokenHash.All(char.IsAsciiHexDigit))
-                throw new DomainException("La huella del token debe ser un SHA-256 en hexadecimal.");
-        }
+        private static string? HashError(string tokenHash) =>
+            string.IsNullOrWhiteSpace(tokenHash) || tokenHash.Length != HashLength || !tokenHash.All(char.IsAsciiHexDigit)
+                ? "La huella del token debe ser un SHA-256 en hexadecimal."
+                : null;
 
         private static DateTime Min(DateTime a, DateTime b) => a < b ? a : b;
     }

@@ -18,9 +18,17 @@ namespace ERP.Api.Common
             {
                 // Sin cuerpo: StatusCodeResponse le pone el mensaje en español.
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-                options.AddPolicy(ExternalLookup, context => RateLimitPartition.GetFixedWindowLimiter(
-                    context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonimo",
-                    _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+                options.AddPolicy(ExternalLookup, context =>
+                    // El tipo de cambio "solo lo guardado" lee la base, no el servicio externo: no gasta el cupo (la
+                    // pantalla lo pide en cada cambio de fecha y, si contara, el botón SUNAT respondería 429 sin motivo).
+                    IsStoredOnly(context)
+                        ? RateLimitPartition.GetNoLimiter("guardado")
+                        : RateLimitPartition.GetFixedWindowLimiter(
+                            context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonimo",
+                            _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
             });
+
+        private static bool IsStoredOnly(HttpContext context) =>
+            bool.TryParse(context.Request.Query["storedOnly"], out var storedOnly) && storedOnly;
     }
 }

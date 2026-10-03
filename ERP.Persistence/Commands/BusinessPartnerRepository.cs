@@ -36,6 +36,6 @@ namespace ERP.Persistence.Commands
             .ToListAsync();
 
         public uint VersionOf(BusinessPartner businessPartner) =>
-            _context.Entry(businessPartner).Property<uint>("RowVersion").CurrentValue;
+            _context.VersionOf(businessPartner);
     }
 }

@@ -31,11 +31,15 @@ namespace ERP.Domain.Companies
         public void UpdateRuc(string ruc, bool hasPurchases)
         {
             var normalized = ValidateRuc(ruc);
-            if (RucChangeError(normalized, hasPurchases) is { } error)
-                throw new DomainException(error);
-
+            DomainException.ThrowIf(RucChangeError(normalized, hasPurchases));
             Ruc = normalized;
         }
+
+        /// <summary>El aviso de "RUC ya registrado", el mismo al crear o editar una empresa: dice de cuál es.</summary>
+        /// <param name="owner">La empresa que ya tiene ese RUC.</param>
+        public static string RucTakenError(Company owner) =>
+            // El nombre no cierra la oración: las razones sociales suelen terminar en punto ("E.I.R.L.").
+            $"La empresa {owner.Name}{(owner.IsActive ? "" : " (desactivada)")} ya tiene el RUC {owner.Ruc}.";
 
         public void UpdateName(string name) =>
             Name = ValidateName(name);

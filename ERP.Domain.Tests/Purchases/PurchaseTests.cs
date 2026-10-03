@@ -1,3 +1,4 @@
+using ERP.Domain.Catalogs;
 using ERP.Domain.Purchases;
 
 namespace ERP.Domain.Tests.Purchases
@@ -18,6 +19,33 @@ namespace ERP.Domain.Tests.Purchases
         public void Una_fecha_con_el_anio_mal_escrito_se_rechaza()
         {
             Assert.Equal("La fecha de emisión es demasiado antigua. Revisa el año.", Purchase.IssueDateError(new DateOnly(206, 10, 3), Today));
+        }
+
+        [Theory]
+        [InlineData(TaxDocumentType.Factura, "F001")]
+        [InlineData(TaxDocumentType.Factura, "E001")]
+        [InlineData(TaxDocumentType.Factura, "0001")]
+        [InlineData(TaxDocumentType.Boleta, "B001")]
+        [InlineData(TaxDocumentType.Boleta, "EB01")]
+        [InlineData(TaxDocumentType.Boleta, " b001 ")]
+        public void La_serie_corresponde_al_comprobante(TaxDocumentType type, string serie) =>
+            Assert.Null(Purchase.SerieError(type, serie));
+
+        [Theory]
+        [InlineData(TaxDocumentType.Factura, "B001")]
+        [InlineData(TaxDocumentType.Factura, "EB01")]
+        [InlineData(TaxDocumentType.Boleta, "F001")]
+        [InlineData(TaxDocumentType.Factura, "F01")]
+        [InlineData(TaxDocumentType.Factura, "FÑ01")]
+        public void Una_serie_de_otro_comprobante_o_mal_escrita_se_rechaza(TaxDocumentType type, string serie) =>
+            Assert.NotNull(Purchase.SerieError(type, serie));
+
+        [Fact]
+        public void El_numero_se_completa_con_ceros_y_no_puede_ser_cero()
+        {
+            Assert.Equal("00000410", Purchase.NormalizeNumber("410"));
+            Assert.NotNull(Purchase.NumberError("0000"));
+            Assert.NotNull(Purchase.NumberError("123456789"));
         }
 
         [Fact]

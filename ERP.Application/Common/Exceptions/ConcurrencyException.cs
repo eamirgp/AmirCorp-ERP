@@ -18,6 +18,14 @@ namespace ERP.Application.Common.Exceptions
             : base(message, innerException) { }
 
         /// <summary>
+        /// El aviso cuando el formulario envía una versión que ya no es la actual (decisión 21), el mismo en todas las
+        /// pantallas. Después del 409 la pantalla vuelve a pedir los datos (decisión 32).
+        /// </summary>
+        /// <param name="what">Qué se editaba: "este producto", "esta empresa".</param>
+        public static string EditedWhileOpenMessage(string what) =>
+            $"Otra persona hizo cambios en {what} mientras tenías abierto el formulario. Cierra el formulario y vuelve a abrirlo para ver los datos actuales.";
+
+        /// <summary>
         /// Los casos de uso revisan que un código o documento no se repita, pero si dos personas guardan el mismo a la
         /// vez, lo frena el índice único de la base. El mensaje dice qué se repitió.
         /// </summary>

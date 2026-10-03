@@ -5,20 +5,12 @@ using ERP.Domain.Users;
 
 namespace ERP.Application.Features.Auth.Refresh
 {
-    public interface IRefreshSessionUseCase
-    {
-        /// <param name="refreshToken">El token de la cookie del navegador, o null si no hay.</param>
-        Task<Result<AuthSessionDto>> ExecuteAsync(string? refreshToken);
-    }
-
     /// <summary>
     /// Renueva la sesión con el refresh token de la cookie: entrega un token de acceso nuevo y rota el refresh token.
     /// Si llega un token ya reemplazado (fuera del margen de las pestañas), alguien lo copió: se anula la sesión entera.
     /// </summary>
     internal sealed class RefreshSessionUseCase : IRefreshSessionUseCase
     {
-        private const string Expired = "Tu sesión venció. Vuelve a iniciar sesión.";
-
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IUserRepository _userRepository;
         private readonly SessionTokens _sessionTokens;
@@ -40,15 +32,16 @@ namespace ERP.Application.Features.Auth.Refresh
             _unitOfWork = unitOfWork;
         }
 
+        /// <param name="refreshToken">El token de la cookie del navegador, o null si no hay.</param>
         public async Task<Result<AuthSessionDto>> ExecuteAsync(string? refreshToken)
         {
             if (string.IsNullOrWhiteSpace(refreshToken))
-                return Unauthorized(Expired);
+                return Unauthorized(RefreshToken.ExpiredError);
 
             var now = _timeProvider.GetUtcNow().UtcDateTime;
             var current = await _refreshTokenRepository.GetByHashAsync(_sessionTokens.HashOf(refreshToken));
             if (current is null)
-                return Unauthorized(Expired);
+                return Unauthorized(RefreshToken.ExpiredError);
 
             // Primero el usuario: si lo desactivaron, se le dice eso (sus tokens ya quedaron anulados al desactivarlo).
             var user = await _userRepository.GetByIdAsync(current.UserId);
@@ -56,14 +49,14 @@ namespace ERP.Application.Features.Auth.Refresh
             {
                 await _refreshTokenRepository.RevokeAllForUserAsync(current.UserId, now);
                 await _unitOfWork.SaveChangesAsync();
-                return Unauthorized(user is null ? Expired : User.DeactivatedError);
+                return Unauthorized(user is null ? RefreshToken.ExpiredError : User.DeactivatedError);
             }
 
             if (current.IsReuse(now))
             {
                 await _refreshTokenRepository.RevokeFamilyAsync(current.FamilyId, now);
                 await _unitOfWork.SaveChangesAsync();
-                return Unauthorized(Expired);
+                return Unauthorized(RefreshToken.ExpiredError);
             }
 
             if (current.IsRevoked)
@@ -99,7 +92,7 @@ namespace ERP.Application.Features.Auth.Refresh
         {
             var open = (await _refreshTokenRepository.ListUnrevokedInFamilyAsync(familyId)).FirstOrDefault(t => t.IsActive(now));
             return open is null
-                ? Unauthorized(Expired)
+                ? Unauthorized(RefreshToken.ExpiredError)
                 : Result<AuthSessionDto>.Success(_sessionTokens.AccessOnly(user, familyId, open.ExpiresAt));
         }
 

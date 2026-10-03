@@ -22,7 +22,8 @@ namespace ERP.Api.Controllers.Purchases.Requests
         IReadOnlyCollection<CreatePurchaseLineRequest>? Lines
         )
     {
-        public IReadOnlyCollection<string> Validate()
+        /// <param name="today">Hoy en Perú, con el mismo reloj que el registro (<see cref="PeruCalendar.Today"/>).</param>
+        public IReadOnlyCollection<string> Validate(DateOnly today)
         {
             var errors = new List<string>();
 
@@ -36,7 +37,7 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 Purchase.TaxDocumentTypeError(TaxDocumentType),
                 Purchase.SerieError(validType, Serie),
                 Purchase.NumberError(Number),
-                Purchase.IssueDateError(IssueDate, PeruCalendar.Today(DateTime.UtcNow)),
+                Purchase.IssueDateError(IssueDate, today),
                 Purchase.CurrencyError(Currency),
                 Purchase.ExchangeRateError(Currency, ExchangeRate),
                 Purchase.InvoicePriceTypeError(InvoicePriceType),

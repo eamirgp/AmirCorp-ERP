@@ -1,3 +1,4 @@
+using ERP.Application.Common.Exceptions;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Application.Features.Products.SupplierCodes;
@@ -35,7 +36,7 @@ namespace ERP.Application.Features.Products.UpdateProduct
             // Si alguien lo modificó (otra persona o una importación) después de abrir el formulario, no se pisa su cambio.
             if (_productRepository.VersionOf(product) != request.RowVersion)
                 return Result.Failure(
-                    ["Otra persona modificó este producto mientras lo editabas. Cierra el formulario y vuelve a abrirlo para ver los datos actuales."],
+                    [ConcurrencyException.EditedWhileOpenMessage("este producto")],
                     ErrorType.Conflict
                     );
 

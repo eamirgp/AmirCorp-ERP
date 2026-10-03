@@ -40,6 +40,11 @@ namespace ERP.Persistence.Commands
                 token.Revoke(now);
         }
 
+        public async Task<IReadOnlyCollection<RefreshToken>> ListUnrevokedForUserAsync(Guid userId) =>
+            await _context.RefreshTokens
+            .Where(t => t.UserId == userId && t.RevokedAt == null)
+            .ToListAsync();
+
         public async Task RemoveExpiredForUserAsync(Guid userId, DateTime now)
         {
             // Un DELETE directo: borrar entidades cargadas revisa su versión, y dos inicios de sesión a la vez chocaban (409).

@@ -30,9 +30,11 @@ Ejemplo: `POST api/products`.
 
 | Nivel | Qué valida | Ejemplo |
 |---|---|---|
-| Api (`Request.Validate()`) | Formato del request HTTP | "La contraseña debe tener al menos 8 caracteres" |
-| Application (caso de uso) | Reglas que necesitan consultar la base | "El correo ya se encuentra en uso" |
-| Domain (`Entidad.Create`) | Invariantes de la entidad, siempre | "El RUC debe tener 11 dígitos" |
+| Api (`Request.Validate()`) | Avisa antes, llamando a las funciones `…Error` del dominio | `Purchase.SerieError`, `Product.CodeError` |
+| Application (caso de uso) | Reglas que necesitan consultar la base, con el texto del dominio | `User.EmailTakenError(owner)`: "El usuario … ya tiene el correo …" |
+| Domain (`Entidad.Create` y cada método) | Invariantes de la entidad, siempre | "El RUC debe tener 11 dígitos" |
+
+Cada regla se escribe una sola vez, en el dominio, como una función `…Error` que devuelve el mensaje o `null` (decisión 20). La API y el caso de uso la llaman antes para avisar todos los errores juntos; el dominio la usa con `DomainException.ThrowIf` para que nunca exista una entidad inválida. Si una `DomainException` llega a la API es un hueco: responde 400 y deja un aviso en el registro.
 
 Las constantes compartidas (largos máximos, `User.PasswordMinLength`) viven en el dominio y se reutilizan en las demás capas.
 
@@ -53,9 +55,9 @@ Todas responden `{ "errors": [ ... ] }`.
 
 ## Concurrencia
 
-`Purchase` y `StockEntry` usan concurrencia optimista sobre la columna de sistema `xmin` de PostgreSQL (shadow property `RowVersion` en la configuración de EF). Si otro usuario modificó la fila entre la lectura y el guardado, EF lanza `DbUpdateConcurrencyException`, el `UnitOfWork` la traduce a `ConcurrencyException` y la API responde 409.
+Las entidades usan concurrencia optimista sobre la columna de sistema `xmin` de PostgreSQL (shadow property `RowVersion` en la configuración de EF). Si otro usuario modificó la fila entre la lectura y el guardado, EF lanza `DbUpdateConcurrencyException`, el `UnitOfWork` la traduce a `ConcurrencyException` y la API responde 409.
 
-Esto protege lo que ocurre **dentro** de un mismo request. No cubre el caso de "abrí el formulario hace 10 minutos"; para eso habría que enviar el `RowVersion` al frontend y recibirlo al guardar.
+Lo que se edita en un formulario (productos, clientes y proveedores, empresas, usuarios, unidades) además viaja con su `RowVersion`: la lista la envía, el formulario la devuelve y el caso de uso la compara con `VersionOf` antes de cambiar nada (decisión 21). El aviso es uno solo (`ConcurrencyException.EditedWhileOpenMessage`), y después de un 409 la pantalla vuelve a pedir los datos (decisión 32).
 
 ## Relaciones entre entidades
 
@@ -95,9 +97,9 @@ Después de cambiar un endpoint o un DTO, en el frontend se ejecuta `npm run api
 
 Ejemplo: `Features/Products/ChangePrice`.
 
-1. **Application/Features/Products/ChangePrice/**
+1. **Application/Features/Products/ChangePrice/**, un tipo por archivo:
    - `ChangePriceDto.cs`
-   - `IChangePriceUseCase.cs` → `: IUseCase<ChangePriceDto, Result>`
+   - `IChangePriceUseCase.cs` → `: IUseCase<ChangePriceDto, Result>` (o `IQueryUseCase<…>` si solo lee). Si el método necesita varios parámetros o un `CancellationToken` (consultas a SUNAT), la interfaz declara su propio `ExecuteAsync`.
    - `ChangePriceUseCase.cs` → `internal sealed`, devuelve `Result`
 2. Si necesita datos nuevos, agrega el método a la interfaz en `Contracts/Persistence/...` y su implementación en `ERP.Persistence`.
 3. Registra el caso de uso en `ERP.Application/DependencyInjection.cs`.

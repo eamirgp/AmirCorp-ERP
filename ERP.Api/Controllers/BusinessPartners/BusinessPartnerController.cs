@@ -5,6 +5,7 @@ using ERP.Application.Common.Pagination;
 using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.BusinessPartners.Requests;
 using ERP.Api.Extensions;
+using ERP.Application.Features.Partners;
 using ERP.Application.Features.Partners.BlockBusinessPartnerRole;
 using ERP.Application.Features.Partners.CreateBusinessPartner;
 using ERP.Application.Features.Partners.GetBusinessPartner;

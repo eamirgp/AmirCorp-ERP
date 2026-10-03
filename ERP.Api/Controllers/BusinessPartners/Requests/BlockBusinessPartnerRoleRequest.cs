@@ -1,4 +1,4 @@
-using ERP.Application.Features.Partners.AddBusinessPartnerRole;
+using ERP.Application.Features.Partners;
 using ERP.Application.Features.Partners.BlockBusinessPartnerRole;
 using ERP.Domain.Partners;
 

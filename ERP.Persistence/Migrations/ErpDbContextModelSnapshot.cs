@@ -880,7 +880,7 @@ namespace ERP.Persistence.Migrations
                     b.HasOne("ERP.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

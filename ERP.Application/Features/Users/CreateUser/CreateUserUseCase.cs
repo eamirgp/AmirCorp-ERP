@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Responses;
+using ERP.Application.Common.Responses;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Api;
 using ERP.Application.Contracts.Infrastructure;
@@ -34,8 +34,8 @@ namespace ERP.Application.Features.Users.CreateUser
             if (User.AssignRoleError(_currentUser.Role, request.Role) is { } roleError)
                 return Result<CreatedResponseDto>.Failure([roleError], ErrorType.Forbidden);
 
-            if (await _userRepository.EmailExistsAsync(request.Email))
-                return Result<CreatedResponseDto>.Failure(["El correo ya se encuentra en uso."], ErrorType.Conflict);
+            if (await _userRepository.FindByEmailAsync(request.Email) is { } owner)
+                return Result<CreatedResponseDto>.Failure([User.EmailTakenError(owner)], ErrorType.Conflict);
 
             var user = User.Create(
                 request.Name,

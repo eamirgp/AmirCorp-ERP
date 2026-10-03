@@ -66,6 +66,6 @@ namespace ERP.Persistence.Commands
         }
 
         public uint VersionOf(Product product) =>
-            _context.Entry(product).Property<uint>("RowVersion").CurrentValue;
+            _context.VersionOf(product);
     }
 }

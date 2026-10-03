@@ -412,3 +412,36 @@ La revisión midió el contraste con la fórmula de WCAG y encontró textos y bo
   - La vista previa recibe la moneda solo para ese texto.
   - El monto unitario del detalle se ve "5.00", como al escribirlo, y no "5".
 - **Textos:** con una unidad de cantidad fija de 1 (Pieza, Unidad) el aviso dice "Cada pieza es una unidad", no "trae 1 unidades".
+
+### 34. Cada regla en su capa y un solo patrón (tercera revisión de octubre, grupo 2)
+**Fecha:** octubre 2026
+
+Lo que la revisión encontró fuera de su capa, repetido o con otro estilo. No cambia lo que el usuario hace; cambia dónde vive cada regla. Completa las decisiones 20, 21, 29 y 31.
+
+- **Reglas al dominio:**
+  - Desactivar a un usuario o restablecer su contraseña cierra sus sesiones dentro del dominio (`User.Deactivate` y `User.ResetPassword` reciben sus refresh tokens abiertos y los anulan). Antes lo hacía solo el caso de uso: el pendiente "Cambiar mi contraseña" no podrá olvidarlo.
+  - "RUC ya registrado" y "correo ya usado" los arma el dominio (`Company.RucTakenError`, `User.EmailTakenError`) y dicen de quién es, como el código de producto (`Product.CodeTakenError`). Los repositorios devuelven al dueño (`FindByRucAsync`, `FindByEmailAsync`) en vez de sí o no. El nombre no cierra la oración (decisión 26: "E.I.R.L..").
+  - Qué moneda lleva tipo de cambio (`Currency.RequiresExchangeRate`) y su símbolo están una sola vez en el dominio; el tipo de cambio guardado solo es de una moneda que publica SUNAT.
+  - El aviso de sesión vencida es uno (`RefreshToken.ExpiredError`), y `RefreshToken` y `Company` lanzan con `ThrowIf` como las demás (decisión 31).
+- **Lo decide la API, no la pantalla:**
+  - Si una compra se puede anular (`CancelError` en el detalle, con la regla del dominio): sin motivo en contra aparece "Anular compra"; si su mercadería ya tuvo salidas, se explica en vez de esconder el botón sin decir por qué.
+  - Si quien mira puede gestionar a cada usuario (`CanManage` en la lista): si no, solo ve su historial.
+  - Las empresas que se ofrecen en una compra (la API filtra las activas) y si existe la consulta SUNAT (el formulario de empresas oculta el botón sin ella, como el de clientes y proveedores).
+  - Los códigos se ven en mayúsculas con CSS y viajan tal cual se escribieron: el dominio los normaliza (antes la pantalla repetía `toUpperCase`).
+  - La razón social o el nombre que trae SUNAT o RENIEC se revisa con la regla del registro: si no se puede guardar, se avisa al consultar y no recién al guardar.
+- **Un solo patrón:**
+  - Los 13 casos de uso que tenían otro estilo quedaron como los demás: un tipo por archivo, y la interfaz hereda de `IUseCase` o `IQueryUseCase` cuando la firma encaja (los que reciben varios parámetros o un `CancellationToken` declaran el suyo). `BusinessPartnerRole` tiene su propio archivo, y activar y desactivar unidades son dos casos de uso.
+  - "Otra persona hizo cambios…" es un solo texto (`ConcurrencyException.EditedWhileOpenMessage`) y `VersionOf` un solo helper en Persistence.
+  - Todo usa el mismo reloj (`TimeProvider`): también el historial, el token de acceso y el aviso previo de la fecha de una compra.
+  - En la pantalla, las 7 listas usan un componente para sus estados (`ListBody`: error con "Reintentar", cargando, filas, nada coincide, estado inicial). La página de clientes y proveedores y la importación de Excel se dividieron en archivos más chicos.
+- **Arranque y límites:**
+  - La API no arranca si falta el emisor, la audiencia o la duración del JWT (antes arrancaba y todo daba 401).
+  - El tipo de cambio "solo lo guardado" no cuenta en el límite de consultas externas.
+  - La exportación cuenta antes de leer: con más de 5000 no los carga todos.
+  - Una regla del dominio que llega a la API sin revisarse antes deja un aviso en el registro.
+  - La llave foránea de las sesiones (`RefreshTokens` → `Users`) pasó a Restrict como todas (decisión 4; migración `RefreshTokenUserRestrict`).
+- **Pruebas:** de 36 a 72. Se agregaron RUC (dígito verificador), DNI, serie y número del comprobante, máximo de líneas, roles, correo, cierre de sesiones, rotación del refresh token, precio de venta y código interno.
+- **Se quitó:** `ExactLength` (su comentario contradecía la decisión 16: la consulta nunca es automática) y `ListFilterDto.None`, que no se usaban.
+- **Pendiente:**
+  - Algunos textos de la pantalla todavía se escriben ahí: las explicaciones del bloqueo de compras o ventas, "Dos registros no pueden tener el mismo documento", las etiquetas de orden de cada lista y el resumen de la importación. Son explicaciones fijas, no reglas, pero si una regla cambia hay que acordarse de ellos.
+  - ESLint no está instalado aunque el código tiene comentarios para él: nada revisa las dependencias de los hooks. Instalarlo es una decisión del usuario (agrega herramientas al proyecto).

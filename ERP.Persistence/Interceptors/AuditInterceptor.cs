@@ -20,7 +20,13 @@ namespace ERP.Persistence.Interceptors
     {
         private readonly ICurrentUser _currentUser;
 
-        public AuditInterceptor(ICurrentUser currentUser) => _currentUser = currentUser;
+        private readonly TimeProvider _timeProvider;
+
+        public AuditInterceptor(ICurrentUser currentUser, TimeProvider timeProvider)
+        {
+            _currentUser = currentUser;
+            _timeProvider = timeProvider;
+        }
 
         // El historial necesita consultar la base (nombres de unidades y proveedores), así que solo se guarda con
         // SaveChangesAsync. Un SaveChanges sin await guardaría sin historial: se rechaza para que no pase sin aviso.
@@ -34,7 +40,8 @@ namespace ERP.Persistence.Interceptors
         {
             if(eventData.Context is { } context)
             {
-                var now = DateTime.UtcNow;
+                // El mismo reloj que los casos de uso: en una prueba con la hora fija, el historial también la usa.
+            var now = _timeProvider.GetUtcNow().UtcDateTime;
                 var userId = _currentUser.IsAuthenticated ? _currentUser.Id : AuditableEntity.SystemUserId;
                 var logs = new List<AuditLog>();
 

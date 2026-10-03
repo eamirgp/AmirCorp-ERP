@@ -38,7 +38,7 @@ namespace ERP.Persistence.Commands
             .ToListAsync();
 
         public uint VersionOf(UnitOfMeasure unit) =>
-            _context.Entry(unit).Property<uint>("RowVersion").CurrentValue;
+            _context.VersionOf(unit);
 
         public async Task<int> CountProductsUsingAsync(string code) =>
             await _context.Products

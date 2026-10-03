@@ -1,6 +1,7 @@
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Api;
 using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Domain.Users;
 
 namespace ERP.Application.Features.Users.UpdateUserProfile
 {
@@ -35,8 +36,8 @@ namespace ERP.Application.Features.Users.UpdateUserProfile
             if (user.ManageError(_currentUser.Role) is { } permissionError)
                 return Result.Failure([permissionError], ErrorType.Forbidden);
 
-            if (await _userRepository.EmailExistsAsync(request.Email, request.Id))
-                return Result.Failure(["El correo ya se encuentra en uso."], ErrorType.Conflict);
+            if (await _userRepository.FindByEmailAsync(request.Email, request.Id) is { } owner)
+                return Result.Failure([User.EmailTakenError(owner)], ErrorType.Conflict);
 
             user.UpdateProfile(request.Name, request.Email, _currentUser.Role);
 

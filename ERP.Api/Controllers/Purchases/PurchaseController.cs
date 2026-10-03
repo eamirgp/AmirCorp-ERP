@@ -7,6 +7,7 @@ using ERP.Application.Features.Purchases.CreatePurchase;
 using ERP.Application.Features.Purchases.GetPurchase;
 using ERP.Application.Features.Purchases.ListPurchases;
 using ERP.Application.Features.Purchases.PreviewPurchase;
+using ERP.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,15 +23,18 @@ namespace ERP.Api.Controllers.Purchases
         private readonly IGetPurchaseUseCase _getPurchaseUseCase;
         private readonly ICancelPurchaseUseCase _cancelPurchaseUseCase;
         private readonly IPreviewPurchaseUseCase _previewPurchaseUseCase;
+        private readonly TimeProvider _timeProvider;
 
         public PurchaseController(
             ICreatePurchaseUseCase createPurchaseUseCase,
             IListPurchasesUseCase listPurchasesUseCase,
             IGetPurchaseUseCase getPurchaseUseCase,
             ICancelPurchaseUseCase cancelPurchaseUseCase,
-            IPreviewPurchaseUseCase previewPurchaseUseCase
+            IPreviewPurchaseUseCase previewPurchaseUseCase,
+            TimeProvider timeProvider
             )
         {
+            _timeProvider = timeProvider;
             _createPurchaseUseCase = createPurchaseUseCase;
             _listPurchasesUseCase = listPurchasesUseCase;
             _getPurchaseUseCase = getPurchaseUseCase;
@@ -56,7 +60,7 @@ namespace ERP.Api.Controllers.Purchases
         [ProducesResponseType<CreatedResponseDto>(StatusCodes.Status201Created)]
         public async Task<IActionResult> Create([FromBody] CreatePurchaseRequest createPurchaseRequest)
         {
-            var errors = createPurchaseRequest.Validate();
+            var errors = createPurchaseRequest.Validate(PeruCalendar.Today(_timeProvider.GetUtcNow().UtcDateTime));
             if (errors.Count > 0)
                 return errors.ToBadRequest();
 

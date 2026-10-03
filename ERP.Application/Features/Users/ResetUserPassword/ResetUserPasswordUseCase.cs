@@ -41,10 +41,10 @@ namespace ERP.Application.Features.Users.ResetUserPassword
             if (user.ManageError(_currentUser.Role) is { } permissionError)
                 return Result.Failure([permissionError], ErrorType.Forbidden);
 
-            user.ResetPassword(request.NewPassword, _passwordService.Hash, _currentUser.Role);
-
-            // Quien conocía la contraseña anterior pierde las sesiones que tuviera abiertas: entra solo con la nueva.
-            await _refreshTokenRepository.RevokeAllForUserAsync(user.Id, _timeProvider.GetUtcNow().UtcDateTime);
+            // Quien conocía la contraseña anterior pierde las sesiones que tuviera abiertas (lo hace el dominio): entra
+            // solo con la nueva.
+            var openSessions = await _refreshTokenRepository.ListUnrevokedForUserAsync(user.Id);
+            user.ResetPassword(request.NewPassword, _passwordService.Hash, _currentUser.Role, openSessions, _timeProvider.GetUtcNow().UtcDateTime);
 
             await _unitOfWork.SaveChangesAsync();
 

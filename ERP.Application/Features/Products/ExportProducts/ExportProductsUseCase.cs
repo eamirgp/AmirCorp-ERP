@@ -25,9 +25,12 @@ namespace ERP.Application.Features.Products.ExportProducts
 
         public async Task<Result<FileDto>> ExecuteAsync(ExportProductsDto request)
         {
+            // Primero cuántos: con demasiados no se leen todos solo para rechazarlos.
+            var count = await _productQueries.CountForExportAsync(request);
+            if (count > ProductSheet.MaxRows)
+                return Result<FileDto>.Failure([ProductSheet.TooManyToExport(count)], ErrorType.BadRequest);
+
             var products = await _productQueries.ListForExportAsync(request);
-            if (products.Count > ProductSheet.MaxRows)
-                return Result<FileDto>.Failure([ProductSheet.TooManyToExport(products.Count)], ErrorType.BadRequest);
 
             var units = await _unitOfMeasureQueries.ListActiveAsync();
 

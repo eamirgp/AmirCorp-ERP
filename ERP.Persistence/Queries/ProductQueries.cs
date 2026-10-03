@@ -123,6 +123,9 @@ namespace ERP.Persistence.Queries
                 ))
             .FirstOrDefaultAsync();
 
+        public async Task<int> CountForExportAsync(ExportProductsDto exportProductsDto) =>
+            await Filter(_context.Products.AsNoTracking(), exportProductsDto.SearchTerm, exportProductsDto.IsActive).CountAsync();
+
         public async Task<IReadOnlyCollection<ProductExportRowDto>> ListForExportAsync(ExportProductsDto exportProductsDto) =>
             await Sort(Filter(_context.Products.AsNoTracking(), exportProductsDto.SearchTerm, exportProductsDto.IsActive), exportProductsDto.SortBy, exportProductsDto.SortDescending)
             .Select(p => new ProductExportRowDto(

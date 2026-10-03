@@ -404,8 +404,8 @@ namespace ERP.Domain.Purchases
         public static string? ExchangeRateError(Currency? currency, decimal? exchangeRate) =>
             (currency, exchangeRate) switch
             {
-                (Currency.PEN, not null) => "El tipo de cambio no aplica para soles.",
-                (not null and not Currency.PEN, null) => "El tipo de cambio es requerido para moneda extranjera.",
+                ({ } c, not null) when !c.RequiresExchangeRate => "El tipo de cambio no aplica para soles.",
+                ({ } c, null) when c.RequiresExchangeRate => "El tipo de cambio es requerido para moneda extranjera.",
                 (_, { } rate) => Catalogs.ExchangeRate.RateError(rate),
                 _ => null
             };

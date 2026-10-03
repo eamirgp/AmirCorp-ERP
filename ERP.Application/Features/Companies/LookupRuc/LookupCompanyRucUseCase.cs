@@ -1,17 +1,12 @@
 using ERP.Application.Common.Lookup;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Domain.Companies;
 using ERP.Domain.Partners;
 using ERP.Domain.Partners.Enums;
 
 namespace ERP.Application.Features.Companies.LookupRuc
 {
-    public interface ILookupCompanyRucUseCase
-    {
-        /// <param name="companyId">La empresa que se está editando, si la hay: tener ese RUC ella misma no es un duplicado.</param>
-        Task<Result<LookupDocumentResponseDto>> ExecuteAsync(string ruc, Guid? companyId = null, CancellationToken ct = default);
-    }
-
     /// <summary>Razón social, estado y condición de SUNAT para el formulario de empresas.</summary>
     internal sealed class LookupCompanyRucUseCase : ILookupCompanyRucUseCase
     {
@@ -36,8 +31,12 @@ namespace ERP.Application.Features.Companies.LookupRuc
             if (data.Ruc is { } sunat && !TaxpayerStatus.IsActiveAndLocated(sunat.Status, sunat.Condition))
                 warnings.Add($"{TaxpayerStatus.Describe(sunat.Status, sunat.Condition)}. Revísalo con tu contador: sus comprobantes podrían no ser válidos.");
 
-            if (await _companyRepository.RucExistsAsync(data.DocumentNumber, companyId))
-                warnings.Add("Ya hay una empresa registrada con este RUC.");
+            // La razón social llega al formulario tal cual; si no cumple la regla de la empresa, se avisa ya y no al guardar.
+            if (Company.NameError(data.Name) is { } nameError)
+                warnings.Add($"La razón social que trae {data.Source} no se puede guardar así: {nameError} Corrígela antes de guardar.");
+
+            if (await _companyRepository.FindByRucAsync(data.DocumentNumber, companyId) is { } owner)
+                warnings.Add(Company.RucTakenError(owner));
 
             return Result<LookupDocumentResponseDto>.Success(LookupDocumentResponseDto.From(data, warnings));
         }

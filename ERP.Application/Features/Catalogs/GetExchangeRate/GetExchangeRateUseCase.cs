@@ -8,25 +8,6 @@ using ERP.Domain.Common;
 
 namespace ERP.Application.Features.Catalogs.GetExchangeRate
 {
-    /// <summary>Tipo de cambio para llenar una compra, con el texto que explica de dónde salió.</summary>
-    public sealed record GetExchangeRateResponseDto(
-        decimal Rate,
-        // Fecha de lo publicado: anterior a la pedida si ese día no hubo publicación.
-        DateOnly Date,
-        string Source,
-        // "Tipo de cambio venta de SUNAT del 02/10/2026."
-        string Description
-        );
-
-    public interface IGetExchangeRateUseCase
-    {
-        /// <param name="storedOnly">
-        /// Solo lo que ya está guardado, sin consultar al servicio externo: la pantalla lo usa para llenar el campo sola
-        /// al elegir la fecha, sin gastar consultas. Si no está guardado responde "no encontrado" y lo pide el usuario.
-        /// </param>
-        Task<Result<GetExchangeRateResponseDto>> ExecuteAsync(Currency currency, DateOnly date, bool storedOnly = false, CancellationToken ct = default);
-    }
-
     /// <summary>
     /// Tipo de cambio de SUNAT para una moneda y una fecha. Para compras se usa el de venta: es el que fija el
     /// Reglamento del IGV (art. 5, num. 17) para operaciones en moneda extranjera, en la fecha en que nace la

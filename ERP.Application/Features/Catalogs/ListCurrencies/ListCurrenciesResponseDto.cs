@@ -10,7 +10,7 @@ namespace ERP.Application.Features.Catalogs.ListCurrencies
         )
     {
         /// <summary>Si una compra en esta moneda lleva tipo de cambio: en soles no aplica y la pantalla bloquea el campo.</summary>
-        public bool RequiresExchangeRate => Currency is not Currency.PEN;
+        public bool RequiresExchangeRate => Currency.RequiresExchangeRate;
 
         /// <summary>El símbolo de los montos en esta moneda ("S/", "US$"), el mismo que usan los textos de la API.</summary>
         public string Symbol => Currency.Symbol;

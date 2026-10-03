@@ -63,12 +63,18 @@ namespace ERP.Domain.Users
             Email = NormalizeEmail(email);
         }
 
-        public void ResetPassword(string password, Func<string, string> hashPassword, UserRole actorRole)
+        /// <summary>
+        /// Cambia la contraseña y cierra todas sus sesiones abiertas: quien tenía la anterior (por ejemplo, alguien que la
+        /// vio) ya no puede seguir dentro.
+        /// </summary>
+        /// <param name="openSessions">Los refresh tokens del usuario que todavía no se anularon.</param>
+        public void ResetPassword(string password, Func<string, string> hashPassword, UserRole actorRole, IReadOnlyCollection<RefreshToken> openSessions, DateTime now)
         {
             DomainException.ThrowIf(ManageError(actorRole));
             DomainException.ThrowIf(PasswordError(password));
 
             PasswordHash = hashPassword(password);
+            CloseSessions(openSessions, now);
         }
 
         public void ChangeRole(UserRole role, UserRole actorRole)
@@ -87,12 +93,28 @@ namespace ERP.Domain.Users
             IsActive = true;
         }
 
-        /// <summary>Si ya estaba inactivo, no cambia nada.</summary>
-        public void Deactivate(UserRole actorRole)
+        /// <summary>Lo saca del sistema: cierra todas sus sesiones abiertas. Si ya estaba inactivo, no cambia nada.</summary>
+        /// <param name="openSessions">Los refresh tokens del usuario que todavía no se anularon.</param>
+        public void Deactivate(UserRole actorRole, IReadOnlyCollection<RefreshToken> openSessions, DateTime now)
         {
             DomainException.ThrowIf(ManageError(actorRole));
             IsActive = false;
+            CloseSessions(openSessions, now);
         }
+
+        private void CloseSessions(IReadOnlyCollection<RefreshToken> openSessions, DateTime now)
+        {
+            if (openSessions.Any(t => t.UserId != Id))
+                throw new DomainException("Las sesiones no son de este usuario.");
+
+            foreach (var token in openSessions)
+                token.Revoke(now);
+        }
+
+        /// <summary>El aviso de "correo ya usado", el mismo al crear o editar un usuario: dice de quién es.</summary>
+        /// <param name="owner">El usuario que ya tiene ese correo.</param>
+        public static string EmailTakenError(User owner) =>
+            $"El usuario {owner.Name}{(owner.IsActive ? "" : " (desactivado)")} ya tiene el correo {owner.Email}. Usa otro correo.";
 
         /// <summary>Qué impide a quien tiene ese rol modificar a este usuario, o null si puede.</summary>
         public string? ManageError(UserRole actorRole) =>

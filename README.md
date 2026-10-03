@@ -106,7 +106,7 @@ Cada recurso tiene `POST` (crear), `GET` (listar), `GET {id}` y `PUT {id}` (actu
 Todos los errores de negocio devuelven el mismo cuerpo:
 
 ```json
-{ "errors": ["El correo ya se encuentra en uso."] }
+{ "errors": ["El usuario Ana Pérez ya tiene el correo ana@pizarro.pe. Usa otro correo."] }
 ```
 
 | Código | Cuándo |

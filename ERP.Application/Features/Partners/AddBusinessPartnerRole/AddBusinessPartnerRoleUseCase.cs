@@ -3,17 +3,6 @@ using ERP.Application.Contracts.Persistence.Commands;
 
 namespace ERP.Application.Features.Partners.AddBusinessPartnerRole
 {
-    public enum BusinessPartnerRole
-    {
-        Client = 1,
-        Supplier = 2
-    }
-
-    public interface IAddBusinessPartnerRoleUseCase
-    {
-        Task<Result> ExecuteAsync(Guid id, BusinessPartnerRole role);
-    }
-
     /// <summary>
     /// "Registrar también como proveedor / cliente": el mismo registro pasa a estar en las dos listas, como la acción
     /// "Crear como proveedor" de Business Central. Si el documento no sirve para ese rol, el dominio lo rechaza.

@@ -3,12 +3,6 @@ using ERP.Application.Contracts.Persistence.Commands;
 
 namespace ERP.Application.Features.Auth.Logout
 {
-    public interface ILogoutUseCase
-    {
-        /// <param name="refreshToken">El token de la cookie del navegador, o null si no hay.</param>
-        Task ExecuteAsync(string? refreshToken);
-    }
-
     /// <summary>Cierra la sesión en el servidor: el refresh token deja de servir, aunque alguien lo hubiera copiado.</summary>
     internal sealed class LogoutUseCase : ILogoutUseCase
     {

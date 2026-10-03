@@ -11,6 +11,7 @@ using ERP.Application.Common.Lookup;
 using ERP.Application.Features.Companies.ListCompanies;
 using ERP.Application.Features.Companies.LookupRuc;
 using ERP.Application.Features.Companies.UpdateCompany;
+using ERP.Domain.Companies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -98,8 +99,13 @@ namespace ERP.Api.Controllers.Companies
         [ProducesResponseType<LookupDocumentResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> LookupRuc([FromQuery] string? ruc, [FromQuery] Guid? companyId, CancellationToken ct)
         {
+            // El RUC se revisa con la regla de la empresa antes de consultar: así un RUC vacío dice "El RUC es requerido."
+            // y no se gasta una consulta en uno mal escrito.
+            if (Company.RucError(ruc) is { } rucError)
+                return ((IReadOnlyCollection<string>)[rucError]).ToBadRequest();
+
             // companyId: la empresa que se está editando; así no se avisa "ya registrada" por ella misma.
-            var result = await _lookupCompanyRucUseCase.ExecuteAsync(ruc ?? "", companyId, ct);
+            var result = await _lookupCompanyRucUseCase.ExecuteAsync(ruc!, companyId, ct);
             return result.ToActionResult(StatusCodes.Status200OK);
         }
 

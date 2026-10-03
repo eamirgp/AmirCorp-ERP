@@ -42,8 +42,9 @@ namespace ERP.Domain.Catalogs
 
         public static ExchangeRate Create(Currency currency, DateOnly date, DateOnly publishedDate, decimal buyRate, decimal sellRate, string source, DateTime fetchedAt)
         {
-            if (!Enum.IsDefined(currency) || currency is Currency.PEN)
-                throw new DomainException("El tipo de cambio es de una moneda extranjera.");
+            // Solo se guarda lo que SUNAT publica (Currency.HasPublishedExchangeRate).
+            if (!Enum.IsDefined(currency) || !currency.HasPublishedExchangeRate)
+                throw new DomainException("El tipo de cambio guardado es solo de una moneda que publica SUNAT.");
 
             DomainException.ThrowIf(PublishedError(date, publishedDate, buyRate, sellRate));
 

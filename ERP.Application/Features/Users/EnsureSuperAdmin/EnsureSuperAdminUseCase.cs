@@ -34,8 +34,8 @@ namespace ERP.Application.Features.Users.EnsureSuperAdmin
             if (errors.Length > 0)
                 return Result<bool>.Failure(errors, ErrorType.BadRequest);
 
-            if (await _userRepository.EmailExistsAsync(request.Email!))
-                return Result<bool>.Failure(["El correo ya se encuentra en uso por otro usuario."], ErrorType.Conflict);
+            if (await _userRepository.FindByEmailAsync(request.Email!) is { } owner)
+                return Result<bool>.Failure([User.EmailTakenError(owner)], ErrorType.Conflict);
 
             var user = User.CreateSuperAdmin(request.Name!, request.Email!, request.Password!, _passwordService.Hash);
 

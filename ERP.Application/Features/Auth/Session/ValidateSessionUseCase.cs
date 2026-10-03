@@ -6,16 +6,6 @@ using ERP.Domain.Users.Enums;
 
 namespace ERP.Application.Features.Auth.Session
 {
-    /// <summary>Lo que importa del usuario en cada pedido: si sigue activo y su rol de hoy.</summary>
-    public sealed record SessionUserDto(bool IsActive, UserRole Role);
-
-    public interface IValidateSessionUseCase
-    {
-        /// <param name="sessionId">La sesión del token (<see cref="RefreshToken.FamilyId"/>).</param>
-        /// <returns>El rol actual del usuario, o 401 si ya no existe, está desactivado o su sesión se cerró.</returns>
-        Task<Result<UserRole>> ExecuteAsync(Guid userId, Guid sessionId);
-    }
-
     /// <summary>
     /// Revisa en cada pedido que el usuario del token siga activo y toma su rol actual, no el que tenía al iniciar
     /// sesión. Así desactivar a alguien lo saca del sistema al momento y bajarle el rol le quita los permisos de

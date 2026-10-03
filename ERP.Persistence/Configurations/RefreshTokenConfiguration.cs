@@ -43,7 +43,8 @@ namespace ERP.Persistence.Configurations
             builder.HasOne<User>()
                 .WithMany()
                 .HasForeignKey(t => t.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                // Como todas las llaves foráneas (decisión 4): los usuarios no se borran, se desactivan.
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasIndex(t => t.TokenHash)
                 .IsUnique();

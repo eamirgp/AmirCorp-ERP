@@ -11,15 +11,18 @@ namespace ERP.Infrastructure.Services.Auth
     internal sealed class JwtService : IJwtService
     {
         private readonly JwtSettings _jwtSettings;
+        private readonly TimeProvider _timeProvider;
 
-        public JwtService(IOptions<JwtSettings> jwtSettings)
+        public JwtService(IOptions<JwtSettings> jwtSettings, TimeProvider timeProvider)
         {
             _jwtSettings = jwtSettings.Value;
+            _timeProvider = timeProvider;
         }
 
         public string GenerateToken(Guid userId, string name, string email, string role, Guid sessionId)
         {
             var handler = new JsonWebTokenHandler();
+            var now = _timeProvider.GetUtcNow().UtcDateTime;
 
             var claims = new List<Claim>
             {
@@ -35,7 +38,11 @@ namespace ERP.Infrastructure.Services.Auth
                 Subject = new ClaimsIdentity(claims),
                 Issuer = _jwtSettings.Issuer,
                 Audience = _jwtSettings.Audience,
-                Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationInMinutes),
+                // El mismo reloj que la sesión (TimeProvider), y la emisión explícita: si no, la librería usaría la hora
+                // del sistema.
+                IssuedAt = now,
+                NotBefore = now,
+                Expires = now.AddMinutes(_jwtSettings.ExpirationInMinutes),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret)), SecurityAlgorithms.HmacSha256)
             };
