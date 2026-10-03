@@ -1,4 +1,5 @@
-﻿using ERP.Application.Features.Accounts.GetMyProfile;
+﻿using ERP.Application.Common.Lookup;
+using ERP.Application.Features.Accounts.GetMyProfile;
 using ERP.Application.Features.Audit.ListAuditActions;
 using ERP.Application.Features.Audit.ListAuditEntityTypes;
 using ERP.Application.Features.Audit.ListAuditEntries;
@@ -15,6 +16,7 @@ using ERP.Application.Features.Companies.CreateCompany;
 using ERP.Application.Features.Companies.Deactivate;
 using ERP.Application.Features.Companies.GetCompany;
 using ERP.Application.Features.Companies.ListCompanies;
+using ERP.Application.Features.Companies.LookupRuc;
 using ERP.Application.Features.Companies.UpdateCompany;
 using ERP.Application.Features.Partners.BlockBusinessPartnerRole;
 using ERP.Application.Features.Partners.CreateBusinessPartner;
@@ -102,6 +104,8 @@ namespace ERP.Application
                     .AddScoped<IDeactivateCompanyUseCase, DeactivateCompanyUseCase>()
                     .AddScoped<IGetCompanyUseCase, GetCompanyUseCase>()
                     .AddScoped<IUpdateCompanyUseCase, UpdateCompanyUseCase>()
+                    .AddScoped<ILookupCompanyRucUseCase, LookupCompanyRucUseCase>()
+                    .AddScoped<DocumentLookupService>()
 
                     .AddScoped<ICreateProductUseCase, CreateProductUseCase>()
                     .AddScoped<IListProductsUseCase, ListProductsUseCase>()
