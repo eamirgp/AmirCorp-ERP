@@ -29,6 +29,7 @@ using ERP.Application.Features.Products.ActivateProduct;
 using ERP.Application.Features.Products.CreateProduct;
 using ERP.Application.Features.Products.DeactivateProduct;
 using ERP.Application.Features.Products.ExportProducts;
+using ERP.Application.Features.Products.FindProductByCode;
 using ERP.Application.Features.Products.GetProductImportTemplate;
 using ERP.Application.Features.Products.ImportProducts;
 using ERP.Application.Features.Products.PreviewProductImport;
@@ -108,6 +109,7 @@ namespace ERP.Application
                     .AddScoped<IDeactivateProductUseCase, DeactivateProductUseCase>()
                     .AddScoped<IUpdateProductUseCase, UpdateProductUseCase>()
                     .AddScoped<IGetProductUseCase, GetProductUseCase>()
+                    .AddScoped<IFindProductByCodeUseCase, FindProductByCodeUseCase>()
                     .AddScoped<ProductImportPlanner>()
                     .AddScoped<IGetProductImportTemplateUseCase, GetProductImportTemplateUseCase>()
                     .AddScoped<IExportProductsUseCase, ExportProductsUseCase>()

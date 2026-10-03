@@ -6,6 +6,7 @@ using ERP.Api.Extensions;
 using ERP.Application.Features.Products.ActivateProduct;
 using ERP.Application.Features.Products.CreateProduct;
 using ERP.Application.Features.Products.DeactivateProduct;
+using ERP.Application.Features.Products.FindProductByCode;
 using ERP.Application.Features.Products.GetProduct;
 using ERP.Application.Features.Products.ListProducts;
 using ERP.Application.Features.Products.UpdateProduct;
@@ -25,6 +26,7 @@ namespace ERP.Api.Controllers.Products
         private readonly IDeactivateProductUseCase _deactivateProductUseCase;
         private readonly IUpdateProductUseCase _updateProductUseCase;
         private readonly IGetProductUseCase _getProductUseCase;
+        private readonly IFindProductByCodeUseCase _findProductByCodeUseCase;
 
         public ProductController(
             ICreateProductUseCase createProductUseCase,
@@ -32,9 +34,11 @@ namespace ERP.Api.Controllers.Products
             IActivateProductUseCase activateProductUseCase,
             IDeactivateProductUseCase deactivateProductUseCase,
             IUpdateProductUseCase updateProductUseCase,
-            IGetProductUseCase getProductUseCase
+            IGetProductUseCase getProductUseCase,
+            IFindProductByCodeUseCase findProductByCodeUseCase
             )
         {
+            _findProductByCodeUseCase = findProductByCodeUseCase;
             _createProductUseCase = createProductUseCase;
             _listProductsUseCase = listProductsUseCase;
             _activateProductUseCase = activateProductUseCase;
@@ -87,6 +91,14 @@ namespace ERP.Api.Controllers.Products
             var result = await _updateProductUseCase.ExecuteAsync(updateProductRequest.ToDto(id));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }
+
+        /// <summary>Quién tiene ya ese código interno (404 si nadie). Sirve para avisar antes de guardar un producto nuevo.</summary>
+        [HttpGet("by-code")]
+        [ProducesResponseType<FoundProductDto>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> FindByCode([FromQuery] string code) =>
+            await _findProductByCodeUseCase.ExecuteAsync(code) is { } found
+                ? Ok(found)
+                : NotFound(new ErrorResponse(["Ningún producto tiene ese código interno."]));
 
         [HttpGet("{id:guid}")]
         [ProducesResponseType<GetProductResponseDto>(StatusCodes.Status200OK)]
