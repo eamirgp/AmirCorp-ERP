@@ -262,3 +262,13 @@ Se hizo ahora, y no al publicar, porque el sistema se publicará sí o sí. Es l
 - **Al abrir la página** la pantalla recupera la sesión con la cookie antes de mostrarse.
 - **Para publicar:** la pantalla y la API deben estar en el **mismo sitio** (por ejemplo `erp.empresa.pe` y `api.empresa.pe`, o la misma dirección), con HTTPS. Si quedaran en sitios distintos, la cookie necesitaría `SameSite=None`.
 - Se quita la renovación por encabezado `X-Session-Token` de la decisión 23.
+
+### 25. Sin ngrok, y lo pendiente para publicar
+**Fecha:** octubre 2026
+
+- **ngrok fue solo un experimento** y no se volverá a usar: se quitó su dirección de los orígenes permitidos (CORS). Queda solo `http://localhost:5173`. La nota de la decisión 22 sobre ngrok ya no aplica.
+- **Antes de publicar el sistema** (recordatorio; hoy funciona bien en una sola computadora):
+  1. **Proxy (`ForwardedHeaders`):** en un servidor o en la nube la API queda detrás de un proxy (nginx, Cloudflare, balanceador) que recibe el HTTPS. Hay que configurar `ForwardedHeaders` con la dirección de ese proxy en la configuración. Sin eso: todos los pedidos parecen venir de la misma IP (5 errores de una persona harían esperar a todos, decisión 22) y la API cree que no hay HTTPS, así que la cookie del refresh token sale sin `Secure` (decisión 24).
+  2. **CORS desde la configuración:** pasar los orígenes permitidos a `appsettings` (en desarrollo `http://localhost:5173`; al publicar, la dirección real de la pantalla) en vez de tenerlos en el código.
+  3. **Mismo sitio y HTTPS:** la pantalla y la API en el mismo sitio (por ejemplo `erp.empresa.pe` y `api.empresa.pe`) para que viaje la cookie `SameSite=Strict` (decisión 24).
+  4. **Un solo servidor de la API:** los intentos fallidos se cuentan en memoria. Si hubiera varios, pasarlos a una caché compartida.

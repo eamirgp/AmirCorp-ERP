@@ -29,10 +29,8 @@ namespace ERP.Api
                         options.AddPolicy("AllowLocalhost", policy =>
                         {
                             policy
-                            .WithOrigins(
-                                "http://localhost:5173",
-                                "https://poster-caption-endorphin.ngrok-free.dev"
-                                )
+                            // Al publicar, la dirección real de la pantalla debe venir de la configuración (decisión 25).
+                            .WithOrigins("http://localhost:5173")
                             .AllowAnyHeader()
                             .AllowAnyMethod()
                             // La cookie del refresh token solo viaja si el origen está permitido con credenciales.
