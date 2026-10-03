@@ -36,28 +36,32 @@ namespace ERP.Api.Controllers.Purchases.Requests
             if (TaxDocumentType is not null && !Enum.IsDefined(TaxDocumentType.Value))
                 errors.Add("El tipo de documento es inválido.");
 
-            if (string.IsNullOrWhiteSpace(Serie))
+            // Sin espacios alrededor: "F001 " pegado de otro lado es la serie F001 (el dominio hace lo mismo).
+            var serie = Serie?.Trim();
+            var number = Number?.Trim();
+
+            if (string.IsNullOrWhiteSpace(serie))
                 errors.Add("La serie es requerida.");
 
-            if (!string.IsNullOrWhiteSpace(Serie) && Serie.Length != Purchase.SerieMaxLength)
+            if (!string.IsNullOrWhiteSpace(serie) && serie.Length != Purchase.SerieMaxLength)
                 errors.Add($"La serie debe tener exactamente {Purchase.SerieMaxLength} caracteres.");
 
-            if (!string.IsNullOrWhiteSpace(Serie) && !Serie.All(char.IsLetterOrDigit))
+            if (!string.IsNullOrWhiteSpace(serie) && !serie.All(char.IsLetterOrDigit))
                 errors.Add("La serie debe contener solo letras y números.");
 
             // La serie debe corresponder al comprobante (factura F…, boleta B…): la misma regla del dominio.
             if (TaxDocumentType is { } type && Enum.IsDefined(type)
-                && !string.IsNullOrWhiteSpace(Serie) && Serie.Length == Purchase.SerieMaxLength && Serie.All(char.IsLetterOrDigit)
-                && Purchase.SerieError(type, Serie) is { } serieError)
+                && !string.IsNullOrWhiteSpace(serie) && serie.Length == Purchase.SerieMaxLength && serie.All(char.IsLetterOrDigit)
+                && Purchase.SerieError(type, serie) is { } serieError)
                 errors.Add(serieError);
 
-            if (string.IsNullOrWhiteSpace(Number))
+            if (string.IsNullOrWhiteSpace(number))
                 errors.Add("El número es requerido.");
 
-            if (!string.IsNullOrWhiteSpace(Number) && Number.Length > Purchase.NumberMaxLength)
+            if (!string.IsNullOrWhiteSpace(number) && number.Length > Purchase.NumberMaxLength)
                 errors.Add($"El número no puede exceder los {Purchase.NumberMaxLength} dígitos.");
 
-            if (!string.IsNullOrWhiteSpace(Number) && !Number.All(char.IsDigit))
+            if (!string.IsNullOrWhiteSpace(number) && !number.All(char.IsDigit))
                 errors.Add("El número debe contener solo dígitos.");
 
             if (IssueDate is null)
@@ -121,8 +125,8 @@ namespace ERP.Api.Controllers.Purchases.Requests
             new(
                 CompanyId!.Value,
                 TaxDocumentType!.Value,
-                Serie!,
-                Number!,
+                Serie!.Trim(),
+                Number!.Trim(),
                 IssueDate!.Value,
                 Currency!.Value,
                 ExchangeRate,

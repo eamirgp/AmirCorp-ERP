@@ -21,14 +21,18 @@ namespace ERP.Persistence.Queries
 
             if (!string.IsNullOrWhiteSpace(listPurchasesDto.SearchTerm))
             {
-                var documentTerm = Purchase.NormalizeSerie(listPurchasesDto.SearchTerm);
-                var nameTerm = SearchText.Normalize(listPurchasesDto.SearchTerm);
+                var raw = listPurchasesDto.SearchTerm.Trim();
+                var documentTerm = Purchase.NormalizeSerie(raw);
+                var nameTerm = SearchText.Normalize(raw);
+
+                // El número se guarda con ceros a la izquierda ("00000123"): "123" y "F001-123" deben encontrarlo.
+                var (serieTerm, numberTerm) = SplitDocument(documentTerm);
 
                 query = query
                     .Where(p =>
                     (p.Serie + "-" + p.Number).StartsWith(documentTerm) ||
-                    p.Number.StartsWith(listPurchasesDto.SearchTerm) ||
-                    p.SupplierDocumentNumber.StartsWith(listPurchasesDto.SearchTerm) ||
+                    (numberTerm != null && p.Number == numberTerm && (serieTerm == null || p.Serie == serieTerm)) ||
+                    p.SupplierDocumentNumber.StartsWith(raw) ||
                     EF.Functions.Unaccent(p.SupplierName.ToLower()).Contains(nameTerm)
                     );
             }
@@ -82,6 +86,21 @@ namespace ERP.Persistence.Queries
                 listPurchasesDto.SortBy,
                 listPurchasesDto.SortDescending
                 );
+        }
+
+        /// <summary>
+        /// "123" → (null, "00000123"); "F001-123" → ("F001", "00000123"); otro texto → (null, null). El número se
+        /// completa con ceros como se guarda, para compararlo exacto.
+        /// </summary>
+        private static (string? Serie, string? Number) SplitDocument(string term)
+        {
+            var parts = term.Split('-', 2);
+            var (serie, number) = parts.Length == 2 ? (parts[0], parts[1]) : (null, parts[0]);
+
+            if (number.Length == 0 || number.Length > Purchase.NumberMaxLength || !number.All(char.IsAsciiDigit))
+                return (null, null);
+
+            return (string.IsNullOrEmpty(serie) ? null : serie, Purchase.NormalizeNumber(number));
         }
 
         public async Task<GetPurchaseResponseDto?> GetPurchaseAsync(GetPurchaseDto getPurchaseDto) =>

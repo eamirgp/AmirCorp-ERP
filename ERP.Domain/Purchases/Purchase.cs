@@ -176,11 +176,12 @@ namespace ERP.Domain.Purchases
             IsCancelled = true;
         }
 
+        // Sin espacios alrededor: un "F001 " pegado de otro lado es la serie F001.
         public static string NormalizeSerie(string serie) =>
-            serie.ToUpperInvariant();
+            serie.Trim().ToUpperInvariant();
 
         public static string NormalizeNumber(string number) =>
-            number.PadLeft(NumberMaxLength, '0');
+            number.Trim().PadLeft(NumberMaxLength, '0');
 
         private static void ValidateCompany(Guid companyId)
         {
@@ -198,6 +199,8 @@ namespace ERP.Domain.Purchases
         {
             if (string.IsNullOrWhiteSpace(serie))
                 throw new DomainException("La serie es requerida.");
+
+            serie = serie.Trim();
 
             if (serie.Length != SerieMaxLength)
                 throw new DomainException($"La serie debe tener exactamente {SerieMaxLength} caracteres.");
