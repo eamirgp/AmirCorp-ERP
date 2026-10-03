@@ -176,7 +176,11 @@ namespace ERP.Persistence.Queries
                 (ProductSortBy.Name, false) => query.OrderBy(p => p.Name).ThenBy(p => p.Id),
                 (ProductSortBy.Name, true) => query.OrderByDescending(p => p.Name).ThenByDescending(p => p.Id),
                 (ProductSortBy.CreatedAt, false) => query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id),
-                _ => query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id)
+                (ProductSortBy.Code, false) => query.OrderBy(p => p.Code).ThenBy(p => p.Id),
+                (ProductSortBy.Code, true) => query.OrderByDescending(p => p.Code).ThenByDescending(p => p.Id),
+                (ProductSortBy.SalePrice, false) => query.OrderBy(p => p.SalePrice).ThenBy(p => p.Name).ThenBy(p => p.Id),
+                (ProductSortBy.SalePrice, true) => query.OrderByDescending(p => p.SalePrice).ThenBy(p => p.Name).ThenBy(p => p.Id),
+                _ =>query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id)
             };
     }
 }

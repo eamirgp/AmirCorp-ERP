@@ -3,6 +3,7 @@
     public enum BusinessPartnerSortBy
     {
         Name = 1,
-        CreatedAt = 2
+        CreatedAt = 2,
+        DocumentNumber = 3
     }
 }

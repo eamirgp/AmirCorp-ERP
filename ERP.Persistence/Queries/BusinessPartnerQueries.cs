@@ -58,7 +58,9 @@ namespace ERP.Persistence.Queries
                 (BusinessPartnerSortBy.Name, false) => query.OrderBy(bp => bp.Name).ThenBy(bp => bp.Id),
                 (BusinessPartnerSortBy.Name, true) => query.OrderByDescending(bp => bp.Name).ThenByDescending(bp => bp.Id),
                 (BusinessPartnerSortBy.CreatedAt, false) => query.OrderBy(bp => bp.CreatedAt).ThenBy(bp => bp.Id),
-                _ => query.OrderByDescending(bp => bp.CreatedAt).ThenByDescending(bp => bp.Id)
+                (BusinessPartnerSortBy.DocumentNumber, false) => query.OrderBy(bp => bp.DocumentNumber).ThenBy(bp => bp.Id),
+                (BusinessPartnerSortBy.DocumentNumber, true) => query.OrderByDescending(bp => bp.DocumentNumber).ThenByDescending(bp => bp.Id),
+                _ =>query.OrderByDescending(bp => bp.CreatedAt).ThenByDescending(bp => bp.Id)
             };
 
             var items = await query

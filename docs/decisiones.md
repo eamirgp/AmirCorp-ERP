@@ -81,7 +81,7 @@ El frontend (`AmirCorp-ERP-Web`) no valida, no calcula, no normaliza y no decide
 - **Cálculos:** cuando una pantalla necesita mostrar un resultado antes de guardar (totales de una compra, costo de una importación), se expone un endpoint de cálculo que no guarda nada. El frontend no replica fórmulas.
 - **Descripciones** de enums y catálogos en las respuestas (`...Description`).
 - **Números en textos** (historial, revisión de importación, mensajes): punto decimal y espacio para los miles, sin comas ("S/ 1 234.50", `NumberText`), igual que la pantalla. Así nadie confunde comas con puntos.
-- **Orden por defecto:** lo decide la API (`ListProductsDto.DefaultSortBy`, etc.). La pantalla no envía orden si el usuario no eligió uno, y la respuesta informa el orden aplicado (`sortBy`, `sortDescending`) para que el menú "Ordenar" lo muestre.
+- **Orden por defecto:** lo decide la API (`ListProductsDto.DefaultSortBy`, etc.). La pantalla no envía orden si el usuario no eligió uno, y la respuesta informa el orden aplicado (`sortBy`, `sortDescending`) para que el menú "Ordenar" lo muestre (y, desde la decisión 35, la flecha de la columna ordenada).
 - **Paginación:** cada lista paginada trae `page`, `totalPages`, `hasNextPage`, el rango visible (`from`, `to`) y los tamaños de página que se pueden elegir (`pageSizeOptions`). Un `PageSize` fuera del rango se ajusta al mínimo o al máximo, y una página que ya no existe se ajusta a la última (`PaginationDefaults.ClampPage`): la respuesta trae la página real.
 - **Errores:** toda respuesta de error tiene la forma `{ errors: [...] }` con mensajes en español, también cuando un dato no se puede leer (`InvalidModelStateResponse`), en los 404 y en los errores inesperados (`UnexpectedExceptionHandler`, que deja el detalle técnico solo en el log).
 - **Auditoría:** el historial de cambios se consulta en `GET /api/audit` con los textos listos para mostrar (ver la decisión 12).
@@ -445,3 +445,14 @@ Lo que la revisión encontró fuera de su capa, repetido o con otro estilo. No c
 - **Pendiente:**
   - Algunos textos de la pantalla todavía se escriben ahí: las explicaciones del bloqueo de compras o ventas, "Dos registros no pueden tener el mismo documento", las etiquetas de orden de cada lista y el resumen de la importación. Son explicaciones fijas, no reglas, pero si una regla cambia hay que acordarse de ellos.
   - ESLint no está instalado aunque el código tiene comentarios para él: nada revisa las dependencias de los hooks. Instalarlo es una decisión del usuario (agrega herramientas al proyecto).
+
+### 35. Ordenar las listas por cada columna
+**Fecha:** octubre 2026
+
+Con el rediseño de la pantalla (decisión 14 de `AmirCorp-ERP-Web`) las columnas de las listas ordenan con un clic en su título, como en la Mac. Ordena la API, como siempre: se agregaron los campos que faltaban a cada enum de orden, y la consulta los aplica en Persistence, con el `Id` al final para que el orden sea estable entre páginas.
+
+- **Productos** (`ProductSortBy`): `Code` y `SalePrice` (a igual precio, por nombre).
+- **Clientes y proveedores** (`BusinessPartnerSortBy`): `DocumentNumber`.
+- **Compras** (`PurchaseSortBy`): `Document` (serie y número; el número se guarda con ceros a la izquierda, así que como texto queda en orden numérico) y `CompanyName` (dentro de cada empresa, lo más reciente primero).
+- Los valores de antes no cambian de número: las vistas guardadas y los enlaces siguen funcionando.
+- **Aviso:** ordenar compras por total compara el número sin mirar la moneda (una factura de US$ 100 queda junto a una de S/ 100). Ya era así con el menú "Ordenar"; se resuelve cuando la compra guarde su total en soles (pendiente "Costo en dólares" de la hoja de ruta).

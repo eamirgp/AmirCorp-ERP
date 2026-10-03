@@ -54,7 +54,12 @@ namespace ERP.Persistence.Queries
                 (PurchaseSortBy.Total, false) => query.OrderBy(p => p.Total).ThenBy(p => p.Id),
                 (PurchaseSortBy.Total, true) => query.OrderByDescending(p => p.Total).ThenByDescending(p => p.Id),
                 (PurchaseSortBy.CreatedAt, false) => query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id),
-                _ => query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id)
+                // El número se guarda con ceros a la izquierda, así que ordenarlo como texto respeta el orden numérico.
+                (PurchaseSortBy.Document, false) => query.OrderBy(p => p.Serie).ThenBy(p => p.Number).ThenBy(p => p.Id),
+                (PurchaseSortBy.Document, true) => query.OrderByDescending(p => p.Serie).ThenByDescending(p => p.Number).ThenByDescending(p => p.Id),
+                (PurchaseSortBy.CompanyName, false) => query.OrderBy(p => p.CompanyName).ThenByDescending(p => p.IssueDate).ThenBy(p => p.Id),
+                (PurchaseSortBy.CompanyName, true) => query.OrderByDescending(p => p.CompanyName).ThenByDescending(p => p.IssueDate).ThenBy(p => p.Id),
+                _ =>query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id)
             };
 
             var items = await query

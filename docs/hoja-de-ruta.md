@@ -23,7 +23,8 @@
 - [x] Código interno y códigos de proveedores por producto (ver [decisiones.md](decisiones.md#14-código-interno-y-códigos-de-proveedores))
 - [x] Datos repetidos guardados al mismo tiempo (índice único): la API responde 409 en vez de 500
 - [x] Carga masiva de productos con Excel: plantilla, exportación, revisión sin guardar y confirmación todo o nada (ver [decisiones.md](decisiones.md#11-carga-masiva-de-productos-con-excel))
-- [x] Rediseño de la pantalla al estilo Apple, pieza por pieza: inicio de sesión y marco de la aplicación (menú lateral por área, barra superior). Siguen los componentes base y cada pantalla; el modo oscuro, al final (decisiones 12 y 13 de `AmirCorp-ERP-Web`)
+- [x] Rediseño de la pantalla al estilo Apple, pieza por pieza: inicio de sesión, marco de la aplicación (menú lateral por área, barra superior) y componentes base (botones, campos, ventanas, avisos, tabla en franjas). Sigue cada pantalla; el modo oscuro, al final (decisiones 12 a 14 de `AmirCorp-ERP-Web`)
+- [x] Ordenar las listas por cada columna (ver [decisiones.md](decisiones.md#35-ordenar-las-listas-por-cada-columna))
 
 ## Siguiente: base técnica
 
