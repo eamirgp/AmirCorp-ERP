@@ -109,6 +109,21 @@ namespace ERP.Domain.Partners
             SalesBlockReason = null;
         }
 
+        /// <summary>
+        /// Si bloquear (con ese motivo) o desbloquear las compras no cambiaría nada: ya está así. Repetir la acción no es
+        /// un error (decisión 20), y como no cambia nada tampoco choca con lo que otra persona haya hecho.
+        /// </summary>
+        public bool PurchasingAlready(bool blocked, string? reason) =>
+            blocked
+                ? IsPurchasingBlocked && PurchasingBlockReason == NormalizeReason(reason)
+                : !IsPurchasingBlocked;
+
+        /// <summary>Lo mismo que <see cref="PurchasingAlready"/>, para las ventas.</summary>
+        public bool SalesAlready(bool blocked, string? reason) =>
+            blocked
+                ? IsSalesBlocked && SalesBlockReason == NormalizeReason(reason)
+                : !IsSalesBlocked;
+
         /// <summary>"Las compras a ACME S.A.C. están bloqueadas (motivo: …).", o null si no lo están.</summary>
         public string? PurchasingBlockedError() =>
             IsPurchasingBlocked

@@ -37,6 +37,13 @@ namespace ERP.Application.Features.Partners.BlockBusinessPartnerRole
             if (businessPartner is null)
                 return Result.Failure(["El cliente o proveedor no existe."], ErrorType.NotFound);
 
+            // Ya está así (doble clic, o otra persona hizo lo mismo): no cambia nada y no es un error, ni siquiera de versión.
+            var already = request.Role is BusinessPartnerRole.Supplier
+                ? businessPartner.IsSupplier && businessPartner.PurchasingAlready(request.Blocked, request.Reason)
+                : businessPartner.IsClient && businessPartner.SalesAlready(request.Blocked, request.Reason);
+            if (already)
+                return Result.Success();
+
             // Si alguien lo modificó después de abrir la lista (por ejemplo, ya lo bloqueó con otro motivo), no se pisa su cambio.
             if (_businessPartnerRepository.VersionOf(businessPartner) != request.RowVersion)
                 return Result.Failure(

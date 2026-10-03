@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
 using ERP.Domain.Companies;
 using ERP.Domain.Partners;
@@ -13,6 +13,10 @@ namespace ERP.Domain.Purchases
         public const int SerieMaxLength = 4;
         public const int NumberMaxLength = 8;
         public const int CancellationReasonMaxLength = 200;
+        // La columna es numeric(18,6). Un dólar nunca valdrá tanto: más es un error de tipeo.
+        public const decimal ExchangeRateMax = 1000m;
+        public const int ExchangeRateDecimals = 6;
+        private static readonly DateOnly MinIssueDate = new(2000, 1, 1);
 
         private static readonly TimeZoneInfo PeruTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
 
@@ -90,17 +94,14 @@ namespace ERP.Domain.Purchases
             InvoicePriceType invoicePriceType
             )
         {
-            if (PartiesError(company, supplier) is { } partiesError)
-                throw new DomainException(partiesError);
-            ValidateTaxDocumentType(taxDocumentType);
-            var normalizedSerie = ValidateSerie(serie);
-            if (SerieError(taxDocumentType, normalizedSerie) is { } serieError)
-                throw new DomainException(serieError);
-            var normalizedNumber = ValidateNumber(number);
-            ValidateIssueDate(issueDate);
-            ValidateCurrency(currency);
-            ValidateExchangeRate(currency, exchangeRate);
-            ValidateInvoicePriceType(invoicePriceType);
+            Throw(PartiesError(company, supplier));
+            Throw(TaxDocumentTypeError(taxDocumentType));
+            Throw(SerieError(taxDocumentType, serie));
+            Throw(NumberError(number));
+            Throw(IssueDateError(issueDate));
+            Throw(CurrencyError(currency));
+            Throw(ExchangeRateError(currency, exchangeRate));
+            Throw(InvoicePriceTypeError(invoicePriceType));
 
             return new(
                 Guid.CreateVersion7(),
@@ -108,8 +109,8 @@ namespace ERP.Domain.Purchases
                 company.Ruc,
                 company.Name,
                 taxDocumentType,
-                normalizedSerie,
-                normalizedNumber,
+                NormalizeSerie(serie),
+                NormalizeNumber(number),
                 issueDate,
                 currency,
                 exchangeRate,
@@ -235,8 +236,9 @@ namespace ERP.Domain.Purchases
         {
             if (IsCancelled)
                 throw new DomainException("La compra ya se encuentra anulada.");
+            Throw(CancellationReasonError(cancellationReason));
 
-            CancellationReason = ValidateCancellationReason(cancellationReason);
+            CancellationReason = TextNormalizer.CollapseSpaces(cancellationReason);
             IsCancelled = true;
         }
 
@@ -247,37 +249,37 @@ namespace ERP.Domain.Purchases
         public static string NormalizeNumber(string number) =>
             number.Trim().PadLeft(NumberMaxLength, '0');
 
-        private static void ValidateTaxDocumentType(TaxDocumentType taxDocumentType)
-        {
-            if (!Enum.IsDefined(taxDocumentType))
-                throw new DomainException("El tipo de documento es inválido.");
-        }
+        // Las reglas de los datos del comprobante: devuelven el mensaje o null. El dominio lanza el error con ellas y la
+        // API las llama antes para avisar todos los errores juntos (decisión 20).
 
-        private static string ValidateSerie(string serie)
-        {
-            if (string.IsNullOrWhiteSpace(serie))
-                throw new DomainException("La serie es requerida.");
-
-            serie = serie.Trim();
-
-            if (serie.Length != SerieMaxLength)
-                throw new DomainException($"La serie debe tener exactamente {SerieMaxLength} caracteres.");
-
-            if (!serie.All(char.IsLetterOrDigit))
-                throw new DomainException("La serie debe contener solo letras y números.");
-
-            return NormalizeSerie(serie);
-        }
+        public static string? TaxDocumentTypeError(TaxDocumentType? taxDocumentType) =>
+            taxDocumentType switch
+            {
+                null => "El tipo de documento es requerido.",
+                { } value when !Enum.IsDefined(value) => "El tipo de documento es inválido.",
+                _ => null
+            };
 
         /// <summary>
-        /// Qué tiene de malo la serie para ese comprobante, o null si corresponde. Los electrónicos empiezan con la
-        /// letra de su tipo (factura F001 o E001; boleta B001 o EB01) y los físicos son numéricos (0001). Una factura
-        /// con serie B, o una boleta con serie F, es un error de tipeo o un comprobante mal elegido.
+        /// Qué tiene de malo la serie, o null si está bien: 4 letras o números, y que corresponda al comprobante. Los
+        /// electrónicos empiezan con la letra de su tipo (factura F001 o E001; boleta B001 o EB01) y los físicos son
+        /// numéricos (0001). Una factura con serie B, o una boleta con serie F, es un error de tipeo o un comprobante mal
+        /// elegido. Sin tipo de comprobante (o con uno inválido) solo se revisa el formato.
         /// </summary>
-        public static string? SerieError(TaxDocumentType taxDocumentType, string serie)
+        public static string? SerieError(TaxDocumentType? taxDocumentType, string? serie)
         {
+            if (string.IsNullOrWhiteSpace(serie))
+                return "La serie es requerida.";
+
             var normalized = NormalizeSerie(serie);
-            if (normalized.All(char.IsDigit))
+            if (normalized.Length != SerieMaxLength)
+                return $"La serie debe tener exactamente {SerieMaxLength} caracteres.";
+
+            // Solo letras sin tilde y números, como los acepta SUNAT (no "Ñ" ni dígitos de otros alfabetos).
+            if (!normalized.All(char.IsAsciiLetterOrDigit))
+                return "La serie debe contener solo letras y números.";
+
+            if (normalized.All(char.IsAsciiDigit))
                 return null;
 
             return taxDocumentType switch
@@ -290,67 +292,85 @@ namespace ERP.Domain.Purchases
             };
         }
 
-        private static string ValidateNumber(string number)
+        public static string? NumberError(string? number)
         {
             if (string.IsNullOrWhiteSpace(number))
-                throw new DomainException("El número es requerido.");
+                return "El número es requerido.";
 
-            var numberNormalized = NormalizeNumber(number);
+            var trimmed = number.Trim();
+            if (!trimmed.All(char.IsAsciiDigit))
+                return "El número debe contener solo dígitos.";
 
-            if (numberNormalized.Length > NumberMaxLength)
-                throw new DomainException($"El número no puede exceder los {NumberMaxLength} dígitos.");
+            if (trimmed.Length > NumberMaxLength)
+                return $"El número no puede exceder los {NumberMaxLength} dígitos.";
 
-            if (!numberNormalized.All(char.IsDigit))
-                throw new DomainException("El número debe contener solo dígitos.");
+            if (trimmed.All(c => c == '0'))
+                return "El número debe ser mayor a cero.";
 
-            if (numberNormalized.All(c => c == '0'))
-                throw new DomainException("El número debe ser mayor a cero.");
-
-            return numberNormalized;
+            return null;
         }
 
-        private static void ValidateIssueDate(DateOnly issueDate)
+        /// <summary>La fecha no puede ser futura (en hora de Perú) ni de antes del 2000, que solo puede ser un año mal escrito.</summary>
+        public static string? IssueDateError(DateOnly? issueDate)
         {
-            var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, PeruTimeZone));
+            if (issueDate is null)
+                return "La fecha de emisión es requerida.";
 
-            if (issueDate > today)
-                throw new DomainException("La fecha de emisión no puede ser mayor a la fecha actual.");
+            if (issueDate > DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, PeruTimeZone)))
+                return "La fecha de emisión no puede ser mayor a la fecha actual.";
+
+            if (issueDate < MinIssueDate)
+                return "La fecha de emisión es demasiado antigua. Revisa el año.";
+
+            return null;
         }
 
-        private static void ValidateCurrency(Currency currency)
-        {
-            if (!Enum.IsDefined(currency))
-                throw new DomainException("La moneda es inválida.");
-        }
+        public static string? CurrencyError(Currency? currency) =>
+            currency switch
+            {
+                null => "La moneda es requerida.",
+                { } value when !Enum.IsDefined(value) => "La moneda es inválida.",
+                _ => null
+            };
 
-        private static void ValidateExchangeRate(Currency currency, decimal? exchangeRate)
-        {
-            if (currency is Currency.PEN && exchangeRate is not null)
-                throw new DomainException("El tipo de cambio no aplica para soles.");
+        /// <summary>Solo en moneda extranjera, mayor a cero y con hasta 6 decimales (los que guarda la base).</summary>
+        public static string? ExchangeRateError(Currency? currency, decimal? exchangeRate) =>
+            (currency, exchangeRate) switch
+            {
+                (Currency.PEN, not null) => "El tipo de cambio no aplica para soles.",
+                (not null and not Currency.PEN, null) => "El tipo de cambio es requerido para moneda extranjera.",
+                (_, <= 0) => "El tipo de cambio debe ser mayor a cero.",
+                (_, > ExchangeRateMax) => "El tipo de cambio es demasiado grande. Revisa que esté bien escrito.",
+                (_, { } rate) when Math.Round(rate, ExchangeRateDecimals) != rate =>
+                    $"El tipo de cambio puede tener hasta {ExchangeRateDecimals} decimales.",
+                _ => null
+            };
 
-            if (currency is not Currency.PEN && exchangeRate is null)
-                throw new DomainException("El tipo de cambio es requerido para moneda extranjera.");
+        public static string? InvoicePriceTypeError(InvoicePriceType? invoicePriceType) =>
+            invoicePriceType switch
+            {
+                null => "El tipo de precio es requerido.",
+                { } value when !Enum.IsDefined(value) => "El tipo de precio es inválido.",
+                _ => null
+            };
 
-            if (exchangeRate is not null && exchangeRate.Value <= 0)
-                throw new DomainException("El tipo de cambio debe ser mayor a cero.");
-        }
-
-        private static void ValidateInvoicePriceType(InvoicePriceType invoicePriceType)
-        {
-            if (!Enum.IsDefined(invoicePriceType))
-                throw new DomainException("El tipo de precio es inválido.");
-        }
-
-        private static string ValidateCancellationReason(string cancellationReason)
+        /// <summary>El largo se mide sobre el motivo ya normalizado (sin espacios de sobra).</summary>
+        public static string? CancellationReasonError(string? cancellationReason)
         {
             if (string.IsNullOrWhiteSpace(cancellationReason))
-                throw new DomainException("El motivo de anulación es requerido.");
+                return "El motivo de anulación es requerido.";
 
-            var normalized = TextNormalizer.CollapseSpaces(cancellationReason);
-            if (normalized.Length > CancellationReasonMaxLength)
-                throw new DomainException($"El motivo de anulación no puede exceder los {CancellationReasonMaxLength} caracteres.");
+            if (TextNormalizer.CollapseSpaces(cancellationReason).Length > CancellationReasonMaxLength)
+                return $"El motivo de anulación no puede exceder los {CancellationReasonMaxLength} caracteres.";
 
-            return normalized;
+            return null;
+        }
+
+        private static void Throw(string? error)
+        {
+            if (error is not null)
+                throw new DomainException(error);
         }
     }
 }
+

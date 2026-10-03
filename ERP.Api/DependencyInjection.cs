@@ -1,4 +1,4 @@
-﻿using ERP.Api.Common;
+using ERP.Api.Common;
 using ERP.Api.Json;
 using ERP.Api.Middleware;
 using ERP.Api.OpenApi;
@@ -46,7 +46,8 @@ namespace ERP.Api
                     {
                         // Los números viajan como números: "12.5" entre comillas se rechaza.
                         options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict;
-                        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                        // Los enums solo como texto ("PEN"): un número como 99 no es un valor del catálogo.
+                        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false));
                         options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
                         options.JsonSerializerOptions.Converters.Add(new TrimmingStringConverter());
                     })
@@ -57,7 +58,7 @@ namespace ERP.Api
                 services.ConfigureHttpJsonOptions(options =>
                 {
                     options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
-                    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false));
                 });
 
                 services.AddOpenApi(options =>

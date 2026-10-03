@@ -21,8 +21,6 @@ namespace ERP.Api.Controllers.Purchases.Requests
         IReadOnlyCollection<CreatePurchaseLineRequest>? Lines
         )
     {
-        private static readonly TimeZoneInfo PeruTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
-
         public IReadOnlyCollection<string> Validate()
         {
             var errors = new List<string>();
@@ -30,66 +28,19 @@ namespace ERP.Api.Controllers.Purchases.Requests
             if (CompanyId is null || CompanyId == Guid.Empty)
                 errors.Add("La empresa es requerida.");
 
-            if (TaxDocumentType is null)
-                errors.Add("El tipo de documento es requerido.");
-
-            if (TaxDocumentType is not null && !Enum.IsDefined(TaxDocumentType.Value))
-                errors.Add("El tipo de documento es inválido.");
-
-            // Sin espacios alrededor: "F001 " pegado de otro lado es la serie F001 (el dominio hace lo mismo).
-            var serie = Serie?.Trim();
-            var number = Number?.Trim();
-
-            if (string.IsNullOrWhiteSpace(serie))
-                errors.Add("La serie es requerida.");
-
-            if (!string.IsNullOrWhiteSpace(serie) && serie.Length != Purchase.SerieMaxLength)
-                errors.Add($"La serie debe tener exactamente {Purchase.SerieMaxLength} caracteres.");
-
-            if (!string.IsNullOrWhiteSpace(serie) && !serie.All(char.IsLetterOrDigit))
-                errors.Add("La serie debe contener solo letras y números.");
-
-            // La serie debe corresponder al comprobante (factura F…, boleta B…): la misma regla del dominio.
-            if (TaxDocumentType is { } type && Enum.IsDefined(type)
-                && !string.IsNullOrWhiteSpace(serie) && serie.Length == Purchase.SerieMaxLength && serie.All(char.IsLetterOrDigit)
-                && Purchase.SerieError(type, serie) is { } serieError)
-                errors.Add(serieError);
-
-            if (string.IsNullOrWhiteSpace(number))
-                errors.Add("El número es requerido.");
-
-            if (!string.IsNullOrWhiteSpace(number) && number.Length > Purchase.NumberMaxLength)
-                errors.Add($"El número no puede exceder los {Purchase.NumberMaxLength} dígitos.");
-
-            if (!string.IsNullOrWhiteSpace(number) && !number.All(char.IsDigit))
-                errors.Add("El número debe contener solo dígitos.");
-
-            if (IssueDate is null)
-                errors.Add("La fecha de emisión es requerida.");
-
-            if (IssueDate is not null && IssueDate > DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, PeruTimeZone)))
-                errors.Add("La fecha de emisión no puede ser mayor a la fecha actual.");
-
-            if (Currency is null)
-                errors.Add("La moneda es requerida.");
-
-            if (Currency is not null && !Enum.IsDefined(Currency.Value))
-                errors.Add("La moneda es inválida.");
-
-            if (Currency is not null && Currency != Domain.Catalogs.Currency.PEN && ExchangeRate is null)
-                errors.Add("El tipo de cambio es requerido para moneda extranjera.");
-
-            if (Currency is Domain.Catalogs.Currency.PEN && ExchangeRate is not null)
-                errors.Add("El tipo de cambio no aplica para soles.");
-
-            if (ExchangeRate is not null && ExchangeRate <= 0)
-                errors.Add("El tipo de cambio debe ser mayor a cero.");
-
-            if (InvoicePriceType is null)
-                errors.Add("El tipo de precio es requerido.");
-
-            if (InvoicePriceType is not null && !Enum.IsDefined(InvoicePriceType.Value))
-                errors.Add("El tipo de precio es inválido.");
+            // Las reglas del comprobante son las del dominio: aquí solo se juntan para avisar todo de una vez.
+            var validType = Purchase.TaxDocumentTypeError(TaxDocumentType) is null ? TaxDocumentType : null;
+            string?[] documentErrors =
+            [
+                Purchase.TaxDocumentTypeError(TaxDocumentType),
+                Purchase.SerieError(validType, Serie),
+                Purchase.NumberError(Number),
+                Purchase.IssueDateError(IssueDate),
+                Purchase.CurrencyError(Currency),
+                Purchase.ExchangeRateError(Currency, ExchangeRate),
+                Purchase.InvoicePriceTypeError(InvoicePriceType),
+            ];
+            errors.AddRange(documentErrors.OfType<string>());
 
             // El proveedor: uno registrado o uno nuevo, no los dos. El nuevo se valida como en su propia pantalla.
             if (NewSupplier is not null && SupplierId is not null)

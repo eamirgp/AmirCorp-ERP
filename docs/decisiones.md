@@ -287,3 +287,14 @@ Correcciones de la revisión completa del sistema. Algunas cambian decisiones an
 - **Cambiar el proveedor de una compra a medio llenar** pregunta antes y quita los productos de las líneas (se quedan la unidad, las cantidades y los montos), porque se buscaron y enlazaron con los códigos del proveedor anterior.
 - **Esc en un buscador dentro de una ventana** cierra solo la lista; el siguiente Esc cierra la ventana.
 - **Pendiente de decidir:** si el stock se cuenta siempre en unidades o en la unidad de cada producto (kilos, metros). Hasta decidirlo, el sistema acepta unidades por caja con decimales.
+
+### 27. Errores esperados con su mensaje, nunca un 500
+**Fecha:** octubre 2026
+
+Completa las decisiones 10 y 20: un dato mal enviado recibe un mensaje claro y no llega a una excepción del dominio (que además detiene el depurador).
+
+- **Compras:** los datos del comprobante tienen sus funciones en el dominio (`Purchase.SerieError`, `NumberError`, `IssueDateError`, `CurrencyError`, `ExchangeRateError`, `InvoicePriceTypeError`, `CancellationReasonError`), que usan la API y el dominio. Antes el número "0" pasaba la API y el dominio lo rechazaba con un 500. Ahora también: la serie y el número solo aceptan letras y números comunes (no "Ñ" ni dígitos de otros alfabetos), la fecha de emisión no puede ser anterior al 2000, el tipo de cambio va hasta 1000 con 6 decimales, y el motivo de anulación se mide sin espacios de sobra.
+- **Clientes y proveedores:** al editar, si el documento nuevo no sirve para sus roles (un proveedor con DNI), responde el mensaje en vez de un 500. Al crear, si no se envía uno de los roles, cuenta como "no". Bloquear o desbloquear algo que ya está así responde bien aunque la lista estuviera desactualizada (antes daba "otra persona lo modificó" en un doble clic; decisión 20).
+- **Fechas fuera de rango:** el tipo de cambio sin moneda o sin fecha, o con una fecha anterior al 2000, y el historial con una fecha fuera de 2000–2100, responden 400 con el motivo.
+- **Toda respuesta de error trae `{ errors: [...] }`:** también 401 (sesión vencida), 403 (sin permiso), 404 (dirección que no existe), 405 y 415 (`StatusCodeResponse`).
+- **Enums solo como texto:** `"PEN"` sí, `99` no. Antes un número cualquiera llegaba al dominio como un valor inexistente.

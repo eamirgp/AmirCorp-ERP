@@ -7,6 +7,8 @@ namespace ERP.Application.Features.Audit.ListAuditEntries
     internal sealed class ListAuditEntriesUseCase : IListAuditEntriesUseCase
     {
         private static readonly TimeZoneInfo PeruTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
+        private static readonly DateOnly MinDay = new(2000, 1, 1);
+        private static readonly DateOnly MaxDay = new(2100, 12, 31);
 
         private readonly IAuditQueries _auditQueries;
 
@@ -14,6 +16,12 @@ namespace ERP.Application.Features.Audit.ListAuditEntries
 
         public async Task<Result<PagedResult<AuditEntryDto>>> ExecuteAsync(ListAuditEntriesDto request)
         {
+            // Una fecha como 31/12/9999 no se puede convertir a hora UTC: se avisa en vez de fallar.
+            if (request.From is { } outFrom && (outFrom < MinDay || outFrom > MaxDay)
+                || request.To is { } outTo && (outTo < MinDay || outTo > MaxDay))
+                return Result<PagedResult<AuditEntryDto>>.Failure(
+                    [$"Revisa el año de las fechas: debe estar entre {MinDay.Year} y {MaxDay.Year}."], ErrorType.BadRequest);
+
             if (request.From is { } from && request.To is { } to && from > to)
                 return Result<PagedResult<AuditEntryDto>>.Failure(["La fecha inicial no puede ser posterior a la fecha final."], ErrorType.BadRequest);
 

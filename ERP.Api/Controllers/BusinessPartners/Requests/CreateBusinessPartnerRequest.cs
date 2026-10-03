@@ -26,8 +26,9 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
                 DocumentNumber!,
                 BusinessPartner.CountryFor(IdentityDocumentType.Value, CountryCode)!,
                 Name!,
-                IsClient!.Value,
-                IsSupplier!.Value
+                // Sin el dato es "no", como en la validación: basta con indicar el rol que tiene.
+                IsClient ?? false,
+                IsSupplier ?? false
                 );
     }
 }

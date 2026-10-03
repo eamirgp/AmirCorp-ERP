@@ -1,4 +1,5 @@
 using ERP.Api;
+using ERP.Api.Common;
 using ERP.Api.Extensions;
 using ERP.Application;
 using ERP.Infrastructure;
@@ -22,6 +23,8 @@ await app.SeedSuperAdminAsync();
 // Configure the HTTP request pipeline.
 
 app.UseExceptionHandler();
+// 401, 403, 404, 405… sin cuerpo: con { errors: [...] } como todas las demás.
+app.UseStatusCodePages(StatusCodeResponse.WriteAsync);
 
 // En desarrollo el frontend llama por http://localhost:5117. Redirigir a HTTPS rompe el preflight
 // de CORS: el navegador no acepta una redirección como respuesta a la consulta OPTIONS.

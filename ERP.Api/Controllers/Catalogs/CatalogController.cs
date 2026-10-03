@@ -61,10 +61,16 @@ namespace ERP.Api.Controllers.Catalogs
         /// </summary>
         [HttpGet("exchange-rate")]
         [ProducesResponseType<GetExchangeRateResponseDto>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetExchangeRate([FromQuery] Currency currency, [FromQuery] DateOnly date, [FromQuery] bool storedOnly, CancellationToken ct)
+        public async Task<IActionResult> GetExchangeRate([FromQuery] Currency? currency, [FromQuery] DateOnly? date, [FromQuery] bool storedOnly, CancellationToken ct)
         {
+            // Sin la moneda o la fecha se avisa (antes llegaba la fecha 01/01/0001 y terminaba en un error 500).
+            string?[] checks = [currency is null ? "La moneda es requerida." : null, date is null ? "La fecha es requerida." : null];
+            IReadOnlyCollection<string> errors = checks.OfType<string>().ToArray();
+            if (errors.Count > 0)
+                return errors.ToBadRequest();
+
             // storedOnly: solo lo ya guardado (404 si falta), sin consultar al servicio externo.
-            var result = await _getExchangeRateUseCase.ExecuteAsync(currency, date, storedOnly, ct);
+            var result = await _getExchangeRateUseCase.ExecuteAsync(currency!.Value, date!.Value, storedOnly, ct);
             return result.ToActionResult(StatusCodes.Status200OK);
         }
 

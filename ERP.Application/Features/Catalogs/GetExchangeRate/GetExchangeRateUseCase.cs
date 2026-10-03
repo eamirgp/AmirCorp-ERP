@@ -37,6 +37,7 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
         private const string Source = "SUNAT";
         // Cuánto se retrocede como máximo buscando el último publicado (feriados largos incluidos).
         private const int MaxDaysBack = 10;
+        private static readonly DateOnly MinDate = new(2000, 1, 1);
         private static readonly TimeZoneInfo PeruTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
 
         private readonly IExchangeRateLookup _exchangeRateLookup;
@@ -59,6 +60,10 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
             var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, PeruTimeZone));
             if (date > today)
                 return Failure(["La fecha no puede ser mayor a la fecha actual."], ErrorType.BadRequest);
+
+            // Un año mal escrito (0001, 1900): no hay nada que consultar.
+            if (date < MinDate)
+                return Failure(["La fecha es demasiado antigua. Revisa el año."], ErrorType.BadRequest);
 
             if (await _exchangeRateRepository.GetAsync(currency, date) is { } stored)
                 return Success(stored.SellRate, stored.PublishedDate, date);

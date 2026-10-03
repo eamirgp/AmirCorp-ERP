@@ -1,5 +1,6 @@
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Domain.Partners;
 
 namespace ERP.Application.Features.Partners.UpdateBusinessPartner
 {
@@ -32,6 +33,11 @@ namespace ERP.Application.Features.Partners.UpdateBusinessPartner
                     ["Otra persona modificó este registro mientras lo editabas. Cierra el formulario y vuelve a abrirlo para ver los datos actuales."],
                     ErrorType.Conflict
                     );
+
+            // El documento nuevo debe servir para los roles que ya tiene (un proveedor no puede quedar con DNI): la
+            // misma regla del dominio, revisada antes para responder con el mensaje en vez de una excepción.
+            if (BusinessPartner.RolesError(request.IdentityDocumentType, businessPartner.IsClient, businessPartner.IsSupplier) is { } rolesError)
+                return Result.Failure([rolesError], ErrorType.BadRequest);
 
             if (await _businessPartnerRepository.FindByDocumentAsync(request.IdentityDocumentType, request.DocumentNumber, request.Id) is { } existing)
                 return Result.Failure([BusinessPartnerRules.AlreadyExists(existing)], ErrorType.Conflict);
