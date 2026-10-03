@@ -25,7 +25,7 @@ namespace ERP.Application.Features.Products.FindProductByCode
             if (string.IsNullOrWhiteSpace(code))
                 return null;
 
-            var product = (await _productRepository.GetByCodesAsync([code.Trim()])).FirstOrDefault();
+            var product = (await _productRepository.GetByCodesAsync([code])).FirstOrDefault();
             return product is null ? null : new FoundProductDto(product.Id, product.Code, product.Name, product.IsActive);
         }
     }

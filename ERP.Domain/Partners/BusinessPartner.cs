@@ -169,7 +169,7 @@ namespace ERP.Domain.Partners
             if (string.IsNullOrWhiteSpace(reason))
                 return null;
 
-            var normalized = NormalizeName(reason);
+            var normalized = TextNormalizer.CollapseSpaces(reason);
             if (normalized.Length > BlockReasonMaxLength)
                 throw new DomainException($"El motivo no puede exceder los {BlockReasonMaxLength} caracteres.");
 

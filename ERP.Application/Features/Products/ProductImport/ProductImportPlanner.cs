@@ -32,7 +32,7 @@ namespace ERP.Application.Features.Products.ProductImport
 
             var codes = rows
                 .Where(r => !string.IsNullOrWhiteSpace(r.Code))
-                .Select(r => Product.NormalizeCode(r.Code!.Trim()))
+                .Select(r => Product.NormalizeCode(r.Code!))
                 .Distinct()
                 .ToArray();
 
@@ -52,7 +52,7 @@ namespace ERP.Application.Features.Products.ProductImport
                 Product? candidate = null;
                 try
                 {
-                    candidate = Product.Create(row.Code?.Trim() ?? "", row.Name?.Trim() ?? "", unit?.Code ?? PlaceholderUnitCode, igv ?? IgvAffectation.Gravado, price ?? 0);
+                    candidate = Product.Create(row.Code ?? "", row.Name ?? "",unit?.Code ?? PlaceholderUnitCode, igv ?? IgvAffectation.Gravado, price ?? 0);
                 }
                 catch (DomainException ex)
                 {

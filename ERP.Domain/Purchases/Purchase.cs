@@ -334,10 +334,11 @@ namespace ERP.Domain.Purchases
             if (string.IsNullOrWhiteSpace(cancellationReason))
                 throw new DomainException("El motivo de anulación es requerido.");
 
-            if (cancellationReason.Length > CancellationReasonMaxLength)
+            var normalized = TextNormalizer.CollapseSpaces(cancellationReason);
+            if (normalized.Length > CancellationReasonMaxLength)
                 throw new DomainException($"El motivo de anulación no puede exceder los {CancellationReasonMaxLength} caracteres.");
 
-            return cancellationReason;
+            return normalized;
         }
     }
 }

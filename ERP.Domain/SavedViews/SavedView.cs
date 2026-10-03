@@ -41,7 +41,7 @@ namespace ERP.Domain.SavedViews
         }
 
         public static string NormalizeName(string name) =>
-            name.Trim();
+            TextNormalizer.CollapseSpaces(name);
 
         public void Rename(string name) =>
             Name = ValidateName(name);

@@ -202,3 +202,14 @@ Las mismas reglas que el documento de un proveedor (decisión 16), aplicadas a l
 - **La compra guarda una copia** del RUC y la razón social de la empresa (`CompanyRuc`, `CompanyName`), como ya lo hacía con el proveedor. El detalle y la lista muestran esa copia, no el nombre actual de la empresa. La migración `AddPurchaseCompanyCopy` llenó las compras anteriores con los datos que la empresa tenía ese día.
 - **Consulta en SUNAT:** el formulario de empresas trae la razón social desde SUNAT con el botón o con Enter en el RUC (`GET api/companies/ruc-lookup?ruc=&companyId=`), igual que el de proveedores: a pedido, porque cada consulta cuenta en el cupo. Avisa si SUNAT no la tiene ACTIVO y HABIDO o si otra empresa ya tiene ese RUC. La consulta y sus mensajes de error son los mismos para los dos formularios (`DocumentLookupService`), y la regla "ACTIVO y HABIDO" está en el dominio (`TaxpayerStatus`).
 - **Una sola regla para la API y el dominio:** el dominio expone `Company.RucError` y `NameError`, que devuelven el mensaje o null. El dominio lanza el error con ellas, y la API las usa para avisar todos los errores juntos. Es el patrón que se irá aplicando al resto de los módulos.
+
+### 19. Normalización completa en el dominio
+**Fecha:** octubre 2026
+
+Completa la decisión 5. Antes, varias entidades solo cambiaban mayúsculas o minúsculas y dependían de que la API quitara los espacios (`TrimmingStringConverter`). Ahora el dominio no depende de eso: si otro camino (la carga con Excel, la creación del SuperAdmin, un caso de uso nuevo) le entrega un texto con espacios, igual lo guarda limpio.
+
+- **Códigos** (producto, código de proveedor, unidad, RUC y documentos): sin espacios alrededor y en mayúsculas. Así " abc" y "ABC" son el mismo código interno, para la base y para la revisión de duplicados.
+- **Nombres y motivos** (producto, empresa, cliente o proveedor, usuario, unidad, vista guardada, motivos de bloqueo y de anulación): sin espacios alrededor ni dobles en medio, con una sola función (`TextNormalizer.CollapseSpaces`).
+- **Correo:** sin espacios alrededor y en minúsculas.
+- **El largo máximo se mide sobre el texto ya normalizado:** un nombre de 100 letras con un espacio de sobra al final no se rechaza.
+- **Datos existentes:** al hacer el cambio se revisaron los productos, usuarios, empresas, unidades, vistas guardadas y motivos de anulación, y ninguno tenía espacios de sobra, así que no hizo falta una migración. Clientes y proveedores ya se normalizaban desde la decisión 16.

@@ -59,11 +59,11 @@ namespace ERP.Domain.UnitsOfMeasure
             if (string.IsNullOrWhiteSpace(name))
                 throw new DomainException("El nombre es requerido.");
 
-            var trimmed = name.Trim();
-            if (trimmed.Length > NameMaxLength)
+            var normalized = TextNormalizer.CollapseSpaces(name);
+            if (normalized.Length > NameMaxLength)
                 throw new DomainException($"El nombre no puede exceder los {NameMaxLength} caracteres.");
 
-            return trimmed;
+            return normalized;
         }
     }
 }

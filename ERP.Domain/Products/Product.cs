@@ -39,8 +39,13 @@ namespace ERP.Domain.Products
         public static Product Create(string code, string name, string unitOfMeasureCode, IgvAffectation igvAffectation, decimal salePrice) =>
             new(Guid.CreateVersion7(), ValidateCode(code), ValidateName(name), ValidateUnitOfMeasureCode(unitOfMeasureCode), ValidateIgvAffectation(igvAffectation), ValidateSalePrice(salePrice), isActive: true);
 
+        /// <summary>El código tal como se guarda y se compara: sin espacios alrededor y en mayúsculas (" abc" es "ABC").</summary>
         public static string NormalizeCode(string code) =>
-            code.ToUpperInvariant();
+            code.Trim().ToUpperInvariant();
+
+        /// <summary>El nombre tal como se guarda: sin espacios al inicio ni al final, ni dobles en medio.</summary>
+        public static string NormalizeName(string name) =>
+            TextNormalizer.CollapseSpaces(name);
 
         public void UpdateCode(string code) =>
             Code = ValidateCode(code);
@@ -127,10 +132,11 @@ namespace ERP.Domain.Products
             if (string.IsNullOrWhiteSpace(code))
                 throw new DomainException("El código interno es requerido.");
 
-            if (code.Length > CodeMaxLength)
+            var normalized = NormalizeCode(code);
+            if (normalized.Length > CodeMaxLength)
                 throw new DomainException($"El código interno no puede exceder los {CodeMaxLength} caracteres.");
 
-            return NormalizeCode(code);
+            return normalized;
         }
 
         private static string ValidateSupplierCode(Guid supplierId, string code)
@@ -153,10 +159,11 @@ namespace ERP.Domain.Products
             if (string.IsNullOrWhiteSpace(name))
                 throw new DomainException("El nombre es requerido.");
 
-            if (name.Length > NameMaxLength)
+            var normalized = NormalizeName(name);
+            if (normalized.Length > NameMaxLength)
                 throw new DomainException($"El nombre no puede exceder los {NameMaxLength} caracteres.");
 
-            return name;
+            return normalized;
         }
 
         // Que la unidad exista y esté activa lo revisa el caso de uso, que conoce el catálogo.

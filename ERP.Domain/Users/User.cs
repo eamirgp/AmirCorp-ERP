@@ -28,8 +28,9 @@ namespace ERP.Domain.Users
         public static User Create(string name, string email, string passwordHash, UserRole role) =>
             new(Guid.CreateVersion7(), ValidateName(name), ValidateEmail(email), ValidatePasswordHash(passwordHash), ValidateRole(role), isActive: true);
 
+        /// <summary>El correo tal como se guarda y se compara: sin espacios alrededor y en minúsculas.</summary>
         public static string NormalizeEmail(string email) =>
-            email.ToLowerInvariant();
+            email.Trim().ToLowerInvariant();
 
         public void UpdateName(string name) =>
             Name = ValidateName(name);
@@ -54,10 +55,11 @@ namespace ERP.Domain.Users
             if (string.IsNullOrWhiteSpace(name))
                 throw new DomainException("El nombre es requerido.");
 
-            if (name.Length > NameMaxLength)
+            var normalized = TextNormalizer.CollapseSpaces(name);
+            if (normalized.Length > NameMaxLength)
                 throw new DomainException($"El nombre no puede exceder los {NameMaxLength} caracteres.");
 
-            return name;
+            return normalized;
         }
 
         private static string ValidateEmail(string email)
@@ -65,13 +67,14 @@ namespace ERP.Domain.Users
             if (string.IsNullOrWhiteSpace(email))
                 throw new DomainException("El correo es requerido.");
 
-            if (email.Length > EmailMaxLength)
+            var normalized = NormalizeEmail(email);
+            if (normalized.Length > EmailMaxLength)
                 throw new DomainException($"El correo no puede exceder los {EmailMaxLength} caracteres.");
 
-            if (!MailAddress.TryCreate(email, out _))
+            if (!MailAddress.TryCreate(normalized, out _))
                 throw new DomainException("El formato del correo es inválido.");
 
-            return NormalizeEmail(email);
+            return normalized;
         }
 
         private static string ValidatePasswordHash(string passwordHash)
