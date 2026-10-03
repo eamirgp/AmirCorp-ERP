@@ -23,7 +23,9 @@ namespace ERP.Application.Features.Purchases.GetPurchase
         decimal InventoryUnitCost,
         decimal BaseAmount,
         decimal IgvAmount,
-        decimal Total
+        decimal Total,
+        // La moneda de la compra, para mostrar el costo con su símbolo.
+        Currency Currency
         )
     {
         public string InvoiceIgvAffectationDescription => InvoiceIgvAffectation.Description;
@@ -31,8 +33,8 @@ namespace ERP.Application.Features.Purchases.GetPurchase
         /// <summary>El monto unitario como venía en la factura: el valor (sin IGV) o el precio (con IGV), según la compra.</summary>
         public decimal InvoiceUnitAmount => PurchaseLine.InvoiceAmountFor(InvoicePriceType, InvoiceUnitValue, InvoiceUnitPrice);
 
-        /// <summary>Lo que entró al inventario: "120 und. (24 por caja) · costo 5.00 c/u". Sin conversión, solo las unidades.</summary>
+        /// <summary>Lo que entró al inventario: "120 und. (24 por caja) · costo S/ 5.00 c/u". Sin conversión, solo las unidades.</summary>
         public string InventoryDescription =>
-            PurchaseLineText.Inventory(InventoryQuantity, ConversionFactor, InvoiceUnitOfMeasureName, InventoryUnitCost);
+            PurchaseLineText.Inventory(InventoryQuantity, ConversionFactor, InvoiceUnitOfMeasureName, InventoryUnitCost, Currency);
     }
 }

@@ -151,7 +151,8 @@ namespace ERP.Persistence.Queries
                     l.InventoryUnitCost,
                     l.BaseAmount,
                     l.IgvAmount,
-                    l.Total
+                    l.Total,
+                    p.Currency
                     )).ToArray()
                 ))
             .FirstOrDefaultAsync();

@@ -390,3 +390,25 @@ Una tercera revisión, por módulo completo (del dominio a la pantalla), encontr
   - Un número con más de 15 cifras se avisa en vez de redondearse al enviarlo, y al reordenarlo se trabaja sobre el texto.
   - Un proveedor nuevo sin razón social (SUNAT no respondió) ya permite elegir productos.
 - **Pendiente:** importar con "actualizar" un producto cuya unidad está desactivada sigue dando error en la fila (se resolverá con la pregunta de en qué unidad se cuenta el stock), y qué caracteres admite el código interno (espacios dobles) lo decide el negocio.
+
+### 33. Pantalla legible para personas mayores (tercera revisión de octubre, grupo 3)
+**Fecha:** octubre 2026
+
+La revisión midió el contraste con la fórmula de WCAG y encontró textos y bordes por debajo del mínimo, mensajes de distinto tamaño y montos sin moneda. Completa la decisión 30.
+
+- **Contraste (medido, no a ojo):**
+  - El rojo de los errores pasó de `#d4453d` a `#c0392f`: 4.9:1 sobre su fondo rosado (antes 4.03).
+  - El gris más tenue para texto pasó de `#737373` a `#6b6b6b`: 4.8:1 sobre el gris de la página (antes 4.31). El gris del manual sigue como referencia de marca, no como color de texto.
+  - Los campos tienen su propio borde (`--control`: `#8a8a87`, en oscuro `#6e6e6e`), de 3:1 o más (antes 1.48:1, casi invisible). Los bordes decorativos no cambian.
+  - En modo oscuro todos los pares de texto pasan 4.5:1.
+- **Mensajes:**
+  - Los errores de los formularios tienen el mismo tamaño en todas las pantallas (`text-sm`); la ayuda sigue más chica.
+  - Los avisos flotantes muestran todos los mensajes de la API (`errorText`), no solo el primero.
+  - El aviso sin conexión ya no habla de "la API".
+- **Listas:** si una lista no se puede cargar, muestra el mensaje con "Reintentar" (`ListError`), como una pantalla. Empresas, Usuarios y Unidades tienen "Limpiar filtros" cuando nada coincide, como las demás.
+- **Montos con su moneda:**
+  - El costo de cada línea dice la moneda: "costo US$ 5.00 c/u". Antes, en una compra en dólares, "5.00" se leía como soles.
+  - El símbolo lo da el dominio (`Currency.Symbol`) y la API lo envía (`Symbol` en el catálogo de monedas, `CurrencySymbol` en las compras). Antes el navegador ponía "USD 120.00" junto a "US$" en el texto del costo.
+  - La vista previa recibe la moneda solo para ese texto.
+  - El monto unitario del detalle se ve "5.00", como al escribirlo, y no "5".
+- **Textos:** con una unidad de cantidad fija de 1 (Pieza, Unidad) el aviso dice "Cada pieza es una unidad", no "trae 1 unidades".

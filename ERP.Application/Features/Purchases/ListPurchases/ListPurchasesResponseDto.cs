@@ -22,6 +22,8 @@ namespace ERP.Application.Features.Purchases.ListPurchases
     {
         public string TaxDocumentTypeDescription => TaxDocumentType.Description;
         public string CurrencyDescription => Currency.Description;
+        /// <summary>El símbolo del total ("S/", "US$").</summary>
+        public string CurrencySymbol => Currency.Symbol;
         public string FullNumber => Serie + "-" + Number;
         /// <summary>"Registrada" o "Anulada", para la columna Estado.</summary>
         public string StatusDescription => IsCancelled ? "Anulada" : "Registrada";

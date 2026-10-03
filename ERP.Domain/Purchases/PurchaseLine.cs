@@ -268,7 +268,9 @@ namespace ERP.Domain.Purchases
             if (unitOfMeasure.FixedConversionFactor is { } fixedFactor)
                 return conversionFactor is null || conversionFactor == fixedFactor
                     ? null
-                    : $"Cada {name} trae {fixedFactor:0.######} unidades: no se puede indicar otra cantidad.";
+                    : fixedFactor == 1
+                        ? $"Cada {name} es una unidad: no se puede indicar otra cantidad."
+                        : $"Cada {name} trae {fixedFactor:0.######} unidades: no se puede indicar otra cantidad.";
 
             return conversionFactor switch
             {

@@ -9,7 +9,9 @@ namespace ERP.Api.Controllers.Purchases.Requests
     /// </summary>
     public sealed record PreviewPurchaseRequest(
         InvoicePriceType? InvoicePriceType,
-        IReadOnlyCollection<PreviewPurchaseLineRequest>? Lines
+        IReadOnlyCollection<PreviewPurchaseLineRequest>? Lines,
+        // La moneda elegida, para mostrar el costo con su símbolo. Opcional.
+        Currency? Currency = null
         )
     {
         /// <summary>Solo el máximo de líneas: una compra a medio llenar puede no tener ninguna todavía.</summary>
@@ -19,6 +21,7 @@ namespace ERP.Api.Controllers.Purchases.Requests
         public PreviewPurchaseDto ToDto() =>
             new(
                 InvoicePriceType,
+                Currency,
                 // Una línea null es una línea vacía: no se calcula, como las incompletas.
                 (Lines ?? []).Select(l => new PreviewPurchaseLineDto(
                     l?.InvoiceIgvAffectation,

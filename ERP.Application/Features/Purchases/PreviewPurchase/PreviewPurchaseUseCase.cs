@@ -79,7 +79,7 @@ namespace ERP.Application.Features.Purchases.PreviewPurchase
                     amounts.Total,
                     amounts.InventoryQuantity,
                     amounts.InventoryUnitCost,
-                    PurchaseLineText.Inventory(amounts.InventoryQuantity, amounts.ConversionFactor, unit.Name, amounts.InventoryUnitCost),
+                    PurchaseLineText.Inventory(amounts.InventoryQuantity, amounts.ConversionFactor, unit.Name, amounts.InventoryUnitCost, request.Currency),
                     null
                     ));
             }

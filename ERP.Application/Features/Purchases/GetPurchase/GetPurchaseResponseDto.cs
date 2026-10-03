@@ -33,6 +33,8 @@ namespace ERP.Application.Features.Purchases.GetPurchase
     {
         public string TaxDocumentTypeDescription => TaxDocumentType.Description;
         public string CurrencyDescription => Currency.Description;
+        /// <summary>El símbolo de los montos ("S/", "US$"), el mismo del costo de cada línea.</summary>
+        public string CurrencySymbol => Currency.Symbol;
         public string InvoicePriceTypeDescription => InvoicePriceType.Description;
         public string SupplierIdentityDocumentTypeDescription => SupplierIdentityDocumentType.Description;
         public string FullNumber => Serie + "-" + Number;

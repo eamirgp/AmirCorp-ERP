@@ -7,6 +7,8 @@ namespace ERP.Application.Features.Purchases.PreviewPurchase
     /// </summary>
     public sealed record PreviewPurchaseDto(
         InvoicePriceType? InvoicePriceType,
+        // Solo para mostrar el costo con su símbolo; sin moneda, el costo va sin símbolo.
+        Currency? Currency,
         IReadOnlyCollection<PreviewPurchaseLineDto> Lines
         );
 
