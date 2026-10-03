@@ -45,14 +45,7 @@ namespace ERP.Domain.Catalogs
             if (!Enum.IsDefined(currency) || currency is Currency.PEN)
                 throw new DomainException("El tipo de cambio es de una moneda extranjera.");
 
-            if (publishedDate > date)
-                throw new DomainException("La publicación del tipo de cambio no puede ser posterior a la fecha a la que aplica.");
-
-            if (date.DayNumber - publishedDate.DayNumber > MaxDaysBack)
-                throw new DomainException($"El último tipo de cambio publicado no puede ser de más de {MaxDaysBack} días antes.");
-
-            if ((RateError(buyRate) ?? RateError(sellRate)) is { } rateError)
-                throw new DomainException(rateError);
+            DomainException.ThrowIf(PublishedError(date, publishedDate, buyRate, sellRate));
 
             if (string.IsNullOrWhiteSpace(source) || source.Trim().Length > SourceMaxLength)
                 throw new DomainException($"Quién publica el tipo de cambio es requerido, de hasta {SourceMaxLength} caracteres.");
@@ -78,15 +71,56 @@ namespace ERP.Domain.Catalogs
             date.AddDays(-MaxDaysBack);
 
         /// <summary>
+        /// La publicación que aplica a esa fecha entre las conocidas: la del mismo día o, si ese día no se publicó, la
+        /// última anterior, hasta <see cref="MaxDaysBack"/> días atrás. Null si ninguna sirve.
+        /// </summary>
+        public static DateOnly? ApplicablePublication(DateOnly date, IEnumerable<DateOnly> publishedDates)
+        {
+            var oldest = OldestApplicable(date);
+            return publishedDates.Where(d => d <= date && d >= oldest).Select(d => (DateOnly?)d).Max();
+        }
+
+        /// <summary>
         /// Si un día sin publicación se guarda con el último publicado, para no volver a consultarlo. Solo un día pasado:
         /// el de hoy puede publicarse más tarde.
         /// </summary>
         public static bool StoresDayWithoutPublication(DateOnly date, DateOnly publishedDate, DateOnly today) =>
             publishedDate < date && date < today;
 
-        private static string? RateError(decimal rate) =>
+        /// <summary>
+        /// Qué tiene de malo un tipo de cambio (soles por unidad), o null si está bien: mayor a cero, hasta
+        /// <see cref="RateMax"/> y con hasta <see cref="RateDecimals"/> decimales. La misma regla para lo que publica
+        /// SUNAT y para el que se escribe en una compra.
+        /// </summary>
+        public static string? RateError(decimal rate) =>
             rate <= 0 ? "El tipo de cambio debe ser mayor a cero."
-            : rate > RateMax || Math.Round(rate, RateDecimals) != rate ? $"El tipo de cambio debe ser menor a {RateMax} y tener hasta {RateDecimals} decimales."
+            : rate > RateMax ? "El tipo de cambio es demasiado grande. Revisa que esté bien escrito."
+            : Math.Round(rate, RateDecimals) != rate ? $"El tipo de cambio puede tener hasta {RateDecimals} decimales."
             : null;
+
+        /// <summary>
+        /// Qué tiene de malo lo publicado para guardarlo como el de esa fecha, o null si está bien. El caso de uso lo
+        /// revisa con lo que trae el servicio externo antes de guardarlo: un dato raro se descarta, no termina en un error.
+        /// </summary>
+        public static string? PublishedError(DateOnly date, DateOnly publishedDate, decimal buyRate, decimal sellRate)
+        {
+            if (date < MinDate || publishedDate < MinDate)
+                return "La fecha del tipo de cambio es demasiado antigua.";
+
+            if (publishedDate > date)
+                return "La publicación del tipo de cambio no puede ser posterior a la fecha a la que aplica.";
+
+            if (date.DayNumber - publishedDate.DayNumber > MaxDaysBack)
+                return $"El último tipo de cambio publicado no puede ser de más de {MaxDaysBack} días antes.";
+
+            if ((RateError(buyRate) ?? RateError(sellRate)) is { } rateError)
+                return rateError;
+
+            // SUNAT siempre publica el de compra menor o igual al de venta: al revés, el dato vino mal.
+            if (buyRate > sellRate)
+                return "El tipo de cambio de compra no puede ser mayor al de venta.";
+
+            return null;
+        }
     }
 }

@@ -1,6 +1,7 @@
 using ERP.Application.Common.Responses;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Domain.Common;
 using ERP.Domain.Inventory;
 using ERP.Domain.Purchases;
 using ERP.Domain.UnitsOfMeasure;
@@ -18,6 +19,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
         private readonly PurchaseLinesChecker _linesChecker;
         private readonly PurchaseLineProducts _lineProducts;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly TimeProvider _timeProvider;
 
         public CreatePurchaseUseCase(
             IPurchaseRepository purchaseRepository,
@@ -28,7 +30,8 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             PurchaseSupplierResolver supplierResolver,
             PurchaseLinesChecker linesChecker,
             PurchaseLineProducts lineProducts,
-            IUnitOfWork unitOfWork
+            IUnitOfWork unitOfWork,
+            TimeProvider timeProvider
             )
         {
             _purchaseRepository = purchaseRepository;
@@ -40,6 +43,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             _linesChecker = linesChecker;
             _lineProducts = lineProducts;
             _unitOfWork = unitOfWork;
+            _timeProvider = timeProvider;
         }
 
         public async Task<Result<CreatedResponseDto>> ExecuteAsync(CreatePurchaseDto request)
@@ -89,7 +93,8 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 request.IssueDate,
                 request.Currency,
                 request.ExchangeRate,
-                request.InvoicePriceType
+                request.InvoicePriceType,
+                PeruCalendar.Today(_timeProvider.GetUtcNow().UtcDateTime)
                 );
 
             var stockEntries = new List<StockEntry>();

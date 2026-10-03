@@ -1,7 +1,7 @@
 using System.Globalization;
+using System.IO.Compression;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
-using ERP.Application.Common.Formatting;
 using ERP.Application.Contracts.Infrastructure;
 using ERP.Domain.Catalogs;
 
@@ -16,14 +16,15 @@ namespace ERP.Infrastructure.Services.Spreadsheets
         private const string DataSheet = "Productos";
         private const string ListsSheet = "Listas";
         private const string HelpSheet = "Instrucciones";
-        private const int MaxRows = 5000;
+        // Un .xlsx es un zip: más de esto descomprimido no es una planilla de productos, y abrirlo llenaría la memoria.
+        private const long MaxUncompressedBytes = 100L * 1024 * 1024;
 
         private static readonly string[] Headers = ["Código interno", "Nombre", "Unidad de medida", "Afectación IGV", "Precio de venta (S/, con IGV)"];
 
         // Nombres anteriores de las columnas: los archivos descargados antes se siguen aceptando.
         private static readonly Dictionary<int, string> FormerHeaders = new() { [0] = "Código" };
 
-        public byte[] Write(IReadOnlyCollection<ProductSheetRow> rows, IReadOnlyCollection<string> unitNames)
+        public byte[] Write(IReadOnlyCollection<ProductSheetRow> rows, IReadOnlyCollection<string> unitNames, int maxRows)
         {
             using var workbook = new XLWorkbook();
             var sheet = workbook.Worksheets.Add(DataSheet);
@@ -58,7 +59,7 @@ namespace ERP.Infrastructure.Services.Spreadsheets
             for (var i = 0; i < igvs.Length; i++) lists.Cell(i + 1, 2).Value = igvs[i];
             lists.Visibility = XLWorksheetVisibility.Hidden;
 
-            var lastDataRow = MaxRows + 1;
+            var lastDataRow = maxRows + 1;
             if (units.Length > 0)
                 AddList(sheet.Range(2, 3, lastDataRow, 3), lists.Range(1, 1, units.Length, 1), "Unidad de medida");
             AddList(sheet.Range(2, 4, lastDataRow, 4), lists.Range(1, 2, igvs.Length, 2), "Afectación IGV");
@@ -88,8 +89,11 @@ namespace ERP.Infrastructure.Services.Spreadsheets
             return stream.ToArray();
         }
 
-        public ProductSheetReadResult Read(Stream file)
+        public ProductSheetReadResult Read(Stream file, int maxRows)
         {
+            if (UncompressedTooLarge(file) is { } zipError)
+                return Fail(zipError);
+
             XLWorkbook workbook;
             try
             {
@@ -97,13 +101,13 @@ namespace ERP.Infrastructure.Services.Spreadsheets
             }
             catch
             {
-                return Fail("No se pudo leer el archivo. Sube la plantilla en formato Excel (.xlsx).");
+                return Fail(ProductSheetReadError.Unreadable);
             }
 
             using (workbook)
             {
                 if (!workbook.Worksheets.TryGetWorksheet(DataSheet, out var sheet))
-                    return Fail($"El archivo no tiene la hoja \"{DataSheet}\". Descarga la plantilla y copia tus datos en ella.");
+                    return Fail(ProductSheetReadError.MissingSheet);
 
                 for (var c = 0; c < Headers.Length; c++)
                 {
@@ -111,12 +115,12 @@ namespace ERP.Infrastructure.Services.Spreadsheets
                     var matches = string.Equals(text, Headers[c], StringComparison.CurrentCultureIgnoreCase)
                         || (FormerHeaders.TryGetValue(c, out var former) && string.Equals(text, former, StringComparison.CurrentCultureIgnoreCase));
                     if (!matches)
-                        return Fail("Las columnas no coinciden con la plantilla. Descarga la plantilla y copia tus datos en ella, sin cambiar la cabecera.");
+                        return Fail(ProductSheetReadError.WrongColumns);
                 }
 
                 var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
-                if (lastRow - 1 > MaxRows)
-                    return Fail($"El archivo tiene más de {NumberText.Integer(MaxRows)} filas. Divídelo en varios archivos.");
+                if (lastRow - 1 > maxRows)
+                    return Fail(ProductSheetReadError.TooManyRows);
 
                 var rows = new List<ProductSheetRow>();
                 for (var r = 2; r <= lastRow; r++)
@@ -138,7 +142,28 @@ namespace ERP.Infrastructure.Services.Spreadsheets
             }
         }
 
-        private static ProductSheetReadResult Fail(string error) => new([], error);
+        private static ProductSheetReadResult Fail(ProductSheetReadError error) => new([], error);
+
+        /// <summary>
+        /// Revisa el zip antes de abrirlo con ClosedXML, que carga todo en memoria: un archivo de 5 MB puede descomprimirse
+        /// en cientos. Deja el archivo al inicio para leerlo después.
+        /// </summary>
+        private static ProductSheetReadError? UncompressedTooLarge(Stream file)
+        {
+            try
+            {
+                using var zip = new ZipArchive(file, ZipArchiveMode.Read, leaveOpen: true);
+                return zip.Entries.Sum(e => e.Length) > MaxUncompressedBytes ? ProductSheetReadError.TooLarge : null;
+            }
+            catch (InvalidDataException)
+            {
+                return ProductSheetReadError.Unreadable;
+            }
+            finally
+            {
+                file.Position = 0;
+            }
+        }
 
         private static void AddList(IXLRange cells, IXLRange options, string title)
         {

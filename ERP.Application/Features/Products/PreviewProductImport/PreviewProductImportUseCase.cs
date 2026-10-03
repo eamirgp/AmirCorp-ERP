@@ -17,9 +17,9 @@ namespace ERP.Application.Features.Products.PreviewProductImport
 
         public async Task<Result<ProductImportPreviewDto>> ExecuteAsync(ImportProductsDto request)
         {
-            var sheet = _spreadsheet.Read(request.File);
+            var sheet = _spreadsheet.Read(request.File, ProductSheet.MaxRows);
             if (sheet.Error is not null)
-                return Result<ProductImportPreviewDto>.Failure([sheet.Error], ErrorType.BadRequest);
+                return Result<ProductImportPreviewDto>.Failure([ProductSheet.ReadErrorMessage(sheet.Error.Value)], ErrorType.BadRequest);
 
             if (sheet.Rows.Count == 0)
                 return Result<ProductImportPreviewDto>.Failure(["El archivo no tiene productos."], ErrorType.BadRequest);

@@ -22,9 +22,9 @@ namespace ERP.Application.Features.Products.ImportProducts
 
         public async Task<Result<ProductImportResultDto>> ExecuteAsync(ImportProductsDto request)
         {
-            var sheet = _spreadsheet.Read(request.File);
+            var sheet = _spreadsheet.Read(request.File, ProductSheet.MaxRows);
             if (sheet.Error is not null)
-                return Result<ProductImportResultDto>.Failure([sheet.Error], ErrorType.BadRequest);
+                return Result<ProductImportResultDto>.Failure([ProductSheet.ReadErrorMessage(sheet.Error.Value)], ErrorType.BadRequest);
 
             if (sheet.Rows.Count == 0)
                 return Result<ProductImportResultDto>.Failure(["El archivo no tiene productos."], ErrorType.BadRequest);

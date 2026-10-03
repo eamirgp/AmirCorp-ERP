@@ -1,5 +1,6 @@
 using ERP.Application.Common.Formatting;
 using ERP.Domain.Catalogs;
+using ERP.Domain.Purchases;
 
 namespace ERP.Application.Features.Purchases.GetPurchase
 {
@@ -14,7 +15,9 @@ namespace ERP.Application.Features.Purchases.GetPurchase
         string InvoiceUnitOfMeasureCode,
         string InvoiceUnitOfMeasureName,
         decimal InvoiceQuantity,
-        decimal InvoiceUnitAmount,
+        InvoicePriceType InvoicePriceType,
+        decimal InvoiceUnitValue,
+        decimal InvoiceUnitPrice,
         decimal ConversionFactor,
         decimal InventoryQuantity,
         decimal InventoryUnitCost,
@@ -24,6 +27,9 @@ namespace ERP.Application.Features.Purchases.GetPurchase
         )
     {
         public string InvoiceIgvAffectationDescription => InvoiceIgvAffectation.Description;
+
+        /// <summary>El monto unitario como venía en la factura: el valor (sin IGV) o el precio (con IGV), según la compra.</summary>
+        public decimal InvoiceUnitAmount => PurchaseLine.InvoiceAmountFor(InvoicePriceType, InvoiceUnitValue, InvoiceUnitPrice);
 
         /// <summary>Lo que entró al inventario: "120 und. (24 por caja) · costo 5.00 c/u". Sin conversión, solo las unidades.</summary>
         public string InventoryDescription =>

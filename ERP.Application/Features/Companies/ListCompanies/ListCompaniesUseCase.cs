@@ -1,4 +1,5 @@
-﻿using ERP.Application.Contracts.Persistence.Queries;
+using ERP.Application.Common.Pagination;
+using ERP.Application.Contracts.Persistence.Queries;
 
 namespace ERP.Application.Features.Companies.ListCompanies
 {
@@ -8,7 +9,7 @@ namespace ERP.Application.Features.Companies.ListCompanies
 
         public ListCompaniesUseCase(ICompanyQueries companyQueries) => _companyQueries = companyQueries;
 
-        public async Task<IReadOnlyCollection<ListCompaniesResponseDto>> ExecuteAsync() =>
-            await _companyQueries.ListCompaniesAsync();
+        public async Task<IReadOnlyCollection<ListCompaniesResponseDto>> ExecuteAsync(ListFilterDto filter) =>
+            await _companyQueries.ListCompaniesAsync(filter);
     }
 }

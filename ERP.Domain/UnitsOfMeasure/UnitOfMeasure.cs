@@ -65,8 +65,7 @@ namespace ERP.Domain.UnitsOfMeasure
         /// <param name="units">Todo el catálogo, para que el nombre no se confunda con el de otra unidad.</param>
         public void UpdateName(string name, IReadOnlyCollection<UnitOfMeasure> units)
         {
-            if (NameError(name, Id, units) is { } error)
-                throw new DomainException(error);
+            DomainException.ThrowIf(NameError(name, Id, units));
 
             Name = NormalizeName(name);
         }
@@ -80,18 +79,24 @@ namespace ERP.Domain.UnitsOfMeasure
         /// <param name="units">Todo el catálogo.</param>
         public static string? NameError(string? name, Guid unitId, IReadOnlyCollection<UnitOfMeasure> units)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                return "El nombre es requerido.";
+            if (NameFormatError(name) is { } formatError)
+                return formatError;
 
-            var normalized = NormalizeName(name);
-            if (normalized.Length > NameMaxLength)
-                return $"El nombre no puede exceder los {NameMaxLength} caracteres.";
-
+            var normalized = NormalizeName(name!);
             if (units.FirstOrDefault(u => u.Id != unitId && u.IsKnownAs(normalized)) is { } other)
                 return $"«{normalized}» ya identifica a la unidad {other.Name} ({other.Code}). Elige otro nombre.";
 
             return null;
         }
+
+        /// <summary>
+        /// La parte de <see cref="NameError"/> que no necesita el catálogo (requerido y largo): la API la revisa antes y
+        /// el caso de uso revisa la regla completa.
+        /// </summary>
+        public static string? NameFormatError(string? name) =>
+            string.IsNullOrWhiteSpace(name) ? "El nombre es requerido."
+            : NormalizeName(name).Length > NameMaxLength ? $"El nombre no puede exceder los {NameMaxLength} caracteres."
+            : null;
 
         /// <summary>
         /// Si el texto es el nombre corto, el nombre SUNAT o el código de esta unidad, sin distinguir mayúsculas ni
@@ -109,20 +114,21 @@ namespace ERP.Domain.UnitsOfMeasure
         /// <param name="productsUsing">Cuántos productos (activos o no) la tienen como unidad.</param>
         public void Deactivate(int productsUsing)
         {
-            if (DeactivateError(productsUsing) is { } error)
-                throw new DomainException(error);
+            DomainException.ThrowIf(DeactivateError(productsUsing));
 
             IsActive = false;
         }
 
         /// <summary>
-        /// Qué impide desactivarla, o null si se puede. Una unidad que usa algún producto no se desactiva: el producto
-        /// quedaría con una unidad que ya no aparece en las listas. Primero hay que cambiarles la unidad.
+        /// Qué impide desactivarla, o null si se puede. La unidad en que se cuenta el stock (<see cref="BaseUnitCode"/>)
+        /// no se desactiva nunca: sin ella no se pueden crear productos desde una compra. Una unidad que usa algún producto
+        /// tampoco: el producto quedaría con una unidad que ya no aparece en las listas. Primero hay que cambiarles la unidad.
         /// </summary>
         public string? DeactivateError(int productsUsing) =>
             productsUsing switch
             {
                 < 0 => throw new DomainException("La cantidad de productos no puede ser negativa."),
+                _ when Code == BaseUnitCode => $"No se puede desactivar {Name}: es la unidad en que se cuenta el stock.",
                 0 => null,
                 1 => $"No se puede desactivar {Name}: la usa 1 producto. Cámbiale la unidad de medida y vuelve a intentarlo.",
                 _ => $"No se puede desactivar {Name}: la usan {productsUsing.ToString(CultureInfo.InvariantCulture)} productos. Cámbiales la unidad de medida y vuelve a intentarlo."

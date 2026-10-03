@@ -33,17 +33,14 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                     continue;
                 }
 
-                // Toma la afectación al IGV de su línea, se cuenta en unidades (lo comprado por caja o docena se convierte
-                // con las unidades por caja) y nace sin precio de venta.
-                var created = Product.Create(
+                // Cómo nace un producto desde una compra lo decide el dominio.
+                var created = Product.CreateFromPurchase(
                     newProduct.Code,
                     newProduct.Name,
                     units[UnitOfMeasure.BaseUnitCode],
                     lines[i].InvoiceIgvAffectation,
-                    salePrice: 0);
-
-                if (newProduct.SupplierCode is { } supplierCode)
-                    created.AddSupplierCode(supplier, supplierCode);
+                    supplier,
+                    newProduct.SupplierCode);
 
                 _productRepository.Add(created);
                 result[i] = created;

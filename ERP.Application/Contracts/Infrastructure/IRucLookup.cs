@@ -14,10 +14,10 @@ namespace ERP.Application.Contracts.Infrastructure
     }
 
     /// <summary>Resultado de la consulta de DNI: el nombre como lo informa RENIEC (apellidos y nombres) o el motivo del fallo.</summary>
-    public sealed record DniLookupOutcome(string? Name, RucLookupFailure? Failure)
+    public sealed record DniLookupOutcome(string? Name, LookupFailure? Failure)
     {
         public static DniLookupOutcome Found(string name) => new(name, null);
-        public static DniLookupOutcome Failed(RucLookupFailure failure) => new(null, failure);
+        public static DniLookupOutcome Failed(LookupFailure failure) => new(null, failure);
     }
 
     /// <summary>Datos del contribuyente tal como los informa SUNAT.</summary>
@@ -31,22 +31,10 @@ namespace ERP.Application.Contracts.Infrastructure
         string? Address
         );
 
-    public enum RucLookupFailure
-    {
-        /// <summary>SUNAT no tiene ese RUC, o RENIEC no tiene ese DNI.</summary>
-        NotFound,
-        /// <summary>El proveedor rechazó la clave (vencida o mal copiada).</summary>
-        Unauthorized,
-        /// <summary>El proveedor no respondió o falló.</summary>
-        Unavailable,
-        /// <summary>Se acabaron las consultas del plan (Decolecta da 1000 al mes): reintentar no sirve hasta el próximo mes.</summary>
-        QuotaExceeded
-    }
-
     /// <summary>Resultado de la consulta: los datos o el motivo por el que no se obtuvieron.</summary>
-    public sealed record RucLookupOutcome(RucLookupData? Data, RucLookupFailure? Failure)
+    public sealed record RucLookupOutcome(RucLookupData? Data, LookupFailure? Failure)
     {
         public static RucLookupOutcome Found(RucLookupData data) => new(data, null);
-        public static RucLookupOutcome Failed(RucLookupFailure failure) => new(null, failure);
+        public static RucLookupOutcome Failed(LookupFailure failure) => new(null, failure);
     }
 }

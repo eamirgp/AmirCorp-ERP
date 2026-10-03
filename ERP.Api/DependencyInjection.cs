@@ -24,6 +24,7 @@ namespace ERP.Api
                     // Debe ir al final: atiende lo que los anteriores no reconocieron.
                     .AddExceptionHandler<UnexpectedExceptionHandler>()
                     .AddProblemDetails()
+                    .AddApiRateLimits()
                     .AddCors(options =>
                     {
                         options.AddPolicy("AllowLocalhost", policy =>

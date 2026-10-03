@@ -46,13 +46,37 @@ namespace ERP.Domain.Products
         /// <param name="unitOfMeasure">La unidad del catálogo: debe estar activa.</param>
         public static Product Create(string code, string name, UnitOfMeasure unitOfMeasure, IgvAffectation igvAffectation, decimal salePrice)
         {
-            Throw(CodeError(code));
-            Throw(NameError(name));
-            Throw(UnitOfMeasure.UsableError(unitOfMeasure, unitOfMeasure.Code));
-            Throw(IgvAffectationError(igvAffectation));
-            Throw(SalePriceError(salePrice));
+            DomainException.ThrowIf(CodeError(code));
+            DomainException.ThrowIf(NameError(name));
+            DomainException.ThrowIf(UnitOfMeasure.UsableError(unitOfMeasure, unitOfMeasure.Code));
+            DomainException.ThrowIf(IgvAffectationError(igvAffectation));
+            DomainException.ThrowIf(SalePriceError(salePrice));
 
             return new(Guid.CreateVersion7(), NormalizeCode(code), NormalizeName(name), unitOfMeasure.Code, igvAffectation, salePrice, isActive: true);
+        }
+
+        /// <summary>
+        /// Producto nuevo registrado desde una línea de compra: se cuenta en unidades (lo comprado por caja o docena se
+        /// convierte con las unidades por caja), toma la afectación al IGV de la línea y nace sin precio de venta (0), que
+        /// se pone después en Productos. Si la factura trae el código del proveedor, queda enlazado a él.
+        /// </summary>
+        /// <param name="baseUnit">La unidad en que se cuenta el stock (<see cref="UnitOfMeasure.BaseUnitCode"/>).</param>
+        public static Product CreateFromPurchase(
+            string code,
+            string name,
+            UnitOfMeasure baseUnit,
+            IgvAffectation igvAffectation,
+            BusinessPartner supplier,
+            string? supplierCode)
+        {
+            if (baseUnit.Code != UnitOfMeasure.BaseUnitCode)
+                throw new DomainException("Un producto nuevo desde una compra se cuenta en unidades.");
+
+            var product = Create(code, name, baseUnit, igvAffectation, salePrice: 0);
+            if (supplierCode is not null)
+                product.AddSupplierCode(supplier, supplierCode);
+
+            return product;
         }
 
         /// <summary>El código tal como se guarda y se compara: sin espacios alrededor y en mayúsculas (" abc" es "ABC").</summary>
@@ -65,32 +89,32 @@ namespace ERP.Domain.Products
 
         public void UpdateCode(string code)
         {
-            Throw(CodeError(code));
+            DomainException.ThrowIf(CodeError(code));
             Code = NormalizeCode(code);
         }
 
         public void UpdateName(string name)
         {
-            Throw(NameError(name));
+            DomainException.ThrowIf(NameError(name));
             Name = NormalizeName(name);
         }
 
         /// <summary>Cambia la unidad. Si es la misma, se acepta aunque ya no esté activa: el producto sigue editándose.</summary>
         public void UpdateUnitOfMeasure(UnitOfMeasure unitOfMeasure)
         {
-            Throw(UnitOfMeasureChangeError(unitOfMeasure));
+            DomainException.ThrowIf(UnitOfMeasureChangeError(unitOfMeasure));
             UnitOfMeasureCode = unitOfMeasure.Code;
         }
 
         public void UpdateIgvAffectation(IgvAffectation igvAffectation)
         {
-            Throw(IgvAffectationError(igvAffectation));
+            DomainException.ThrowIf(IgvAffectationError(igvAffectation));
             IgvAffectation = igvAffectation;
         }
 
         public void UpdateSalePrice(decimal salePrice)
         {
-            Throw(SalePriceError(salePrice));
+            DomainException.ThrowIf(SalePriceError(salePrice));
             SalePrice = salePrice;
         }
 
@@ -127,8 +151,7 @@ namespace ERP.Domain.Products
         /// </summary>
         public void AddSupplierCode(BusinessPartner supplier, string code)
         {
-            Throw(ProductSupplierCode.CodeError(code));
-            Throw(SupplierCodeError(supplier, code));
+            DomainException.ThrowIf(SupplierCodeError(supplier, code));
 
             if (SupplierCodeOf(supplier.Id) is null)
                 _supplierCodes.Add(ProductSupplierCode.Create(Id, supplier.Id, ProductSupplierCode.NormalizeCode(code)));
@@ -139,8 +162,12 @@ namespace ERP.Domain.Products
         /// por proveedor, y a un proveedor con compras bloqueadas no se le agregan códigos nuevos (conserva los que tenía).
         /// La usa <see cref="AddSupplierCode"/> y el registro de la compra para avisar antes, junto con los demás errores.
         /// </summary>
-        public string? SupplierCodeError(BusinessPartner supplier, string code)
+        public string? SupplierCodeError(BusinessPartner supplier, string? code)
         {
+            // Primero que el código esté bien escrito: así quien llama no tiene que acordarse de revisarlo aparte.
+            if (ProductSupplierCode.CodeError(code) is { } codeError)
+                return codeError;
+
             if (SupplierCodeOf(supplier.Id) is { } existing)
                 return ConflictsWithLinkedCode(existing.Code, code)
                     ? $"El producto {Code} ya tiene el código {existing.Code} de {supplier.Name}. Si cambió, corrígelo desde Productos."
@@ -203,6 +230,14 @@ namespace ERP.Domain.Products
             return null;
         }
 
+        /// <summary>
+        /// El aviso de "código interno ocupado", el mismo al crear o editar un producto, en una compra y en la pantalla:
+        /// dice de qué producto es (y si está desactivado, porque entonces no aparece en las listas).
+        /// </summary>
+        /// <param name="owner">El producto que ya tiene ese código.</param>
+        public static string CodeTakenError(Product owner) =>
+            $"El código interno {owner.Code} ya es de «{owner.Name}»{(owner.IsActive ? "" : " (desactivado)")}. Usa otro código interno.";
+
         /// <summary>Qué tiene de malo el nombre, o null si está bien.</summary>
         public static string? NameError(string? name)
         {
@@ -243,11 +278,5 @@ namespace ERP.Domain.Products
         // A un proveedor solo se le enlaza un código nuevo si es proveedor y no tiene las compras bloqueadas.
         private static string? NewSupplierLinkError(BusinessPartner supplier) =>
             !supplier.IsSupplier ? $"{supplier.Name} no está registrado como proveedor." : supplier.PurchasingBlockedError();
-
-        private static void Throw(string? error)
-        {
-            if (error is not null)
-                throw new DomainException(error);
-        }
     }
 }

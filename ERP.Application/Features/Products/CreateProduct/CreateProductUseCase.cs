@@ -31,9 +31,10 @@ namespace ERP.Application.Features.Products.CreateProduct
         {
             // Todos los errores juntos: el código repetido, la unidad y los códigos de proveedores.
             var errors = new List<string>();
-            var codeTaken = await _productRepository.CodeExistsAsync(request.Code);
-            if (codeTaken)
-                errors.Add("El código interno ya se encuentra en uso.");
+            var owner = await _productRepository.FindByCodeAsync(request.Code);
+            var codeTaken = owner is not null;
+            if (owner is not null)
+                errors.Add(Product.CodeTakenError(owner));
 
             // La misma regla del dominio, revisada antes para responder con el mensaje en vez de una excepción. Sin una
             // unidad que sirva no se puede armar el producto para revisar lo demás.

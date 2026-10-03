@@ -1,4 +1,4 @@
-﻿using ERP.Application.Contracts.Persistence.Queries;
+using ERP.Application.Contracts.Persistence.Queries;
 
 namespace ERP.Application.Features.Users.ListUsers
 {
@@ -8,7 +8,7 @@ namespace ERP.Application.Features.Users.ListUsers
 
         public ListUsersUseCase(IUserQueries userQueries) => _userQueries = userQueries;
 
-        public async Task<IReadOnlyCollection<ListUsersResponseDto>> ExecuteAsync() =>
-            await _userQueries.ListUsersAsync();
+        public async Task<IReadOnlyCollection<ListUsersResponseDto>> ExecuteAsync(ListUsersDto listUsersDto) =>
+            await _userQueries.ListUsersAsync(listUsersDto);
     }
 }

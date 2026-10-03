@@ -143,9 +143,9 @@ namespace ERP.Persistence.Queries
                     l.InvoiceUnitOfMeasureCode,
                     _context.UnitsOfMeasure.Where(u => u.Code == l.InvoiceUnitOfMeasureCode).Select(u => u.Name).First(),
                     l.InvoiceQuantity,
-                    l.InvoicePriceType == InvoicePriceType.UnitValue
-                        ? l.InvoiceUnitValue
-                        : l.InvoiceUnitPrice,
+                    l.InvoicePriceType,
+                    l.InvoiceUnitValue,
+                    l.InvoiceUnitPrice,
                     l.ConversionFactor,
                     l.InventoryQuantity,
                     l.InventoryUnitCost,

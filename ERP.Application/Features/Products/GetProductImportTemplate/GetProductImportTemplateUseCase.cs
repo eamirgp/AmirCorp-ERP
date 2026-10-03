@@ -1,5 +1,7 @@
+using ERP.Application.Common.Responses;
 using ERP.Application.Contracts.Infrastructure;
 using ERP.Application.Contracts.Persistence.Queries;
+using ERP.Application.Features.Products.ProductImport;
 
 namespace ERP.Application.Features.Products.GetProductImportTemplate
 {
@@ -15,10 +17,10 @@ namespace ERP.Application.Features.Products.GetProductImportTemplate
         }
 
         // La lista desplegable de unidades trae solo las activas.
-        public async Task<byte[]> ExecuteAsync()
+        public async Task<FileDto> ExecuteAsync()
         {
             var units = await _unitOfMeasureQueries.ListActiveAsync();
-            return _spreadsheet.Write([], units.Select(u => u.Name).ToArray());
+            return new FileDto(_spreadsheet.Write([], units.Select(u => u.Name).ToArray(), ProductSheet.MaxRows), ProductSheet.TemplateFileName);
         }
     }
 }

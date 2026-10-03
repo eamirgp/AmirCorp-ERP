@@ -1,4 +1,4 @@
-﻿using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Catalogs;
 using ERP.Domain.Purchases;
 using ERP.Persistence.Context;
@@ -18,6 +18,7 @@ namespace ERP.Persistence.Commands
         public async Task<RegisteredDocument?> FindDocumentAsync(TaxDocumentType taxDocumentType, Guid supplierId, string serie, string number)
         {
             var normalizedSerie = Purchase.NormalizeSerie(serie);
+            var normalizedNumber = Purchase.NormalizeNumber(number);
 
             return await _context.Purchases
                 .AsNoTracking()
@@ -26,7 +27,7 @@ namespace ERP.Persistence.Commands
                     p.TaxDocumentType == taxDocumentType &&
                     p.SupplierId == supplierId &&
                     p.Serie == normalizedSerie &&
-                    p.Number == number
+                    p.Number == normalizedNumber
                     )
                 .Select(p => new RegisteredDocument(p.CompanyId, p.CompanyName))
                 .FirstOrDefaultAsync();

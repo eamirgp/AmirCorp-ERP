@@ -36,11 +36,11 @@ namespace ERP.Domain.SavedViews
         {
             if (userId == Guid.Empty)
                 throw new DomainException("El usuario es requerido.");
-            Throw(ScreenError(screen));
+            DomainException.ThrowIf(ScreenError(screen));
             EnsureSiblings(userId, screen, siblings, exceptId: null);
-            Throw(NameError(name));
-            Throw(FiltersError(filters));
-            Throw(CreateError(name, siblings));
+            DomainException.ThrowIf(NameError(name));
+            DomainException.ThrowIf(FiltersError(filters));
+            DomainException.ThrowIf(CreateError(name, siblings));
 
             var view = new SavedView(Guid.CreateVersion7(), userId, screen, NormalizeName(name), filters, isDefault: false);
             if (isDefault)
@@ -53,9 +53,9 @@ namespace ERP.Domain.SavedViews
         public void Update(string name, string filters, bool isDefault, IReadOnlyCollection<SavedView> siblings)
         {
             EnsureSiblings(UserId, Screen, siblings, exceptId: Id);
-            Throw(NameError(name));
-            Throw(FiltersError(filters));
-            Throw(NameTakenError(name, siblings, Id));
+            DomainException.ThrowIf(NameError(name));
+            DomainException.ThrowIf(FiltersError(filters));
+            DomainException.ThrowIf(NameTakenError(name, siblings, Id));
 
             Name = NormalizeName(name);
             Filters = filters;
@@ -125,12 +125,6 @@ namespace ERP.Domain.SavedViews
         {
             if (siblings.Any(v => v.Id != exceptId && (v.UserId != userId || v.Screen != screen)))
                 throw new DomainException("Las vistas comparadas deben ser del mismo usuario y pantalla.");
-        }
-
-        private static void Throw(string? error)
-        {
-            if (error is not null)
-                throw new DomainException(error);
         }
     }
 }

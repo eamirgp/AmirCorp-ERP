@@ -13,7 +13,7 @@ namespace ERP.Application.Features.Catalogs.ListCurrencies
         {
             // SUNAT publica el tipo de cambio del dólar: solo esa moneda se puede consultar, y solo con la consulta configurada.
             IReadOnlyCollection<ListCurrenciesResponseDto> currencies = Enum.GetValues<Currency>()
-                .Select(c => new ListCurrenciesResponseDto(c, c.Description, c is Currency.USD && _exchangeRateLookup.IsConfigured))
+                .Select(c => new ListCurrenciesResponseDto(c, c.Description, c.HasPublishedExchangeRate && _exchangeRateLookup.IsConfigured))
                 .ToArray();
 
             return Task.FromResult(currencies);

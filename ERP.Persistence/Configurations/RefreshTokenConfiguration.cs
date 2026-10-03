@@ -6,9 +6,6 @@ namespace ERP.Persistence.Configurations
 {
     internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
     {
-        // SHA-256 en hexadecimal: 64 caracteres.
-        private const int HashLength = 64;
-
         public void Configure(EntityTypeBuilder<RefreshToken> builder)
         {
             builder.HasKey(t => t.Id);
@@ -18,7 +15,7 @@ namespace ERP.Persistence.Configurations
 
             builder.Property(t => t.TokenHash)
                 .IsRequired()
-                .HasMaxLength(HashLength);
+                .HasMaxLength(RefreshToken.HashLength);
 
             builder.Property(t => t.FamilyId)
                 .IsRequired();

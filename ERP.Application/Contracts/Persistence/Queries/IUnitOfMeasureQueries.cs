@@ -1,3 +1,4 @@
+using ERP.Application.Common.Pagination;
 using ERP.Application.Features.Catalogs.ListUnitsOfMeasure;
 using ERP.Application.Features.UnitsOfMeasure.ListAllUnitsOfMeasure;
 
@@ -9,6 +10,6 @@ namespace ERP.Application.Contracts.Persistence.Queries
         Task<IReadOnlyCollection<ListUnitsOfMeasureResponseDto>> ListActiveAsync();
 
         /// <summary>Todo el catálogo con cuántos productos usan cada unidad, para la pantalla de administración.</summary>
-        Task<IReadOnlyCollection<UnitOfMeasureListItemDto>> ListAllAsync();
+        Task<IReadOnlyCollection<UnitOfMeasureListItemDto>> ListAllAsync(ListFilterDto filter);
     }
 }

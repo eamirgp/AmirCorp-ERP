@@ -18,7 +18,9 @@ namespace ERP.Api.Common
                 StatusCodes.Status403Forbidden => "No tienes permiso para hacer esto. Si lo necesitas, pídeselo a un administrador.",
                 StatusCodes.Status404NotFound => "La dirección pedida no existe en la API.",
                 StatusCodes.Status405MethodNotAllowed => "Esa acción no se puede hacer en esta dirección de la API.",
+                StatusCodes.Status413PayloadTooLarge => "El archivo es demasiado grande. Divídelo en varios archivos más pequeños.",
                 StatusCodes.Status415UnsupportedMediaType => "El pedido debe enviarse en formato JSON.",
+                StatusCodes.Status429TooManyRequests => "Hiciste demasiadas consultas seguidas. Espera un momento e inténtalo de nuevo.",
                 _ => "No se pudo completar el pedido."
             };
 

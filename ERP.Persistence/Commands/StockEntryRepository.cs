@@ -1,4 +1,4 @@
-﻿using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Inventory;
 using ERP.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +11,7 @@ namespace ERP.Persistence.Commands
 
         public StockEntryRepository(ErpDbContext context) => _context = context;
 
-        public void AddRange(List<StockEntry> stockEntries) =>
+        public void AddRange(IReadOnlyCollection<StockEntry> stockEntries) =>
             _context.StockEntries
             .AddRange(stockEntries);
 

@@ -23,7 +23,7 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
 
             // Con DNI o RUC el país es Perú y no se pregunta; con documento extranjero se elige.
             if (identityDocumentType is { } type && Enum.IsDefined(type)
-                && BusinessPartner.CountryError(type, BusinessPartner.CountryFor(type, countryCode)) is { } countryError)
+                && BusinessPartner.CountryError(type, countryCode) is { } countryError)
                 errors.Add(countryError);
 
             if (BusinessPartner.NameError(name) is { } nameError)

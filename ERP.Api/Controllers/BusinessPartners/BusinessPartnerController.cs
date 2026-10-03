@@ -1,4 +1,5 @@
 using ERP.Api.Common;
+using Microsoft.AspNetCore.RateLimiting;
 using ERP.Application.Common.Lookup;
 using ERP.Application.Common.Pagination;
 using ERP.Application.Common.Responses;
@@ -75,11 +76,16 @@ namespace ERP.Api.Controllers.BusinessPartners
         /// sigue funcionando a mano.
         /// </summary>
         [HttpGet("document-lookup")]
+        [EnableRateLimiting(RateLimits.ExternalLookup)]
         [ProducesResponseType<LookupDocumentResponseDto>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> LookupDocument([FromQuery] IdentityDocumentType identityDocumentType, [FromQuery] string documentNumber, [FromQuery] Guid? partnerId, CancellationToken ct)
+        public async Task<IActionResult> LookupDocument([FromQuery] DocumentQueryRequest document, [FromQuery] Guid? partnerId, CancellationToken ct)
         {
+            var errors = document.Validate();
+            if (errors.Count > 0)
+                return errors.ToBadRequest();
+
             // partnerId: el registro que se está editando; así no se avisa "ya está registrado" por él mismo.
-            var result = await _lookupDocumentUseCase.ExecuteAsync(identityDocumentType, documentNumber, partnerId, ct);
+            var result = await _lookupDocumentUseCase.ExecuteAsync(document.IdentityDocumentType!.Value, document.DocumentNumber!, partnerId, ct);
             return result.ToActionResult(StatusCodes.Status200OK);
         }
 
@@ -89,10 +95,15 @@ namespace ERP.Api.Controllers.BusinessPartners
         /// </summary>
         [HttpGet("by-document")]
         [ProducesResponseType<FoundBusinessPartnerDto>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> FindByDocument([FromQuery] IdentityDocumentType identityDocumentType, [FromQuery] string documentNumber) =>
-            await _findByDocumentUseCase.ExecuteAsync(identityDocumentType, documentNumber) is { } found
-                ? Ok(found)
-                : NotFound(new ErrorResponse(["No hay ningún cliente ni proveedor con ese documento."]));
+        public async Task<IActionResult> FindByDocument([FromQuery] DocumentQueryRequest document)
+        {
+            var errors = document.Validate();
+            if (errors.Count > 0)
+                return errors.ToBadRequest();
+
+            var result = await _findByDocumentUseCase.ExecuteAsync(document.IdentityDocumentType!.Value, document.DocumentNumber!);
+            return result.ToActionResult(StatusCodes.Status200OK);
+        }
 
         /// <summary>"Registrar también como cliente / proveedor": agrega el rol al mismo registro.</summary>
         [HttpPatch("{id:guid}/roles/{role}")]
@@ -127,7 +138,7 @@ namespace ERP.Api.Controllers.BusinessPartners
             if (errors.Count > 0)
                 return errors.ToBadRequest();
 
-            var result = await _blockRoleUseCase.ExecuteAsync(new BlockBusinessPartnerRoleDto(id, role, Blocked: true, request.Reason, request.RowVersion!.Value));
+            var result = await _blockRoleUseCase.ExecuteAsync(request.ToDto(id, role));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }
 
@@ -139,7 +150,7 @@ namespace ERP.Api.Controllers.BusinessPartners
             if (errors.Count > 0)
                 return errors.ToBadRequest();
 
-            var result = await _blockRoleUseCase.ExecuteAsync(new BlockBusinessPartnerRoleDto(id, role, Blocked: false, Reason: null, request.RowVersion!.Value));
+            var result = await _blockRoleUseCase.ExecuteAsync(request.ToDto(id, role));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }
 
@@ -159,10 +170,8 @@ namespace ERP.Api.Controllers.BusinessPartners
         [ProducesResponseType<GetBusinessPartnerResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(Guid id)
         {
-            var response = await _getBusinessPartnerUseCase.ExecuteAsync(new GetBusinessPartnerDto(id));
-            return response is null
-                ? NotFound(new ErrorResponse(["El cliente o proveedor no existe."]))
-                : Ok(response);
+            var result = await _getBusinessPartnerUseCase.ExecuteAsync(new GetBusinessPartnerDto(id));
+            return result.ToActionResult(StatusCodes.Status200OK);
         }
     }
 }

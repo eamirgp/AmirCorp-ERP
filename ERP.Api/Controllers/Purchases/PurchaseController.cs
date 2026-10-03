@@ -1,4 +1,3 @@
-using ERP.Api.Common;
 using ERP.Application.Common.Pagination;
 using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.Purchases.Requests;
@@ -68,8 +67,8 @@ namespace ERP.Api.Controllers.Purchases
         [ProducesResponseType<GetPurchaseResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(Guid id)
         {
-            var response = await _getPurchaseUseCase.ExecuteAsync(new GetPurchaseDto(id));
-            return response is null ? NotFound(new ErrorResponse(["La compra no existe."])) : Ok(response);
+            var result = await _getPurchaseUseCase.ExecuteAsync(new GetPurchaseDto(id));
+            return result.ToActionResult(StatusCodes.Status200OK);
         }
 
         [HttpPatch("{id:guid}/cancel")]

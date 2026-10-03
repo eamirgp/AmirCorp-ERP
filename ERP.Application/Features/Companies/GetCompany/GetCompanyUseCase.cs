@@ -1,4 +1,5 @@
-﻿using ERP.Application.Contracts.Persistence.Queries;
+using ERP.Application.Common.Results;
+using ERP.Application.Contracts.Persistence.Queries;
 
 namespace ERP.Application.Features.Companies.GetCompany
 {
@@ -8,7 +9,7 @@ namespace ERP.Application.Features.Companies.GetCompany
 
         public GetCompanyUseCase(ICompanyQueries companyQueries) => _companyQueries = companyQueries;
 
-        public async Task<GetCompanyResponseDto?> ExecuteAsync(GetCompanyDto request) =>
-            await _companyQueries.GetCompanyAsync(request);
+        public async Task<Result<GetCompanyResponseDto>> ExecuteAsync(GetCompanyDto request) =>
+            Result<GetCompanyResponseDto>.FoundOr(await _companyQueries.GetCompanyAsync(request), "La empresa no existe.");
     }
 }

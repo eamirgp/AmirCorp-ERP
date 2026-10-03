@@ -1,6 +1,7 @@
 ﻿using ERP.Api.Controllers.BusinessPartners.Requests;
 using ERP.Application.Features.Purchases.CreatePurchase;
 using ERP.Domain.Catalogs;
+using ERP.Domain.Common;
 using ERP.Domain.Partners.Enums;
 using ERP.Domain.Purchases;
 
@@ -35,7 +36,7 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 Purchase.TaxDocumentTypeError(TaxDocumentType),
                 Purchase.SerieError(validType, Serie),
                 Purchase.NumberError(Number),
-                Purchase.IssueDateError(IssueDate),
+                Purchase.IssueDateError(IssueDate, PeruCalendar.Today(DateTime.UtcNow)),
                 Purchase.CurrencyError(Currency),
                 Purchase.ExchangeRateError(Currency, ExchangeRate),
                 Purchase.InvoicePriceTypeError(InvoicePriceType),

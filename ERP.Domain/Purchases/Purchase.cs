@@ -14,9 +14,6 @@ namespace ERP.Domain.Purchases
         public const int SerieMaxLength = 4;
         public const int NumberMaxLength = 8;
         public const int CancellationReasonMaxLength = 200;
-        // Los mismos límites del tipo de cambio guardado: más es un error de tipeo.
-        public const decimal ExchangeRateMax = Catalogs.ExchangeRate.RateMax;
-        public const int ExchangeRateDecimals = Catalogs.ExchangeRate.RateDecimals;
         private static readonly DateOnly MinIssueDate = new(2000, 1, 1);
 
 
@@ -82,6 +79,7 @@ namespace ERP.Domain.Purchases
         /// Registra la compra que la empresa le hace al proveedor. Guarda una copia del RUC y la razón social que la
         /// empresa y el proveedor tienen hoy: si después cambian, la compra sigue mostrando lo que decía su comprobante.
         /// </summary>
+        /// <param name="today">La fecha de hoy en Perú (<see cref="PeruCalendar.Today"/>): la emisión no puede ser posterior.</param>
         public static Purchase Create(
             Company company,
             BusinessPartner supplier,
@@ -91,17 +89,18 @@ namespace ERP.Domain.Purchases
             DateOnly issueDate,
             Currency currency,
             decimal? exchangeRate,
-            InvoicePriceType invoicePriceType
+            InvoicePriceType invoicePriceType,
+            DateOnly today
             )
         {
-            Throw(PartiesError(company, supplier));
-            Throw(TaxDocumentTypeError(taxDocumentType));
-            Throw(SerieError(taxDocumentType, serie));
-            Throw(NumberError(number));
-            Throw(IssueDateError(issueDate));
-            Throw(CurrencyError(currency));
-            Throw(ExchangeRateError(currency, exchangeRate));
-            Throw(InvoicePriceTypeError(invoicePriceType));
+            DomainException.ThrowIf(PartiesError(company, supplier));
+            DomainException.ThrowIf(TaxDocumentTypeError(taxDocumentType));
+            DomainException.ThrowIf(SerieError(taxDocumentType, serie));
+            DomainException.ThrowIf(NumberError(number));
+            DomainException.ThrowIf(IssueDateError(issueDate, today));
+            DomainException.ThrowIf(CurrencyError(currency));
+            DomainException.ThrowIf(ExchangeRateError(currency, exchangeRate));
+            DomainException.ThrowIf(InvoicePriceTypeError(invoicePriceType));
 
             return new(
                 Guid.CreateVersion7(),
@@ -242,8 +241,8 @@ namespace ERP.Domain.Purchases
         /// <param name="stockEntries">Los ingresos de stock de las líneas de esta compra.</param>
         public void Cancel(string cancellationReason, IReadOnlyCollection<StockEntry> stockEntries)
         {
-            Throw(CancelError(stockEntries));
-            Throw(CancellationReasonError(cancellationReason));
+            DomainException.ThrowIf(CancelError(stockEntries));
+            DomainException.ThrowIf(CancellationReasonError(cancellationReason));
 
             CancellationReason = TextNormalizer.CollapseSpaces(cancellationReason);
             IsCancelled = true;
@@ -333,13 +332,14 @@ namespace ERP.Domain.Purchases
             return null;
         }
 
-        /// <summary>La fecha no puede ser futura (en hora de Perú) ni de antes del 2000, que solo puede ser un año mal escrito.</summary>
-        public static string? IssueDateError(DateOnly? issueDate)
+        /// <summary>La fecha no puede ser futura ni de antes del 2000, que solo puede ser un año mal escrito.</summary>
+        /// <param name="today">La fecha de hoy en Perú (<see cref="PeruCalendar.Today"/>), la de quien llama.</param>
+        public static string? IssueDateError(DateOnly? issueDate, DateOnly today)
         {
             if (issueDate is null)
                 return "La fecha de emisión es requerida.";
 
-            if (issueDate > PeruCalendar.Today(DateTime.UtcNow))
+            if (issueDate > today)
                 return "La fecha de emisión no puede ser mayor a la fecha actual.";
 
             if (issueDate < MinIssueDate)
@@ -356,16 +356,13 @@ namespace ERP.Domain.Purchases
                 _ => null
             };
 
-        /// <summary>Solo en moneda extranjera, mayor a cero y con hasta 6 decimales (los que guarda la base).</summary>
+        /// <summary>Solo en moneda extranjera, y con la misma regla del tipo de cambio guardado (<see cref="Catalogs.ExchangeRate.RateError"/>).</summary>
         public static string? ExchangeRateError(Currency? currency, decimal? exchangeRate) =>
             (currency, exchangeRate) switch
             {
                 (Currency.PEN, not null) => "El tipo de cambio no aplica para soles.",
                 (not null and not Currency.PEN, null) => "El tipo de cambio es requerido para moneda extranjera.",
-                (_, <= 0) => "El tipo de cambio debe ser mayor a cero.",
-                (_, > ExchangeRateMax) => "El tipo de cambio es demasiado grande. Revisa que esté bien escrito.",
-                (_, { } rate) when Math.Round(rate, ExchangeRateDecimals) != rate =>
-                    $"El tipo de cambio puede tener hasta {ExchangeRateDecimals} decimales.",
+                (_, { } rate) => Catalogs.ExchangeRate.RateError(rate),
                 _ => null
             };
 
@@ -387,12 +384,6 @@ namespace ERP.Domain.Purchases
                 return $"El motivo de anulación no puede exceder los {CancellationReasonMaxLength} caracteres.";
 
             return null;
-        }
-
-        private static void Throw(string? error)
-        {
-            if (error is not null)
-                throw new DomainException(error);
         }
     }
 }

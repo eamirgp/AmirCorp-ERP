@@ -1,3 +1,5 @@
+using ERP.Application.Features.Partners.AddBusinessPartnerRole;
+using ERP.Application.Features.Partners.BlockBusinessPartnerRole;
 using ERP.Domain.Partners;
 
 namespace ERP.Api.Controllers.BusinessPartners.Requests
@@ -10,6 +12,9 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
             new[] { BusinessPartner.BlockReasonError(Reason), BusinessPartnerRequestRules.RowVersionError(RowVersion) }
                 .OfType<string>()
                 .ToArray();
+
+        public BlockBusinessPartnerRoleDto ToDto(Guid id, BusinessPartnerRole role) =>
+            new(id, role, Blocked: true, Reason, RowVersion!.Value);
     }
 
     /// <param name="RowVersion">Versión que se veía en la lista: si otra persona lo cambió mientras tanto, no se pisa su cambio.</param>
@@ -17,5 +22,8 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
     {
         public IReadOnlyCollection<string> Validate() =>
             BusinessPartnerRequestRules.RowVersionError(RowVersion) is { } error ? [error] : [];
+
+        public BlockBusinessPartnerRoleDto ToDto(Guid id, BusinessPartnerRole role) =>
+            new(id, role, Blocked: false, Reason: null, RowVersion!.Value);
     }
 }

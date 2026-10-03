@@ -1,4 +1,4 @@
-﻿using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Products;
 using ERP.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
@@ -15,13 +15,13 @@ namespace ERP.Persistence.Commands
             _context.Products
             .Add(product);
 
-        public async Task<bool> CodeExistsAsync(string code, Guid? excludeId = null)
+        public async Task<Product?> FindByCodeAsync(string code, Guid? excludeId = null)
         {
             var normalizedCode = Product.NormalizeCode(code);
 
             return await _context.Products
                 .Where(p => excludeId == null || p.Id != excludeId)
-                .AnyAsync(p => p.Code == normalizedCode);
+                .FirstOrDefaultAsync(p => p.Code == normalizedCode);
         }
 
         public async Task<Product?> GetByIdAsync(Guid id) =>

@@ -7,9 +7,6 @@ namespace ERP.Persistence.Commands
 {
     internal sealed class RefreshTokenRepository : IRefreshTokenRepository
     {
-        // Un token vencido se guarda un día más: si alguien presenta uno copiado, todavía se reconoce como robo.
-        private static readonly TimeSpan KeepExpired = TimeSpan.FromDays(1);
-
         private readonly ErpDbContext _context;
 
         public RefreshTokenRepository(ErpDbContext context) => _context = context;
@@ -45,7 +42,7 @@ namespace ERP.Persistence.Commands
 
         public async Task RemoveExpiredForUserAsync(Guid userId, DateTime now)
         {
-            var limit = now - KeepExpired;
+            var limit = now - RefreshToken.KeepAfterExpiry;
             _context.RefreshTokens.RemoveRange(
                 await _context.RefreshTokens.Where(t => t.UserId == userId && t.ExpiresAt < limit).ToListAsync());
         }

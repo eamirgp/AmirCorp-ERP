@@ -5,8 +5,8 @@ using ERP.Domain.Users.Enums;
 namespace ERP.Application.Features.Users.ListAssignableRoles
 {
     /// <summary>
-    /// Los roles que quien consulta puede dar: solo los menores al suyo (<see cref="User.AssignRoleError"/>). Así el
-    /// formulario no ofrece uno que después se rechazaría.
+    /// Todos los roles, y cuáles puede dar quien consulta: solo los menores al suyo (<see cref="User.AssignRoleError"/>).
+    /// Así el formulario no ofrece uno que después se rechazaría, y el filtro de la lista de usuarios los tiene todos.
     /// </summary>
     internal sealed class ListAssignableRolesUseCase : IListAssignableRolesUseCase
     {
@@ -17,8 +17,7 @@ namespace ERP.Application.Features.Users.ListAssignableRoles
         public Task<IReadOnlyCollection<ListAssignableRolesResponseDto>> ExecuteAsync() =>
             Task.FromResult<IReadOnlyCollection<ListAssignableRolesResponseDto>>(
                 Enum.GetValues<UserRole>()
-                    .Where(role => User.AssignRoleError(_currentUser.Role, role) is null)
-                    .Select(role => new ListAssignableRolesResponseDto(role, role.Description))
+                    .Select(role => new ListAssignableRolesResponseDto(role, role.Description, User.AssignRoleError(_currentUser.Role, role) is null))
                     .ToArray());
     }
 }

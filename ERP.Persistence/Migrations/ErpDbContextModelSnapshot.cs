@@ -239,8 +239,8 @@ namespace ERP.Persistence.Migrations
 
                     b.Property<string>("IgvAffectation")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");

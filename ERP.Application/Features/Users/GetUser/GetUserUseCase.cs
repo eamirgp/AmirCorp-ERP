@@ -1,4 +1,5 @@
-﻿using ERP.Application.Contracts.Persistence.Queries;
+using ERP.Application.Common.Results;
+using ERP.Application.Contracts.Persistence.Queries;
 
 namespace ERP.Application.Features.Users.GetUser
 {
@@ -8,7 +9,7 @@ namespace ERP.Application.Features.Users.GetUser
 
         public GetUserUseCase(IUserQueries userQueries) => _userQueries = userQueries;
 
-        public async Task<GetUserResponseDto?> ExecuteAsync(GetUserDto request) =>
-            await _userQueries.GetUserAsync(request);
+        public async Task<Result<GetUserResponseDto>> ExecuteAsync(GetUserDto request) =>
+            Result<GetUserResponseDto>.FoundOr(await _userQueries.GetUserAsync(request), "El usuario no existe.");
     }
 }

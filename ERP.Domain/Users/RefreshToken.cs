@@ -22,6 +22,15 @@ namespace ERP.Domain.Users
         /// </summary>
         public static readonly TimeSpan ReuseInterval = TimeSpan.FromSeconds(30);
 
+        /// <summary>
+        /// Un token vencido se guarda este tiempo más: si alguien presenta uno copiado, todavía se reconoce como robo.
+        /// Después se puede borrar.
+        /// </summary>
+        public static readonly TimeSpan KeepAfterExpiry = TimeSpan.FromDays(1);
+
+        /// <summary>Largo de la huella: SHA-256 en hexadecimal.</summary>
+        public const int HashLength = 64;
+
         public Guid UserId { get; }
         public string TokenHash { get; }
         public Guid FamilyId { get; }
@@ -98,10 +107,11 @@ namespace ERP.Domain.Users
         public bool IsReuse(DateTime now) =>
             IsRevoked && !IsWithinReuseInterval(now);
 
+        // La huella es un SHA-256 en hexadecimal: 64 caracteres (lo mismo que guarda la columna).
         private static void ValidateHash(string tokenHash)
         {
-            if (string.IsNullOrWhiteSpace(tokenHash))
-                throw new DomainException("La huella del token es requerida.");
+            if (string.IsNullOrWhiteSpace(tokenHash) || tokenHash.Length != HashLength || !tokenHash.All(char.IsAsciiHexDigit))
+                throw new DomainException("La huella del token debe ser un SHA-256 en hexadecimal.");
         }
 
         private static DateTime Min(DateTime a, DateTime b) => a < b ? a : b;

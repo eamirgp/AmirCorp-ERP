@@ -1,4 +1,5 @@
 using ERP.Application.Contracts.Infrastructure;
+using ERP.Domain.Users;
 
 namespace ERP.Infrastructure.Services.Auth
 {
@@ -76,7 +77,7 @@ namespace ERP.Infrastructure.Services.Auth
         // El correo se compara como se guarda (sin espacios y en minúsculas).
         private static List<(string Key, int Max)> Keys(string email, string? clientIp)
         {
-            var normalized = email.Trim().ToLowerInvariant();
+            var normalized = User.NormalizeEmail(email);
             var keys = new List<(string Key, int Max)> { ("email:" + normalized, WideMaxFailures) };
             if (!string.IsNullOrWhiteSpace(clientIp))
             {

@@ -39,7 +39,7 @@ namespace ERP.Application.Common.Lookup
 
             string name;
             RucLookupData? ruc = null;
-            RucLookupFailure? failure;
+            LookupFailure? failure;
 
             if (identityDocumentType == IdentityDocumentType.Ruc)
             {
@@ -52,20 +52,12 @@ namespace ERP.Application.Common.Lookup
                 (failure, name) = (outcome.Failure, outcome.Name ?? "");
             }
 
-            return failure switch
-            {
-                null => Result<DocumentLookupData>.Success(new DocumentLookupData(normalized, name, source, ruc)),
-                RucLookupFailure.NotFound => Failure(
-                    [$"{source} no tiene registrado el {identityDocumentType.Description} {normalized}. Revisa que esté bien escrito."], ErrorType.NotFound),
-                RucLookupFailure.Unauthorized => Failure(
-                    ["El servicio de consulta rechazó la clave: puede haber vencido. Avisa al administrador del sistema y, mientras tanto, escribe el nombre a mano."],
-                    ErrorType.Unavailable),
-                RucLookupFailure.QuotaExceeded => Failure(
-                    [$"Se acabaron las consultas a {source} de este mes. Escribe el nombre a mano; las consultas vuelven el próximo mes."],
-                    ErrorType.Unavailable),
-                _ => Failure(
-                    [$"No se pudo consultar {source} en este momento. Inténtalo en unos minutos o escribe el nombre a mano."], ErrorType.Unavailable),
-            };
+            if (failure is null)
+                return Result<DocumentLookupData>.Success(new DocumentLookupData(normalized, name, source, ruc));
+
+            return LookupFailureMessage.For(failure.Value, source, "el nombre") is { } problem
+                ? Failure([problem.Message], problem.Type)
+                : Failure([$"{source} no tiene registrado el {identityDocumentType.Description} {normalized}. Revisa que esté bien escrito."], ErrorType.NotFound);
         }
 
         private static Result<DocumentLookupData> Failure(string[] errors, ErrorType type) =>

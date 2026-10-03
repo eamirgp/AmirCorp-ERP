@@ -30,7 +30,7 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
                 id,
                 IdentityDocumentType!.Value,
                 DocumentNumber!,
-                BusinessPartner.CountryFor(IdentityDocumentType.Value, CountryCode)!,
+                CountryCode,
                 Name!,
                 RowVersion!.Value
                 );

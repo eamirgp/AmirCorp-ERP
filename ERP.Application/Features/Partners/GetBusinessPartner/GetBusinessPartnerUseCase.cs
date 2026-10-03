@@ -1,4 +1,5 @@
-﻿using ERP.Application.Contracts.Persistence.Queries;
+using ERP.Application.Common.Results;
+using ERP.Application.Contracts.Persistence.Queries;
 
 namespace ERP.Application.Features.Partners.GetBusinessPartner
 {
@@ -8,7 +9,7 @@ namespace ERP.Application.Features.Partners.GetBusinessPartner
 
         public GetBusinessPartnerUseCase(IBusinessPartnerQueries businessPartnerQueries) => _businessPartnerQueries = businessPartnerQueries;
 
-        public async Task<GetBusinessPartnerResponseDto?> ExecuteAsync(GetBusinessPartnerDto request) =>
-            await _businessPartnerQueries.GetBusinessPartnerAsync(request);
+        public async Task<Result<GetBusinessPartnerResponseDto>> ExecuteAsync(GetBusinessPartnerDto request) =>
+            Result<GetBusinessPartnerResponseDto>.FoundOr(await _businessPartnerQueries.GetBusinessPartnerAsync(request), "El cliente o proveedor no existe.");
     }
 }

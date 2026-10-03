@@ -11,7 +11,6 @@ namespace ERP.Api.Controllers.Products.Requests
         bool? SortDescending
         )
     {
-        public bool HasFilters() => !string.IsNullOrWhiteSpace(SearchTerm) || IsActive is not null;
 
         public ExportProductsDto ToDto() =>
             new(

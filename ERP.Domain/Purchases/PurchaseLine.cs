@@ -157,6 +157,17 @@ namespace ERP.Domain.Purchases
             ) =>
             Compute(invoicePriceType, invoiceIgvAffectation, invoiceUnitOfMeasure, invoiceQuantity, invoiceAmount, requestedConversionFactor).Error;
 
+        /// <summary>
+        /// El monto unitario tal como se escribió de la factura (lo que recibe <see cref="Calculate"/>): el valor sin IGV
+        /// o el precio con IGV, según cómo vienen los montos de la factura.
+        /// </summary>
+        public static decimal InvoiceAmountFor(InvoicePriceType invoicePriceType, decimal invoiceUnitValue, decimal invoiceUnitPrice) =>
+            invoicePriceType is InvoicePriceType.UnitPrice ? invoiceUnitPrice : invoiceUnitValue;
+
+        /// <summary>Qué tiene de malo la afectación al IGV de la línea, o null si está bien (la misma regla del producto).</summary>
+        public static string? InvoiceIgvAffectationError(IgvAffectation? invoiceIgvAffectation) =>
+            Product.IgvAffectationError(invoiceIgvAffectation);
+
         /// <summary>Qué tiene de malo la cantidad de la factura, o null si está bien.</summary>
         public static string? InvoiceQuantityError(decimal? invoiceQuantity) =>
             invoiceQuantity switch
@@ -194,8 +205,8 @@ namespace ERP.Domain.Purchases
         {
             if (!Enum.IsDefined(invoicePriceType))
                 return (null, "El tipo de precio es inválido.");
-            if (!Enum.IsDefined(invoiceIgvAffectation))
-                return (null, "El tipo de afectación del IGV es inválido.");
+            if (InvoiceIgvAffectationError(invoiceIgvAffectation) is { } igvError)
+                return (null, igvError);
             if ((UnitOfMeasure.UsableError(invoiceUnitOfMeasure, invoiceUnitOfMeasure.Code)
                 ?? InvoiceQuantityError(invoiceQuantity)
                 ?? InvoiceAmountError(invoiceAmount, invoicePriceType)

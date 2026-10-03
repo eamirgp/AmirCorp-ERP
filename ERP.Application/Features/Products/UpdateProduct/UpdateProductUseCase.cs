@@ -1,6 +1,7 @@
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Application.Features.Products.SupplierCodes;
+using ERP.Domain.Products;
 using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Application.Features.Products.UpdateProduct
@@ -38,8 +39,8 @@ namespace ERP.Application.Features.Products.UpdateProduct
                     ErrorType.Conflict
                     );
 
-            if (await _productRepository.CodeExistsAsync(request.Code, request.Id))
-                return Result.Failure(["El código interno ya se encuentra en uso."], ErrorType.Conflict);
+            if (await _productRepository.FindByCodeAsync(request.Code, request.Id) is { } owner)
+                return Result.Failure([Product.CodeTakenError(owner)], ErrorType.Conflict);
 
             // Las mismas reglas del dominio, revisadas antes para responder con el mensaje en vez de una excepción. Si no
             // cambia la unidad, se acepta aunque ya no esté activa: el producto puede seguir editándose.

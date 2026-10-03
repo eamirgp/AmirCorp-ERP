@@ -1,3 +1,4 @@
+using ERP.Application.Common.Pagination;
 using ERP.Application.Contracts.Persistence.Queries;
 using ERP.Application.Features.Catalogs.ListUnitsOfMeasure;
 using ERP.Application.Features.UnitsOfMeasure.ListAllUnitsOfMeasure;
@@ -20,9 +21,24 @@ namespace ERP.Persistence.Queries
             .Select(u => new ListUnitsOfMeasureResponseDto(u.Code, u.Name, u.FixedConversionFactor))
             .ToArrayAsync();
 
-        public async Task<IReadOnlyCollection<UnitOfMeasureListItemDto>> ListAllAsync() =>
-            await _context.UnitsOfMeasure
-            .AsNoTracking()
+        public async Task<IReadOnlyCollection<UnitOfMeasureListItemDto>> ListAllAsync(ListFilterDto filter)
+        {
+            var query = _context.UnitsOfMeasure.AsNoTracking();
+
+            // Por el nombre corto o el de SUNAT (sin mayúsculas ni tildes), o por el código.
+            if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+            {
+                var term = SearchText.Normalize(filter.SearchTerm);
+                query = query.Where(u =>
+                    EF.Functions.Unaccent(u.Name.ToLower()).Contains(term)
+                    || EF.Functions.Unaccent(u.SunatName.ToLower()).Contains(term)
+                    || u.Code.ToLower().Contains(term));
+            }
+
+            if (filter.IsActive is { } isActive)
+                query = query.Where(u => u.IsActive == isActive);
+
+            return await query
             .OrderByDescending(u => u.IsActive)
             .ThenBy(u => u.Name)
             .Select(u => new UnitOfMeasureListItemDto(
@@ -36,5 +52,6 @@ namespace ERP.Persistence.Queries
                 EF.Property<uint>(u, "RowVersion")
                 ))
             .ToArrayAsync();
+        }
     }
 }

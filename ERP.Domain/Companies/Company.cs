@@ -59,14 +59,18 @@ namespace ERP.Domain.Companies
                 ? "El RUC es requerido."
                 : IdentityDocumentType.Ruc.DocumentNumberError(NormalizeRuc(ruc));
 
+        /// <summary>La razón social tal como se guarda: sin espacios al inicio ni al final, ni dobles en medio.</summary>
+        public static string NormalizeName(string name) =>
+            TextNormalizer.CollapseSpaces(name);
+
         /// <summary>Qué tiene de malo la razón social, o null si está bien.</summary>
         public static string? NameError(string? name)
         {
             if (string.IsNullOrWhiteSpace(name))
-                return "El nombre es requerido.";
+                return "La razón social es requerida.";
 
-            if (TextNormalizer.CollapseSpaces(name).Length > NameMaxLength)
-                return $"El nombre no puede exceder los {NameMaxLength} caracteres.";
+            if (NormalizeName(name).Length > NameMaxLength)
+                return $"La razón social no puede exceder los {NameMaxLength} caracteres.";
 
             return null;
         }
@@ -79,18 +83,14 @@ namespace ERP.Domain.Companies
 
         private static string ValidateRuc(string ruc)
         {
-            if (RucError(ruc) is { } error)
-                throw new DomainException(error);
-
+            DomainException.ThrowIf(RucError(ruc));
             return NormalizeRuc(ruc);
         }
 
         private static string ValidateName(string name)
         {
-            if (NameError(name) is { } error)
-                throw new DomainException(error);
-
-            return TextNormalizer.CollapseSpaces(name);
+            DomainException.ThrowIf(NameError(name));
+            return NormalizeName(name);
         }
     }
 }

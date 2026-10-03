@@ -1,4 +1,5 @@
-﻿using ERP.Application.Contracts.Api;
+using ERP.Application.Common.Results;
+using ERP.Application.Contracts.Api;
 using ERP.Application.Contracts.Persistence.Queries;
 
 namespace ERP.Application.Features.Accounts.GetMyProfile
@@ -17,7 +18,7 @@ namespace ERP.Application.Features.Accounts.GetMyProfile
             _currentUser = currentUser;
         }
 
-        public async Task<GetMyProfileResponseDto?> ExecuteAsync() =>
-            await _userQueries.GetMyProfileAsync(_currentUser.Id);
+        public async Task<Result<GetMyProfileResponseDto>> ExecuteAsync() =>
+            Result<GetMyProfileResponseDto>.FoundOr(await _userQueries.GetMyProfileAsync(_currentUser.Id), "Tu usuario ya no existe.");
     }
 }

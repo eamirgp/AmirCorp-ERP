@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Catalogs;
 using ERP.Domain.Purchases;
 
 namespace ERP.Application.Contracts.Persistence.Commands
@@ -9,7 +9,7 @@ namespace ERP.Application.Contracts.Persistence.Commands
 
         /// <summary>
         /// La compra no anulada con ese comprobante del proveedor, en cualquier empresa, o null si no hay.
-        /// El número va normalizado (<see cref="Purchase.NormalizeNumber"/>).
+        /// La serie y el número se comparan normalizados ("f001 " es F001; "25" es 00000025).
         /// </summary>
         Task<RegisteredDocument?> FindDocumentAsync(TaxDocumentType taxDocumentType, Guid supplierId, string serie, string number);
 

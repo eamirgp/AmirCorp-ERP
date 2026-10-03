@@ -33,23 +33,23 @@ namespace ERP.Infrastructure.Services.RucLookup
         public async Task<ExchangeRateOutcome> FindAsync(DateOnly date, CancellationToken ct = default)
         {
             if (!IsConfigured)
-                return ExchangeRateOutcome.Failed(RucLookupFailure.Unauthorized);
+                return ExchangeRateOutcome.Failed(LookupFailure.Unauthorized);
 
             try
             {
                 using var response = await GetAsync($"date={date:yyyy-MM-dd}", ct);
 
                 if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
-                    return ExchangeRateOutcome.Failed(RucLookupFailure.Unauthorized);
+                    return ExchangeRateOutcome.Failed(LookupFailure.Unauthorized);
 
                 if (response.StatusCode is HttpStatusCode.TooManyRequests)
-                    return ExchangeRateOutcome.Failed(RucLookupFailure.QuotaExceeded);
+                    return ExchangeRateOutcome.Failed(LookupFailure.QuotaExceeded);
 
                 if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity)
-                    return ExchangeRateOutcome.Failed(RucLookupFailure.NotFound);
+                    return ExchangeRateOutcome.Failed(LookupFailure.NotFound);
 
                 if (!response.IsSuccessStatusCode)
-                    return ExchangeRateOutcome.Failed(RucLookupFailure.Unavailable);
+                    return ExchangeRateOutcome.Failed(LookupFailure.Unavailable);
 
                 using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
                 var rates = Parse(json.RootElement);
@@ -57,11 +57,11 @@ namespace ERP.Infrastructure.Services.RucLookup
                 // Lo publicado puede ser de una fecha anterior a la pedida (fin de semana, feriado): se informa la que vino.
                 return rates.Count > 0
                     ? ExchangeRateOutcome.Found(rates.OrderByDescending(r => r.Date).First())
-                    : ExchangeRateOutcome.Failed(RucLookupFailure.NotFound);
+                    : ExchangeRateOutcome.Failed(LookupFailure.NotFound);
             }
             catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or JsonException) && !ct.IsCancellationRequested)
             {
-                return ExchangeRateOutcome.Failed(RucLookupFailure.Unavailable);
+                return ExchangeRateOutcome.Failed(LookupFailure.Unavailable);
             }
         }
 

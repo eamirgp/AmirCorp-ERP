@@ -36,7 +36,7 @@ namespace ERP.Infrastructure.Services.RucLookup
         public async Task<RucLookupOutcome> FindAsync(string ruc, CancellationToken ct = default)
         {
             if (!IsConfigured)
-                return RucLookupOutcome.Failed(RucLookupFailure.Unauthorized);
+                return RucLookupOutcome.Failed(LookupFailure.Unauthorized);
 
             try
             {
@@ -46,21 +46,21 @@ namespace ERP.Infrastructure.Services.RucLookup
                 using var response = await Http.SendAsync(request, ct);
 
                 if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
-                    return RucLookupOutcome.Failed(RucLookupFailure.Unauthorized);
+                    return RucLookupOutcome.Failed(LookupFailure.Unauthorized);
 
                 if (response.StatusCode is HttpStatusCode.TooManyRequests)
-                    return RucLookupOutcome.Failed(RucLookupFailure.QuotaExceeded);
+                    return RucLookupOutcome.Failed(LookupFailure.QuotaExceeded);
 
                 // Decolecta responde 422 (o 400) cuando el RUC no existe o no es válido.
                 if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity)
-                    return RucLookupOutcome.Failed(RucLookupFailure.NotFound);
+                    return RucLookupOutcome.Failed(LookupFailure.NotFound);
 
                 if (!response.IsSuccessStatusCode)
-                    return RucLookupOutcome.Failed(RucLookupFailure.Unavailable);
+                    return RucLookupOutcome.Failed(LookupFailure.Unavailable);
 
                 var body = await response.Content.ReadFromJsonAsync<DecolectaRuc>(ct);
                 if (body is null || string.IsNullOrWhiteSpace(body.RazonSocial))
-                    return RucLookupOutcome.Failed(RucLookupFailure.NotFound);
+                    return RucLookupOutcome.Failed(LookupFailure.NotFound);
 
                 return RucLookupOutcome.Found(new RucLookupData(
                     body.NumeroDocumento ?? ruc,
@@ -72,7 +72,7 @@ namespace ERP.Infrastructure.Services.RucLookup
             }
             catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException or NotSupportedException) && !ct.IsCancellationRequested)
             {
-                return RucLookupOutcome.Failed(RucLookupFailure.Unavailable);
+                return RucLookupOutcome.Failed(LookupFailure.Unavailable);
             }
         }
 
@@ -80,7 +80,7 @@ namespace ERP.Infrastructure.Services.RucLookup
         public async Task<DniLookupOutcome> FindDniAsync(string dni, CancellationToken ct = default)
         {
             if (!IsConfigured)
-                return DniLookupOutcome.Failed(RucLookupFailure.Unauthorized);
+                return DniLookupOutcome.Failed(LookupFailure.Unauthorized);
 
             try
             {
@@ -90,26 +90,26 @@ namespace ERP.Infrastructure.Services.RucLookup
                 using var response = await Http.SendAsync(request, ct);
 
                 if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
-                    return DniLookupOutcome.Failed(RucLookupFailure.Unauthorized);
+                    return DniLookupOutcome.Failed(LookupFailure.Unauthorized);
 
                 if (response.StatusCode is HttpStatusCode.TooManyRequests)
-                    return DniLookupOutcome.Failed(RucLookupFailure.QuotaExceeded);
+                    return DniLookupOutcome.Failed(LookupFailure.QuotaExceeded);
 
                 if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity)
-                    return DniLookupOutcome.Failed(RucLookupFailure.NotFound);
+                    return DniLookupOutcome.Failed(LookupFailure.NotFound);
 
                 if (!response.IsSuccessStatusCode)
-                    return DniLookupOutcome.Failed(RucLookupFailure.Unavailable);
+                    return DniLookupOutcome.Failed(LookupFailure.Unavailable);
 
                 var body = await response.Content.ReadFromJsonAsync<DecolectaDni>(ct);
                 if (body is null || string.IsNullOrWhiteSpace(body.FullName))
-                    return DniLookupOutcome.Failed(RucLookupFailure.NotFound);
+                    return DniLookupOutcome.Failed(LookupFailure.NotFound);
 
                 return DniLookupOutcome.Found(body.FullName.Trim());
             }
             catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException or NotSupportedException) && !ct.IsCancellationRequested)
             {
-                return DniLookupOutcome.Failed(RucLookupFailure.Unavailable);
+                return DniLookupOutcome.Failed(LookupFailure.Unavailable);
             }
         }
 

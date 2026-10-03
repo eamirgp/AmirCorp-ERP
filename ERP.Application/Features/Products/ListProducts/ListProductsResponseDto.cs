@@ -22,7 +22,9 @@ namespace ERP.Application.Features.Products.ListProducts
         // Versión del producto: el formulario la devuelve al editar para no pisar cambios de otra persona.
         uint RowVersion,
         // El código de la factura que se quiere enlazar (LinkCode de la búsqueda), o null.
-        string? LinkCode = null
+        string? LinkCode = null,
+        // Lo que se buscó, para saber si es exactamente el código de ese proveedor.
+        string? SearchTerm = null
         )
     {
         public string IgvAffectationDescription => IgvAffectation.Description;
@@ -30,6 +32,13 @@ namespace ERP.Application.Features.Products.ListProducts
 
         /// <summary>"Activo" o "Inactivo", para la columna Estado.</summary>
         public string StatusDescription => IsActive ? "Activo" : "Inactivo";
+
+        /// <summary>
+        /// En una compra: si lo buscado es exactamente el código de este producto para ese proveedor (comparado como se
+        /// guardan los códigos). Si ninguno lo es, la pantalla ofrece enlazar el código o crear un producto nuevo.
+        /// </summary>
+        public bool IsSupplierCodeMatch =>
+            SupplierCode is not null && !string.IsNullOrWhiteSpace(SearchTerm) && SupplierCode == ProductSupplierCode.NormalizeCode(SearchTerm);
 
         /// <summary>
         /// En una compra, al enlazar el código <see cref="LinkCode"/> de la factura: por qué este producto no se puede

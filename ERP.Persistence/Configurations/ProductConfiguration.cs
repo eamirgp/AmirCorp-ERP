@@ -32,10 +32,11 @@ namespace ERP.Persistence.Configurations
                 .HasPrincipalKey(u => u.Code)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // El mismo largo que en las líneas de compra: una afectación nueva con nombre más largo cabe en las dos.
             builder.Property(p => p.IgvAffectation)
                 .IsRequired()
                 .HasConversion<string>()
-                .HasMaxLength(10);
+                .HasMaxLength(20);
 
             builder.Property(p => p.SalePrice)
                 .IsRequired()

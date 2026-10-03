@@ -40,10 +40,11 @@ namespace ERP.Domain.Partners
             IsSupplier = isSupplier;
         }
 
-        public static BusinessPartner Create(IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name, bool isClient, bool isSupplier)
+        /// <param name="countryCode">Solo con documento extranjero; con DNI o RUC es Perú aunque venga otro o nada.</param>
+        public static BusinessPartner Create(IdentityDocumentType identityDocumentType, string documentNumber, string? countryCode, string name, bool isClient, bool isSupplier)
         {
             var (normalizedDocument, normalizedCountry, normalizedName) = ValidateData(identityDocumentType, documentNumber, countryCode, name);
-            Throw(RolesError(identityDocumentType, isClient, isSupplier));
+            DomainException.ThrowIf(RolesError(identityDocumentType, isClient, isSupplier));
 
             return new(Guid.CreateVersion7(), identityDocumentType, normalizedDocument, normalizedCountry, normalizedName, isClient, isSupplier);
         }
@@ -53,11 +54,11 @@ namespace ERP.Domain.Partners
         /// <see cref="AddSupplierRole"/>), pero el documento nuevo debe servir para los roles que ya tiene.
         /// </summary>
         /// <param name="hasPurchases">Si ya tiene compras registradas (también las anuladas): entonces el documento no cambia.</param>
-        public void Update(IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name, bool hasPurchases)
+        public void Update(IdentityDocumentType identityDocumentType, string documentNumber, string? countryCode, string name, bool hasPurchases)
         {
             var (normalizedDocument, normalizedCountry, normalizedName) = ValidateData(identityDocumentType, documentNumber, countryCode, name);
-            Throw(RolesError(identityDocumentType, IsClient, IsSupplier));
-            Throw(DocumentChangeError(identityDocumentType, normalizedDocument, hasPurchases));
+            DomainException.ThrowIf(RolesError(identityDocumentType, IsClient, IsSupplier));
+            DomainException.ThrowIf(DocumentChangeError(identityDocumentType, normalizedDocument, hasPurchases));
 
             IdentityDocumentType = identityDocumentType;
             DocumentNumber = normalizedDocument;
@@ -68,21 +69,21 @@ namespace ERP.Domain.Partners
         /// <summary>Un proveedor pasa a ser también cliente (si su documento lo permite).</summary>
         public void AddClientRole()
         {
-            Throw(AddClientRoleError());
+            DomainException.ThrowIf(AddClientRoleError());
             IsClient = true;
         }
 
         /// <summary>Un cliente pasa a ser también proveedor (si su documento lo permite).</summary>
         public void AddSupplierRole()
         {
-            Throw(AddSupplierRoleError());
+            DomainException.ThrowIf(AddSupplierRoleError());
             IsSupplier = true;
         }
 
         /// <summary>Deja de comprarle: ya no se puede elegir en compras nuevas. Las compras hechas no cambian.</summary>
         public void BlockPurchasing(string? reason)
         {
-            Throw(BlockPurchasingError(reason));
+            DomainException.ThrowIf(BlockPurchasingError(reason));
             PurchasingBlockReason = NormalizeReason(reason);
             IsPurchasingBlocked = true;
         }
@@ -97,7 +98,7 @@ namespace ERP.Domain.Partners
         /// <summary>Deja de venderle: ya no se podrá elegir en ventas nuevas. Las ventas hechas no cambian.</summary>
         public void BlockSales(string? reason)
         {
-            Throw(BlockSalesError(reason));
+            DomainException.ThrowIf(BlockSalesError(reason));
             SalesBlockReason = NormalizeReason(reason);
             IsSalesBlocked = true;
         }
@@ -148,32 +149,34 @@ namespace ERP.Domain.Partners
 
         /// <summary>Qué tiene de malo el documento, o null si es válido. El RUC se valida como SUNAT.</summary>
         public static string? DocumentError(IdentityDocumentType? identityDocumentType, string? documentNumber) =>
+            DocumentTypeError(identityDocumentType)
+            ?? identityDocumentType!.Value.DocumentNumberError(IdentityDocumentTypeExtensions.NormalizeDocumentNumber(documentNumber ?? ""));
+
+        /// <summary>Qué tiene de malo el tipo de documento, o null si está bien.</summary>
+        public static string? DocumentTypeError(IdentityDocumentType? identityDocumentType) =>
             identityDocumentType switch
             {
                 null => "El tipo de documento es requerido.",
                 { } type when !Enum.IsDefined(type) => "El tipo de documento es inválido.",
-                { } type => type.DocumentNumberError(IdentityDocumentTypeExtensions.NormalizeDocumentNumber(documentNumber ?? ""))
+                _ => null
             };
 
         /// <summary>
-        /// Qué tiene de malo el país, o null si está bien. Con DNI o RUC es Perú (<see cref="CountryFor"/>); con un
-        /// documento extranjero se elige y no puede ser Perú.
+        /// Qué tiene de malo el país, o null si está bien. Con DNI o RUC es Perú y no se pregunta (<see cref="CountryFor"/>,
+        /// que se aplica aquí: quien llama no tiene que acordarse); con un documento extranjero se elige y no puede ser Perú.
         /// </summary>
         public static string? CountryError(IdentityDocumentType identityDocumentType, string? countryCode)
         {
+            countryCode = CountryFor(identityDocumentType, countryCode);
+
             if (string.IsNullOrWhiteSpace(countryCode))
-                return "Elige el país del proveedor.";
+                return "Elige el país.";
 
             if (!Countries.Exists(countryCode))
                 return "El país es inválido.";
 
-            var isPeru = Countries.IsPeru(countryCode);
-
-            if (identityDocumentType.RequiresPeruvianCountry && !isPeru)
-                return "Para DNI o RUC el país debe ser Perú.";
-
-            if (!identityDocumentType.RequiresPeruvianCountry && isPeru)
-                return "Un documento extranjero no puede ser de Perú. Elige el país del proveedor.";
+            if (!identityDocumentType.RequiresPeruvianCountry && Countries.IsPeru(countryCode))
+                return "Un documento extranjero no puede ser de Perú. Elige el país.";
 
             return null;
         }
@@ -249,15 +252,15 @@ namespace ERP.Domain.Partners
         public string? BlockSalesError(string? reason) =>
             IsClient ? BlockReasonError(reason) : $"{Name} no es cliente.";
 
-        private static (string Document, string Country, string Name) ValidateData(IdentityDocumentType identityDocumentType, string documentNumber, string countryCode, string name)
+        private static (string Document, string Country, string Name) ValidateData(IdentityDocumentType identityDocumentType, string documentNumber, string? countryCode, string name)
         {
-            Throw(DocumentError(identityDocumentType, documentNumber));
-            Throw(CountryError(identityDocumentType, countryCode));
-            Throw(NameError(name));
+            DomainException.ThrowIf(DocumentError(identityDocumentType, documentNumber));
+            DomainException.ThrowIf(CountryError(identityDocumentType, countryCode));
+            DomainException.ThrowIf(NameError(name));
 
             return (
                 IdentityDocumentTypeExtensions.NormalizeDocumentNumber(documentNumber),
-                Countries.NormalizeCode(countryCode),
+                Countries.NormalizeCode(CountryFor(identityDocumentType, countryCode)!),
                 NormalizeName(name)
                 );
         }
@@ -265,11 +268,5 @@ namespace ERP.Domain.Partners
         // El motivo es opcional: vacío cuenta como sin motivo.
         private static string? NormalizeReason(string? reason) =>
             string.IsNullOrWhiteSpace(reason) ? null : TextNormalizer.CollapseSpaces(reason);
-
-        private static void Throw(string? error)
-        {
-            if (error is not null)
-                throw new DomainException(error);
-        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using ERP.Api.Common;
+using ERP.Api.Extensions;
 using ERP.Application.Features.Accounts.GetMyProfile;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,8 +20,6 @@ namespace ERP.Api.Controllers.Accounts
         [HttpGet]
         [ProducesResponseType<GetMyProfileResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get() =>
-            await _getMyProfileUseCase.ExecuteAsync() is { } profile
-                ? Ok(profile)
-                : NotFound(new ErrorResponse(["Tu usuario ya no existe."]));
+            (await _getMyProfileUseCase.ExecuteAsync()).ToActionResult(StatusCodes.Status200OK);
     }
 }

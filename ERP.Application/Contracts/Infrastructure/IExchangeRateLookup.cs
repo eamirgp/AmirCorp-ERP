@@ -21,9 +21,9 @@ namespace ERP.Application.Contracts.Infrastructure
     public sealed record ExchangeRateData(DateOnly Date, decimal BuyRate, decimal SellRate);
 
     /// <summary>Resultado de la consulta: los datos o el motivo por el que no se obtuvieron.</summary>
-    public sealed record ExchangeRateOutcome(ExchangeRateData? Data, RucLookupFailure? Failure)
+    public sealed record ExchangeRateOutcome(ExchangeRateData? Data, LookupFailure? Failure)
     {
         public static ExchangeRateOutcome Found(ExchangeRateData data) => new(data, null);
-        public static ExchangeRateOutcome Failed(RucLookupFailure failure) => new(null, failure);
+        public static ExchangeRateOutcome Failed(LookupFailure failure) => new(null, failure);
     }
 }

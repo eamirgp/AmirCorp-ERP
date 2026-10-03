@@ -41,7 +41,7 @@ namespace ERP.Domain.Users
         /// <param name="hashPassword">Convierte la contraseña en su hash (lo hace Infrastructure); el dominio nunca guarda la contraseña.</param>
         public static User Create(string name, string email, string password, Func<string, string> hashPassword, UserRole role, UserRole actorRole)
         {
-            Throw(AssignRoleError(actorRole, role));
+            DomainException.ThrowIf(AssignRoleError(actorRole, role));
             return New(name, email, password, hashPassword, role);
         }
 
@@ -55,27 +55,27 @@ namespace ERP.Domain.Users
 
         public void UpdateProfile(string name, string email, UserRole actorRole)
         {
-            Throw(ManageError(actorRole));
-            Throw(NameError(name));
-            Throw(EmailError(email));
+            DomainException.ThrowIf(ManageError(actorRole));
+            DomainException.ThrowIf(NameError(name));
+            DomainException.ThrowIf(EmailError(email));
 
-            Name = TextNormalizer.CollapseSpaces(name);
+            Name = NormalizeName(name);
             Email = NormalizeEmail(email);
         }
 
         public void ResetPassword(string password, Func<string, string> hashPassword, UserRole actorRole)
         {
-            Throw(ManageError(actorRole));
-            Throw(PasswordError(password));
+            DomainException.ThrowIf(ManageError(actorRole));
+            DomainException.ThrowIf(PasswordError(password));
 
             PasswordHash = hashPassword(password);
         }
 
         public void ChangeRole(UserRole role, UserRole actorRole)
         {
-            Throw(ManageError(actorRole));
-            Throw(RoleError(role));
-            Throw(AssignRoleError(actorRole, role));
+            DomainException.ThrowIf(ManageError(actorRole));
+            DomainException.ThrowIf(RoleError(role));
+            DomainException.ThrowIf(AssignRoleError(actorRole, role));
 
             Role = role;
         }
@@ -83,14 +83,14 @@ namespace ERP.Domain.Users
         /// <summary>Si ya estaba activo, no cambia nada.</summary>
         public void Activate(UserRole actorRole)
         {
-            Throw(ManageError(actorRole));
+            DomainException.ThrowIf(ManageError(actorRole));
             IsActive = true;
         }
 
         /// <summary>Si ya estaba inactivo, no cambia nada.</summary>
         public void Deactivate(UserRole actorRole)
         {
-            Throw(ManageError(actorRole));
+            DomainException.ThrowIf(ManageError(actorRole));
             IsActive = false;
         }
 
@@ -102,13 +102,17 @@ namespace ERP.Domain.Users
         public static string? AssignRoleError(UserRole actorRole, UserRole role) =>
             actorRole.CanManage(role) ? null : "No tienes permisos para asignar este rol.";
 
+        /// <summary>El nombre tal como se guarda: sin espacios al inicio ni al final, ni dobles en medio.</summary>
+        public static string NormalizeName(string name) =>
+            TextNormalizer.CollapseSpaces(name);
+
         /// <summary>Qué tiene de malo el nombre, o null si está bien.</summary>
         public static string? NameError(string? name)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return "El nombre es requerido.";
 
-            if (TextNormalizer.CollapseSpaces(name).Length > NameMaxLength)
+            if (NormalizeName(name).Length > NameMaxLength)
                 return $"El nombre no puede exceder los {NameMaxLength} caracteres.";
 
             return null;
@@ -157,18 +161,12 @@ namespace ERP.Domain.Users
 
         private static User New(string name, string email, string password, Func<string, string> hashPassword, UserRole role)
         {
-            Throw(NameError(name));
-            Throw(EmailError(email));
-            Throw(PasswordError(password));
-            Throw(RoleError(role));
+            DomainException.ThrowIf(NameError(name));
+            DomainException.ThrowIf(EmailError(email));
+            DomainException.ThrowIf(PasswordError(password));
+            DomainException.ThrowIf(RoleError(role));
 
-            return new(Guid.CreateVersion7(), TextNormalizer.CollapseSpaces(name), NormalizeEmail(email), hashPassword(password), role, isActive: true);
-        }
-
-        private static void Throw(string? error)
-        {
-            if (error is not null)
-                throw new DomainException(error);
+            return new(Guid.CreateVersion7(), NormalizeName(name), NormalizeEmail(email), hashPassword(password), role, isActive: true);
         }
     }
 }

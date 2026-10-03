@@ -34,6 +34,8 @@ if (!app.Environment.IsDevelopment())
 app.UseCors("AllowLocalhost");
 app.UseAuthentication();
 app.UseAuthorization();
+// Después de la autenticación: los límites son por usuario (RateLimits).
+app.UseRateLimiter();
 app.MapControllers();
 
 // Documentación de la API solo en desarrollo: /openapi/v1.json y /scalar

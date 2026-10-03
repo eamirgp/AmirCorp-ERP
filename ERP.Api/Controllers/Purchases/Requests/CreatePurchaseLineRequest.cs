@@ -44,11 +44,8 @@ namespace ERP.Api.Controllers.Purchases.Requests
             if (!string.IsNullOrWhiteSpace(SupplierCode) && ProductSupplierCode.CodeError(SupplierCode) is { } linkCodeError)
                 errors.Add($"Línea {lineNumber}: {linkCodeError}");
 
-            if (InvoiceIgvAffectation is null)
-                errors.Add($"Línea {lineNumber}: El tipo de afectación del IGV es requerido.");
-
-            if (InvoiceIgvAffectation is not null && !Enum.IsDefined(InvoiceIgvAffectation.Value))
-                errors.Add($"Línea {lineNumber}: El tipo de afectación del IGV es inválido.");
+            if (PurchaseLine.InvoiceIgvAffectationError(InvoiceIgvAffectation) is { } igvError)
+                errors.Add($"Línea {lineNumber}: {igvError}");
 
             if (string.IsNullOrWhiteSpace(InvoiceUnitOfMeasureCode))
                 errors.Add($"Línea {lineNumber}: La unidad de medida es requerida.");
@@ -59,10 +56,8 @@ namespace ERP.Api.Controllers.Purchases.Requests
             if (PurchaseLine.InvoiceAmountError(InvoiceAmount, invoicePriceType ?? InvoicePriceType.UnitValue) is { } amountError)
                 errors.Add($"Línea {lineNumber}: {amountError}");
 
-            // Las unidades por caja solo hacen falta con unidades variables (Caja): eso lo revisa el registro con el
-            // catálogo de unidades. Aquí solo se descarta un valor imposible.
-            if (ConversionFactor is not null && ConversionFactor <= 0)
-                errors.Add($"Línea {lineNumber}: Las unidades por caja o paquete deben ser mayores a cero.");
+            // Las unidades por caja dependen de la unidad (fija o variable): las revisa el registro con el catálogo
+            // (PurchaseLine.ConversionFactorError), con el mismo mensaje que la vista previa.
 
             return errors;
         }
@@ -87,6 +82,7 @@ namespace ERP.Api.Controllers.Purchases.Requests
     }
 
     /// <param name="Code">Código interno (la pantalla propone el de la factura).</param>
+    /// <param name="Name">Nombre del producto (la pantalla propone el de la factura).</param>
     /// <param name="SupplierCode">Código con que lo vende el proveedor de esta compra; opcional.</param>
     public sealed record CreatePurchaseNewProductRequest(string? Code, string? Name, string? SupplierCode);
 }

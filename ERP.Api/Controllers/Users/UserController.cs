@@ -73,8 +73,14 @@ namespace ERP.Api.Controllers.Users
 
         [HttpGet]
         [ProducesResponseType<IReadOnlyCollection<ListUsersResponseDto>>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> List() =>
-            Ok(await _listUsersUseCase.ExecuteAsync());
+        public async Task<IActionResult> List([FromQuery] ListUsersRequest listUsersRequest)
+        {
+            var errors = listUsersRequest.Validate();
+            if (errors.Count > 0)
+                return errors.ToBadRequest();
+
+            return Ok(await _listUsersUseCase.ExecuteAsync(listUsersRequest.ToDto()));
+        }
 
         [HttpPatch("{id:guid}/activate")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -132,8 +138,8 @@ namespace ERP.Api.Controllers.Users
         [ProducesResponseType<GetUserResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(Guid id)
         {
-            var response = await _getUserUseCase.ExecuteAsync(new GetUserDto(id));
-            return response is null ? NotFound(new ErrorResponse(["El usuario no existe."])) : Ok(response);
+            var result = await _getUserUseCase.ExecuteAsync(new GetUserDto(id));
+            return result.ToActionResult(StatusCodes.Status200OK);
         }
     }
 }

@@ -1,4 +1,5 @@
 using ERP.Api.Common;
+using Microsoft.AspNetCore.RateLimiting;
 using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.Companies.Requests;
 using ERP.Api.Extensions;
@@ -61,8 +62,8 @@ namespace ERP.Api.Controllers.Companies
 
         [HttpGet]
         [ProducesResponseType<IReadOnlyCollection<ListCompaniesResponseDto>>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> List() =>
-            Ok(await _listCompaniesUseCase.ExecuteAsync());
+        public async Task<IActionResult> List([FromQuery] ListFilterRequest filter) =>
+            Ok(await _listCompaniesUseCase.ExecuteAsync(filter.ToDto()));
 
         [HttpPatch("{id:guid}/activate")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -84,8 +85,8 @@ namespace ERP.Api.Controllers.Companies
         [ProducesResponseType<GetCompanyResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(Guid id)
         {
-            var response = await _getCompanyUseCase.ExecuteAsync(new GetCompanyDto(id));
-            return response is null ? NotFound(new ErrorResponse(["La empresa no existe."])) : Ok(response);
+            var result = await _getCompanyUseCase.ExecuteAsync(new GetCompanyDto(id));
+            return result.ToActionResult(StatusCodes.Status200OK);
         }
 
         /// <summary>
@@ -93,11 +94,12 @@ namespace ERP.Api.Controllers.Companies
         /// consulta no está configurada o el servicio no responde; el formulario sigue funcionando a mano.
         /// </summary>
         [HttpGet("ruc-lookup")]
+        [EnableRateLimiting(RateLimits.ExternalLookup)]
         [ProducesResponseType<LookupDocumentResponseDto>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> LookupRuc([FromQuery] string ruc, [FromQuery] Guid? companyId, CancellationToken ct)
+        public async Task<IActionResult> LookupRuc([FromQuery] string? ruc, [FromQuery] Guid? companyId, CancellationToken ct)
         {
             // companyId: la empresa que se está editando; así no se avisa "ya registrada" por ella misma.
-            var result = await _lookupCompanyRucUseCase.ExecuteAsync(ruc, companyId, ct);
+            var result = await _lookupCompanyRucUseCase.ExecuteAsync(ruc ?? "", companyId, ct);
             return result.ToActionResult(StatusCodes.Status200OK);
         }
 

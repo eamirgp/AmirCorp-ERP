@@ -1,6 +1,6 @@
-﻿using ERP.Application.Common.Interfaces;
+using ERP.Application.Common.Interfaces;
 
 namespace ERP.Application.Features.Users.ListUsers
 {
-    public interface IListUsersUseCase : IQueryUseCase<IReadOnlyCollection<ListUsersResponseDto>> { }
+    public interface IListUsersUseCase : IQueryUseCase<ListUsersDto, IReadOnlyCollection<ListUsersResponseDto>> { }
 }

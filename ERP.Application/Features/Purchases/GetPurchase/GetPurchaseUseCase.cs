@@ -1,4 +1,5 @@
-﻿using ERP.Application.Contracts.Persistence.Queries;
+using ERP.Application.Common.Results;
+using ERP.Application.Contracts.Persistence.Queries;
 
 namespace ERP.Application.Features.Purchases.GetPurchase
 {
@@ -8,7 +9,7 @@ namespace ERP.Application.Features.Purchases.GetPurchase
 
         public GetPurchaseUseCase(IPurchaseQueries purchaseQueries) => _purchaseQueries = purchaseQueries;
 
-        public async Task<GetPurchaseResponseDto?> ExecuteAsync(GetPurchaseDto request) =>
-            await _purchaseQueries.GetPurchaseAsync(request);
+        public async Task<Result<GetPurchaseResponseDto>> ExecuteAsync(GetPurchaseDto request) =>
+            Result<GetPurchaseResponseDto>.FoundOr(await _purchaseQueries.GetPurchaseAsync(request), "La compra no existe.");
     }
 }

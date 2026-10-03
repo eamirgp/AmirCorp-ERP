@@ -117,7 +117,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 var code = Product.NormalizeCode(line.NewProduct!.Code);
 
                 if (taken.TryGetValue(code, out var existing))
-                    errors.Add($"Línea {number}: El código interno {code} ya es de {existing.Name}. Elígelo de la lista o usa otro código.");
+                    errors.Add($"Línea {number}: {Product.CodeTakenError(existing)}");
                 else if (codes.Count(c => c == code) > 1)
                     errors.Add($"Línea {number}: El código interno {code} está en más de un producto nuevo de esta compra.");
             }

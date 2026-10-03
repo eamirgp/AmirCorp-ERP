@@ -1,4 +1,6 @@
-﻿using ERP.Api.Extensions;
+using ERP.Api.Common;
+using Microsoft.AspNetCore.RateLimiting;
+using ERP.Api.Extensions;
 using ERP.Application.Features.Catalogs.GetExchangeRate;
 using ERP.Application.Features.Catalogs.ListCountries;
 using ERP.Application.Features.Catalogs.ListCurrencies;
@@ -60,6 +62,7 @@ namespace ERP.Api.Controllers.Catalogs
         /// 503 si la consulta no está configurada o el servicio no responde; el tipo de cambio se escribe a mano.
         /// </summary>
         [HttpGet("exchange-rate")]
+        [EnableRateLimiting(RateLimits.ExternalLookup)]
         [ProducesResponseType<GetExchangeRateResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetExchangeRate([FromQuery] Currency? currency, [FromQuery] DateOnly? date, [FromQuery] bool storedOnly, CancellationToken ct)
         {

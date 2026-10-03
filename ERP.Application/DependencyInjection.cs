@@ -114,6 +114,7 @@ namespace ERP.Application
                     .AddScoped<IUpdateCompanyUseCase, UpdateCompanyUseCase>()
                     .AddScoped<ILookupCompanyRucUseCase, LookupCompanyRucUseCase>()
                     .AddScoped<DocumentLookupService>()
+                    .AddScoped<ExchangeRateFetcher>()
 
                     .AddScoped<ICreateProductUseCase, CreateProductUseCase>()
                     .AddScoped<IListProductsUseCase, ListProductsUseCase>()

@@ -7,7 +7,8 @@ namespace ERP.Application.Features.Partners.UpdateBusinessPartner
         Guid Id,
         IdentityDocumentType IdentityDocumentType,
         string DocumentNumber,
-        string CountryCode,
+        // Solo con documento extranjero: con DNI o RUC el dominio pone Perú.
+        string? CountryCode,
         string Name,
         uint RowVersion
         );

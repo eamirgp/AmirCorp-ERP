@@ -1,4 +1,3 @@
-using ERP.Api.Common;
 using ERP.Application.Common.Pagination;
 using ERP.Application.Common.Responses;
 using ERP.Api.Controllers.Products.Requests;
@@ -95,17 +94,15 @@ namespace ERP.Api.Controllers.Products
         /// <summary>Quién tiene ya ese código interno (404 si nadie). Sirve para avisar antes de guardar un producto nuevo.</summary>
         [HttpGet("by-code")]
         [ProducesResponseType<FoundProductDto>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> FindByCode([FromQuery] string code) =>
-            await _findProductByCodeUseCase.ExecuteAsync(code) is { } found
-                ? Ok(found)
-                : NotFound(new ErrorResponse(["Ningún producto tiene ese código interno."]));
+        public async Task<IActionResult> FindByCode([FromQuery] string? code) =>
+            (await _findProductByCodeUseCase.ExecuteAsync(code ?? "")).ToActionResult(StatusCodes.Status200OK);
 
         [HttpGet("{id:guid}")]
         [ProducesResponseType<GetProductResponseDto>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(Guid id)
         {
-            var response = await _getProductUseCase.ExecuteAsync(new GetProductDto(id));
-            return response is null ? NotFound(new ErrorResponse(["El producto no existe."])) : Ok(response);
+            var result = await _getProductUseCase.ExecuteAsync(new GetProductDto(id));
+            return result.ToActionResult(StatusCodes.Status200OK);
         }
     }
 }

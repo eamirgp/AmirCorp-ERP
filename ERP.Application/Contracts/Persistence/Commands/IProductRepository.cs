@@ -5,7 +5,8 @@ namespace ERP.Application.Contracts.Persistence.Commands
     public interface IProductRepository
     {
         void Add(Product product);
-        Task<bool> CodeExistsAsync(string code, Guid? excludeId = null);
+        /// <summary>El producto que ya tiene ese código interno (sin contar el que se edita), o null.</summary>
+        Task<Product?> FindByCodeAsync(string code, Guid? excludeId = null);
 
         /// <summary>El producto con sus códigos de proveedores, listo para editarse.</summary>
         Task<Product?> GetByIdAsync(Guid id);

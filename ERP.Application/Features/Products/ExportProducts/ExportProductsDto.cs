@@ -8,5 +8,9 @@ namespace ERP.Application.Features.Products.ExportProducts
         bool? IsActive,
         ProductSortBy SortBy,
         bool SortDescending
-        );
+        )
+    {
+        /// <summary>Si se exporta solo lo filtrado: el archivo se llama "productos-filtrados-…".</summary>
+        public bool HasFilters => !string.IsNullOrWhiteSpace(SearchTerm) || IsActive is not null;
+    }
 }

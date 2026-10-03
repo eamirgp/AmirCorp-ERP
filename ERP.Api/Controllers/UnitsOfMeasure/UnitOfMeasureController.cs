@@ -1,8 +1,9 @@
+using ERP.Api.Common;
 using ERP.Api.Extensions;
 using ERP.Application.Features.UnitsOfMeasure.ListAllUnitsOfMeasure;
 using ERP.Application.Features.UnitsOfMeasure.ToggleUnitOfMeasure;
 using ERP.Application.Features.UnitsOfMeasure.UpdateUnitOfMeasure;
-using ERP.Domain.UnitsOfMeasure;
+using ERP.Api.Controllers.UnitsOfMeasure.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -39,8 +40,8 @@ namespace ERP.Api.Controllers.UnitsOfMeasure
         /// <summary>Todo el catálogo: primero las activas y luego las demás, cada grupo por nombre de la A a la Z.</summary>
         [HttpGet]
         [ProducesResponseType<IReadOnlyCollection<UnitOfMeasureListItemDto>>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> List() =>
-            Ok(await _listAllUseCase.ExecuteAsync());
+        public async Task<IActionResult> List([FromQuery] ListFilterRequest filter) =>
+            Ok(await _listAllUseCase.ExecuteAsync(filter.ToDto()));
 
         /// <summary>Cambia el nombre corto. El código y el nombre de SUNAT no se cambian.</summary>
         [HttpPut("{id:guid}")]
@@ -51,7 +52,7 @@ namespace ERP.Api.Controllers.UnitsOfMeasure
             if (errors.Count > 0)
                 return errors.ToBadRequest();
 
-            var result = await _updateUseCase.ExecuteAsync(new UpdateUnitOfMeasureDto(id, request.Name!, request.RowVersion!.Value));
+            var result = await _updateUseCase.ExecuteAsync(request.ToDto(id));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }
 
@@ -70,28 +71,6 @@ namespace ERP.Api.Controllers.UnitsOfMeasure
         {
             var result = await _deactivateUseCase.ExecuteAsync(id);
             return result.ToActionResult(StatusCodes.Status204NoContent);
-        }
-    }
-
-    /// <summary>
-    /// Aviso previo: lo que se puede revisar sin el catálogo. Que el nombre no sea el de otra unidad lo revisa el caso de
-    /// uso con <see cref="UnitOfMeasure.NameError"/>, la regla del dominio.
-    /// </summary>
-    public sealed record UpdateUnitOfMeasureRequest(string? Name, uint? RowVersion)
-    {
-        public IReadOnlyCollection<string> Validate()
-        {
-            var errors = new List<string>();
-
-            if (RowVersion is null)
-                errors.Add("Falta la versión de la unidad. Vuelve a abrir el formulario.");
-
-            if (string.IsNullOrWhiteSpace(Name))
-                errors.Add("El nombre es requerido.");
-            else if (UnitOfMeasure.NormalizeName(Name).Length > UnitOfMeasure.NameMaxLength)
-                errors.Add($"El nombre no puede exceder los {UnitOfMeasure.NameMaxLength} caracteres.");
-
-            return errors;
         }
     }
 }

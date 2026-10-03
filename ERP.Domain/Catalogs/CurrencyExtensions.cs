@@ -10,6 +10,9 @@
                 Currency.USD => "Dólares",
                 _ => currency.ToString()
             };
+
+            /// <summary>Si SUNAT publica su tipo de cambio: solo el dólar (el sol no lo necesita).</summary>
+            public bool HasPublishedExchangeRate => currency is Currency.USD;
         }
     }
 }

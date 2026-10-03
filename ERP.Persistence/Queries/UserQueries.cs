@@ -1,4 +1,4 @@
-﻿using ERP.Application.Contracts.Persistence.Queries;
+using ERP.Application.Contracts.Persistence.Queries;
 using ERP.Application.Features.Accounts.GetMyProfile;
 using ERP.Application.Features.Auth.Session;
 using ERP.Application.Features.Users.GetUser;
@@ -14,9 +14,25 @@ namespace ERP.Persistence.Queries
 
         public UserQueries(ErpDbContext context) => _context = context;
 
-        public async Task<IReadOnlyCollection<ListUsersResponseDto>> ListUsersAsync() =>
-            await _context.Users
-            .AsNoTracking()
+        public async Task<IReadOnlyCollection<ListUsersResponseDto>> ListUsersAsync(ListUsersDto listUsersDto)
+        {
+            var filter = listUsersDto.Filter;
+            var query = _context.Users.AsNoTracking();
+
+            // Por el nombre (sin mayúsculas ni tildes) o por parte del correo.
+            if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+            {
+                var term = SearchText.Normalize(filter.SearchTerm);
+                query = query.Where(u => EF.Functions.Unaccent(u.Name.ToLower()).Contains(term) || u.Email.Contains(term));
+            }
+
+            if (filter.IsActive is { } isActive)
+                query = query.Where(u => u.IsActive == isActive);
+
+            if (listUsersDto.Role is { } role)
+                query = query.Where(u => u.Role == role);
+
+            return await query
             .OrderBy(u => u.Name)
             .ThenBy(u => u.Id)
             .Select(u => new ListUsersResponseDto(
@@ -28,6 +44,7 @@ namespace ERP.Persistence.Queries
                 EF.Property<uint>(u, "RowVersion")
                 ))
             .ToArrayAsync();
+        }
 
         public async Task<GetUserResponseDto?> GetUserAsync(GetUserDto getUserDto) =>
             await _context.Users
