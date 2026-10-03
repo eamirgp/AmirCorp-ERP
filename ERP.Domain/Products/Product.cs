@@ -1,17 +1,23 @@
-﻿using ERP.Domain.Catalogs;
+using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
 using ERP.Domain.Partners;
 using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Domain.Products
 {
+    /// <summary>
+    /// Producto del catálogo, compartido por todas las empresas. Las reglas se exponen como funciones <c>…Error</c>
+    /// que devuelven el mensaje o null: el dominio lanza el error con ellas y la API, el importador de Excel y los
+    /// casos de uso las llaman antes para avisar todos los errores juntos.
+    /// </summary>
     public sealed class Product : AuditableEntity
     {
         // El código interno va en la factura electrónica, donde SUNAT acepta hasta 30 caracteres.
         public const int CodeMaxLength = 30;
         public const int NameMaxLength = 100;
-        // La columna es numeric(18,6): 12 dígitos enteros como máximo.
+        // La columna es numeric(18,6): 12 dígitos enteros y 6 decimales como máximo.
         public const decimal SalePriceMax = 999_999_999_999m;
+        public const int SalePriceDecimals = 6;
 
         /// <summary>Código interno: lo define la empresa y es único.</summary>
         public string Code { get; private set; }
@@ -36,8 +42,17 @@ namespace ERP.Domain.Products
             IsActive = isActive;
         }
 
-        public static Product Create(string code, string name, string unitOfMeasureCode, IgvAffectation igvAffectation, decimal salePrice) =>
-            new(Guid.CreateVersion7(), ValidateCode(code), ValidateName(name), ValidateUnitOfMeasureCode(unitOfMeasureCode), ValidateIgvAffectation(igvAffectation), ValidateSalePrice(salePrice), isActive: true);
+        /// <param name="unitOfMeasure">La unidad del catálogo: debe estar activa.</param>
+        public static Product Create(string code, string name, UnitOfMeasure unitOfMeasure, IgvAffectation igvAffectation, decimal salePrice)
+        {
+            Throw(CodeError(code));
+            Throw(NameError(name));
+            Throw(UnitOfMeasure.UsableError(unitOfMeasure, unitOfMeasure.Code));
+            Throw(IgvAffectationError(igvAffectation));
+            Throw(SalePriceError(salePrice));
+
+            return new(Guid.CreateVersion7(), NormalizeCode(code), NormalizeName(name), unitOfMeasure.Code, igvAffectation, RoundSalePrice(salePrice), isActive: true);
+        }
 
         /// <summary>El código tal como se guarda y se compara: sin espacios alrededor y en mayúsculas (" abc" es "ABC").</summary>
         public static string NormalizeCode(string code) =>
@@ -47,31 +62,51 @@ namespace ERP.Domain.Products
         public static string NormalizeName(string name) =>
             TextNormalizer.CollapseSpaces(name);
 
-        public void UpdateCode(string code) =>
-            Code = ValidateCode(code);
+        /// <summary>El precio como se guarda: la base tiene 6 decimales.</summary>
+        public static decimal RoundSalePrice(decimal salePrice) =>
+            Math.Round(salePrice, SalePriceDecimals, MidpointRounding.AwayFromZero);
 
-        public void UpdateName(string name) =>
-            Name = ValidateName(name);
+        public void UpdateCode(string code)
+        {
+            Throw(CodeError(code));
+            Code = NormalizeCode(code);
+        }
 
-        public void UpdateUnitOfMeasure(string unitOfMeasureCode) =>
-            UnitOfMeasureCode = ValidateUnitOfMeasureCode(unitOfMeasureCode);
+        public void UpdateName(string name)
+        {
+            Throw(NameError(name));
+            Name = NormalizeName(name);
+        }
 
-        public void UpdateIgvAffectation(IgvAffectation igvAffectation) =>
-            IgvAffectation = ValidateIgvAffectation(igvAffectation);
+        /// <summary>Cambia la unidad. Si es la misma, se acepta aunque ya no esté activa: el producto sigue editándose.</summary>
+        public void UpdateUnitOfMeasure(UnitOfMeasure unitOfMeasure)
+        {
+            Throw(UnitOfMeasureChangeError(unitOfMeasure));
+            UnitOfMeasureCode = unitOfMeasure.Code;
+        }
 
-        public void UpdateSalePrice(decimal salePrice) =>
-            SalePrice = ValidateSalePrice(salePrice);
+        public void UpdateIgvAffectation(IgvAffectation igvAffectation)
+        {
+            Throw(IgvAffectationError(igvAffectation));
+            IgvAffectation = igvAffectation;
+        }
+
+        public void UpdateSalePrice(decimal salePrice)
+        {
+            Throw(SalePriceError(salePrice));
+            SalePrice = RoundSalePrice(salePrice);
+        }
 
         /// <summary>
         /// Reemplaza los códigos de proveedores por los indicados. Los que siguen conservan su registro, así el
         /// historial muestra solo lo que cambió.
         /// </summary>
-        public void SetSupplierCodes(IReadOnlyCollection<(Guid SupplierId, string Code)> codes)
+        public void SetSupplierCodes(IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes)
         {
-            var normalized = codes.Select(c => (c.SupplierId, Code: ValidateSupplierCode(c.SupplierId, c.Code))).ToList();
+            if (SupplierCodesErrors(codes) is [var first, ..])
+                throw new DomainException(first);
 
-            if (normalized.GroupBy(c => c.SupplierId).Any(g => g.Count() > 1))
-                throw new DomainException("Un proveedor aparece más de una vez en los códigos de proveedores. Deja un solo código por proveedor.");
+            var normalized = codes.Select(c => (SupplierId: c.Supplier.Id, Code: ProductSupplierCode.NormalizeCode(c.Code))).ToList();
 
             _supplierCodes.RemoveAll(existing => normalized.All(c => c.SupplierId != existing.SupplierId));
 
@@ -95,12 +130,11 @@ namespace ERP.Domain.Products
         /// </summary>
         public void AddSupplierCode(BusinessPartner supplier, string code)
         {
-            var normalized = ValidateSupplierCode(supplier.Id, code);
-            if (SupplierCodeError(supplier, normalized) is { } error)
-                throw new DomainException(error);
+            Throw(ProductSupplierCode.CodeError(code));
+            Throw(SupplierCodeError(supplier, code));
 
             if (SupplierCodeOf(supplier.Id) is null)
-                _supplierCodes.Add(ProductSupplierCode.Create(Id, supplier.Id, normalized));
+                _supplierCodes.Add(ProductSupplierCode.Create(Id, supplier.Id, ProductSupplierCode.NormalizeCode(code)));
         }
 
         /// <summary>
@@ -115,10 +149,35 @@ namespace ERP.Domain.Products
                     ? null
                     : $"El producto {Code} ya tiene el código {existing.Code} de {supplier.Name}. Si cambió, corrígelo desde Productos.";
 
-            if (!supplier.IsSupplier)
-                return $"{supplier.Name} no está registrado como proveedor.";
+            return NewSupplierLinkError(supplier);
+        }
 
-            return supplier.PurchasingBlockedError();
+        /// <summary>
+        /// Qué tiene de malo la lista completa de códigos del formulario, o una lista vacía si está bien: un código por
+        /// proveedor, cada código bien escrito, y solo proveedores. Un proveedor con compras bloqueadas conserva su código
+        /// (se puede corregir), pero no se le agrega uno nuevo. Que el código no lo use otro producto lo revisa quien
+        /// puede buscar en la base.
+        /// </summary>
+        public IReadOnlyList<string> SupplierCodesErrors(IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes)
+        {
+            var errors = new List<string>();
+
+            foreach (var group in codes.GroupBy(c => c.Supplier.Id))
+            {
+                var supplier = group.First().Supplier;
+
+                if (group.Count() > 1)
+                    errors.Add($"{supplier.Name} aparece más de una vez. Deja un solo código por proveedor.");
+
+                foreach (var (_, code) in group)
+                    if (ProductSupplierCode.CodeError(code) is { } codeError)
+                        errors.Add($"{supplier.Name}: {codeError}");
+
+                if (SupplierCodeOf(supplier.Id) is null && NewSupplierLinkError(supplier) is { } linkError)
+                    errors.Add(linkError);
+            }
+
+            return errors;
         }
 
         public void Activate() =>
@@ -127,75 +186,61 @@ namespace ERP.Domain.Products
         public void Deactivate() =>
             IsActive = false;
 
-        private static string ValidateCode(string code)
+        /// <summary>Qué tiene de malo el código interno, o null si está bien.</summary>
+        public static string? CodeError(string? code)
         {
             if (string.IsNullOrWhiteSpace(code))
-                throw new DomainException("El código interno es requerido.");
+                return "El código interno es requerido.";
 
-            var normalized = NormalizeCode(code);
-            if (normalized.Length > CodeMaxLength)
-                throw new DomainException($"El código interno no puede exceder los {CodeMaxLength} caracteres.");
+            if (NormalizeCode(code).Length > CodeMaxLength)
+                return $"El código interno no puede exceder los {CodeMaxLength} caracteres.";
 
-            return normalized;
+            return null;
         }
 
-        private static string ValidateSupplierCode(Guid supplierId, string code)
-        {
-            if (supplierId == Guid.Empty)
-                throw new DomainException("Cada código de proveedor necesita su proveedor.");
-
-            if (string.IsNullOrWhiteSpace(code))
-                throw new DomainException("Falta el código en uno de los proveedores.");
-
-            var normalized = ProductSupplierCode.NormalizeCode(code);
-            if (normalized.Length > ProductSupplierCode.CodeMaxLength)
-                throw new DomainException($"El código de proveedor no puede exceder los {ProductSupplierCode.CodeMaxLength} caracteres.");
-
-            return normalized;
-        }
-
-        private static string ValidateName(string name)
+        /// <summary>Qué tiene de malo el nombre, o null si está bien.</summary>
+        public static string? NameError(string? name)
         {
             if (string.IsNullOrWhiteSpace(name))
-                throw new DomainException("El nombre es requerido.");
+                return "El nombre es requerido.";
 
-            var normalized = NormalizeName(name);
-            if (normalized.Length > NameMaxLength)
-                throw new DomainException($"El nombre no puede exceder los {NameMaxLength} caracteres.");
+            if (NormalizeName(name).Length > NameMaxLength)
+                return $"El nombre no puede exceder los {NameMaxLength} caracteres.";
 
-            return normalized;
+            return null;
         }
 
-        // Que la unidad exista y esté activa lo revisa el caso de uso, que conoce el catálogo.
-        private static string ValidateUnitOfMeasureCode(string unitOfMeasureCode)
+        /// <summary>Qué tiene de malo la afectación al IGV, o null si está bien.</summary>
+        public static string? IgvAffectationError(IgvAffectation? igvAffectation) =>
+            igvAffectation switch
+            {
+                null => "El tipo de afectación del IGV es requerido.",
+                { } value when !Enum.IsDefined(value) => "El tipo de afectación del IGV es inválido.",
+                _ => null
+            };
+
+        /// <summary>Qué tiene de malo el precio de venta, o null si está bien. Puede ser 0 (producto todavía sin precio).</summary>
+        public static string? SalePriceError(decimal? salePrice) =>
+            salePrice switch
+            {
+                null => "Ingresa el precio de venta como un número, por ejemplo 12.90.",
+                < 0 => "El precio de venta no puede ser negativo.",
+                > SalePriceMax => "El precio de venta es demasiado grande. Revisa que esté bien escrito.",
+                _ => null
+            };
+
+        /// <summary>Qué impide cambiar la unidad por esa, o null si se puede (la misma unidad se acepta aunque esté desactivada).</summary>
+        public string? UnitOfMeasureChangeError(UnitOfMeasure unitOfMeasure) =>
+            unitOfMeasure.Code == UnitOfMeasureCode ? null : UnitOfMeasure.UsableError(unitOfMeasure, unitOfMeasure.Code);
+
+        // A un proveedor solo se le enlaza un código nuevo si es proveedor y no tiene las compras bloqueadas.
+        private static string? NewSupplierLinkError(BusinessPartner supplier) =>
+            !supplier.IsSupplier ? $"{supplier.Name} no está registrado como proveedor." : supplier.PurchasingBlockedError();
+
+        private static void Throw(string? error)
         {
-            if (string.IsNullOrWhiteSpace(unitOfMeasureCode))
-                throw new DomainException("La unidad de medida es requerida.");
-
-            var code = UnitOfMeasure.NormalizeCode(unitOfMeasureCode);
-            if (code.Length > UnitOfMeasure.CodeMaxLength)
-                throw new DomainException("La unidad de medida es inválida.");
-
-            return code;
-        }
-
-        private static IgvAffectation ValidateIgvAffectation(IgvAffectation igvAffectation)
-        {
-            if (!Enum.IsDefined(igvAffectation))
-                throw new DomainException("El tipo de afectación del IGV es inválido.");
-
-            return igvAffectation;
-        }
-
-        private static decimal ValidateSalePrice(decimal salePrice)
-        {
-            if (salePrice < 0)
-                throw new DomainException("El precio de venta no puede ser negativo.");
-
-            if (salePrice > SalePriceMax)
-                throw new DomainException("El precio de venta es demasiado grande. Revisa que esté bien escrito.");
-
-            return salePrice;
+            if (error is not null)
+                throw new DomainException(error);
         }
     }
 }

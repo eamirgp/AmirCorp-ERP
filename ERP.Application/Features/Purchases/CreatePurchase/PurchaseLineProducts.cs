@@ -15,8 +15,9 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
 
         public PurchaseLineProducts(IProductRepository productRepository) => _productRepository = productRepository;
 
+        /// <param name="units">Las unidades de la compra, por código: incluye la unidad en que se cuentan los productos nuevos.</param>
         /// <returns>Un producto por línea, en el mismo orden.</returns>
-        public Product[] Resolve(CreatePurchaseLineDto[] lines, BusinessPartner supplier, IReadOnlyDictionary<Guid, Product> products)
+        public Product[] Resolve(CreatePurchaseLineDto[] lines, BusinessPartner supplier, IReadOnlyDictionary<Guid, Product> products, IReadOnlyDictionary<string, UnitOfMeasure> units)
         {
             var result = new Product[lines.Length];
 
@@ -37,7 +38,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 var created = Product.Create(
                     newProduct.Code,
                     newProduct.Name,
-                    UnitOfMeasure.BaseUnitCode,
+                    units[UnitOfMeasure.BaseUnitCode],
                     lines[i].InvoiceIgvAffectation,
                     salePrice: 0);
 

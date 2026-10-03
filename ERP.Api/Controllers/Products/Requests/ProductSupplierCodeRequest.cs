@@ -21,10 +21,8 @@ namespace ERP.Api.Controllers.Products.Requests
                 if (code?.SupplierId is null || code.SupplierId == Guid.Empty)
                     errors.Add($"Códigos de proveedores, fila {row}: elige el proveedor.");
 
-                if (string.IsNullOrWhiteSpace(code?.Code))
-                    errors.Add($"Códigos de proveedores, fila {row}: escribe el código.");
-                else if (code.Code.Trim().Length > ProductSupplierCode.CodeMaxLength)
-                    errors.Add($"Códigos de proveedores, fila {row}: el código no puede exceder los {ProductSupplierCode.CodeMaxLength} caracteres.");
+                if (ProductSupplierCode.CodeError(code?.Code) is { } codeError)
+                    errors.Add($"Códigos de proveedores, fila {row}: {codeError}");
             }
 
             return errors;

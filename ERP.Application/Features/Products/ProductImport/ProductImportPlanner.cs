@@ -3,7 +3,6 @@ using ERP.Application.Common.Formatting;
 using ERP.Application.Contracts.Infrastructure;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Catalogs;
-using ERP.Domain.Common;
 using ERP.Domain.Products;
 using ERP.Domain.UnitsOfMeasure;
 
@@ -42,49 +41,47 @@ namespace ERP.Application.Features.Products.ProductImport
 
             foreach (var row in rows)
             {
+                // Las mismas reglas del dominio, todas juntas: la fila muestra todo lo que tiene mal de una vez.
                 var errors = new List<string>();
+                var codeError = Product.CodeError(row.Code);
+                if (codeError is not null)
+                    errors.Add(codeError);
+                if (Product.NameError(row.Name) is { } nameError)
+                    errors.Add(nameError);
                 var unit = ParseUnit(row.UnitOfMeasure, units, errors);
                 var igv = ParseIgvAffectation(row.IgvAffectation, errors);
                 var price = ParsePrice(row, errors);
+                if (price is not null && Product.SalePriceError(price) is { } priceError)
+                    errors.Add(priceError);
 
-                // El dominio valida código, nombre y precio. Si falta la unidad o la afectación, se usa un valor
-                // cualquiera solo para poder revisar el resto de la fila; la fila igual queda con error.
-                Product? candidate = null;
-                try
-                {
-                    candidate = Product.Create(row.Code ?? "", row.Name ?? "",unit?.Code ?? PlaceholderUnitCode, igv ?? IgvAffectation.Gravado, price ?? 0);
-                }
-                catch (DomainException ex)
-                {
-                    errors.Add(ex.Message);
-                }
+                var code = codeError is null ? Product.NormalizeCode(row.Code!) : row.Code?.Trim();
 
-                var code = candidate?.Code ?? row.Code?.Trim();
-
-                if (candidate is not null)
+                if (codeError is null)
                 {
-                    if (firstRowByCode.TryGetValue(candidate.Code, out var firstRow))
-                        errors.Add($"El código interno {candidate.Code} está repetido: ya aparece en la fila {firstRow}.");
+                    if (firstRowByCode.TryGetValue(code!, out var firstRow))
+                        errors.Add($"El código interno {code} está repetido: ya aparece en la fila {firstRow}.");
                     else
-                        firstRowByCode[candidate.Code] = row.RowNumber;
+                        firstRowByCode[code!] = row.RowNumber;
                 }
 
-                if (errors.Count > 0 || candidate is null)
+                if (errors.Count > 0)
                 {
-                    entries.Add(new ProductImportEntry(row.RowNumber, code, row.Name?.Trim(), ProductImportAction.Error, errors, [], null, null));
+                    entries.Add(new ProductImportEntry(row.RowNumber, code, row.Name?.Trim(), ProductImportAction.Error, errors, [], null, null, null));
                     continue;
                 }
+
+                var candidate = Product.Create(row.Code!, row.Name!, unit!, igv!.Value, price!.Value);
 
                 if (!existing.TryGetValue(candidate.Code, out var current))
                 {
                     // Se muestran los valores que se crearán, para detectar antes de guardar un precio o unidad mal leídos.
-                    entries.Add(new ProductImportEntry(row.RowNumber, code, candidate.Name, ProductImportAction.Create, [], Values(candidate, unitNames), candidate, null));
+                    entries.Add(new ProductImportEntry(row.RowNumber, code, candidate.Name, ProductImportAction.Create, [], Values(candidate, unitNames), candidate, null, unit));
                     continue;
                 }
 
                 if (!updateExisting)
                 {
-                    entries.Add(new ProductImportEntry(row.RowNumber, code, candidate.Name, ProductImportAction.Skip, [], [], null, null));
+                    entries.Add(new ProductImportEntry(row.RowNumber, code, candidate.Name, ProductImportAction.Skip, [], [], null, null, null));
                     continue;
                 }
 
@@ -97,7 +94,8 @@ namespace ERP.Application.Features.Products.ProductImport
                     [],
                     changes,
                     candidate,
-                    current
+                    current,
+                    unit
                     ));
             }
 
@@ -116,7 +114,7 @@ namespace ERP.Application.Features.Products.ProductImport
                     var current = entry.Existing!;
                     var next = entry.Candidate!;
                     current.UpdateName(next.Name);
-                    current.UpdateUnitOfMeasure(next.UnitOfMeasureCode);
+                    current.UpdateUnitOfMeasure(entry.Unit!);
                     current.UpdateIgvAffectation(next.IgvAffectation);
                     current.UpdateSalePrice(next.SalePrice);
                 }
@@ -146,9 +144,6 @@ namespace ERP.Application.Features.Products.ProductImport
 
         private static string FormatPrice(decimal price) => NumberText.Money(price);
 
-        // Si falta la unidad, se usa esta solo para validar el resto de la fila (la fila igual queda con error).
-        private const string PlaceholderUnitCode = "NIU";
-
         /// <summary>
         /// La unidad se reconoce por su nombre corto ("Docena"), su nombre SUNAT ("UNIDAD (BIENES)") o su código ("DZN"),
         /// sin distinguir mayúsculas ni tildes. Debe estar activa.
@@ -170,9 +165,9 @@ namespace ERP.Application.Features.Products.ProductImport
                 return null;
             }
 
-            if (!unit.IsActive)
+            if (UnitOfMeasure.UsableError(unit, text) is { } unitError)
             {
-                errors.Add($"La unidad de medida '{unit.Name}' está desactivada. Actívala en Administración › Unidades de medida o elige otra de la lista.");
+                errors.Add(unitError);
                 return null;
             }
 
@@ -190,8 +185,9 @@ namespace ERP.Application.Features.Products.ProductImport
                 return null;
             }
 
+            // Igual que la unidad: sin distinguir mayúsculas ni tildes ("Operacion" es "Operación").
             foreach (var igv in Enum.GetValues<IgvAffectation>())
-                if (Matches(text, igv.Description) || Matches(text, igv.ToString()))
+                if (MatchesIgnoringAccents(text, igv.Description) || MatchesIgnoringAccents(text, igv.ToString()))
                     return igv;
 
             errors.Add($"La afectación del IGV '{text.Trim()}' no existe. Elige una de la lista.");
@@ -200,9 +196,9 @@ namespace ERP.Application.Features.Products.ProductImport
 
         private static decimal? ParsePrice(ProductSheetRow row, List<string> errors)
         {
-            // La base guarda 6 decimales: redondear igual evita marcar como "cambio" un precio que ya está guardado.
+            // El dominio lo redondea a los 6 decimales de la base, así un precio ya guardado no se marca como "cambio".
             if (row.SalePrice is not null)
-                return Math.Round(row.SalePrice.Value, 6, MidpointRounding.AwayFromZero);
+                return row.SalePrice.Value;
 
             if (!string.IsNullOrWhiteSpace(row.SalePriceText) && row.SalePriceText.Contains(','))
                 errors.Add($"El precio de venta '{row.SalePriceText.Trim()}' tiene coma. Usa punto para los decimales y no separes los miles con comas, por ejemplo 1500.50.");
@@ -213,9 +209,6 @@ namespace ERP.Application.Features.Products.ProductImport
 
             return null;
         }
-
-        private static bool Matches(string text, string value) =>
-            string.Equals(text.Trim(), value, StringComparison.CurrentCultureIgnoreCase);
     }
 
     internal sealed record ProductImportEntry(
@@ -226,6 +219,8 @@ namespace ERP.Application.Features.Products.ProductImport
         IReadOnlyCollection<string> Errors,
         IReadOnlyCollection<ProductImportChangeDto> Changes,
         Product? Candidate,
-        Product? Existing
+        Product? Existing,
+        // La unidad de la fila, para actualizar el producto existente.
+        UnitOfMeasure? Unit
         );
 }

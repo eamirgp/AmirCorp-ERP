@@ -1,7 +1,6 @@
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Application.Features.Products.SupplierCodes;
-using ERP.Application.Features.UnitsOfMeasure;
 using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Application.Features.Products.UpdateProduct
@@ -42,24 +41,25 @@ namespace ERP.Application.Features.Products.UpdateProduct
             if (await _productRepository.CodeExistsAsync(request.Code, request.Id))
                 return Result.Failure(["El código interno ya se encuentra en uso."], ErrorType.Conflict);
 
-            // Si no cambia la unidad, se acepta aunque ya no esté activa: el producto puede seguir editándose.
-            if (UnitOfMeasure.NormalizeCode(request.UnitOfMeasureCode) != product.UnitOfMeasureCode)
-            {
-                var unitError = UnitOfMeasureRules.CheckUsable(await _unitOfMeasureRepository.GetByCodeAsync(request.UnitOfMeasureCode), request.UnitOfMeasureCode);
-                if (unitError is not null)
-                    return Result.Failure([unitError], ErrorType.BadRequest);
-            }
+            // Las mismas reglas del dominio, revisadas antes para responder con el mensaje en vez de una excepción. Si no
+            // cambia la unidad, se acepta aunque ya no esté activa: el producto puede seguir editándose.
+            var unit = await _unitOfMeasureRepository.GetByCodeAsync(request.UnitOfMeasureCode);
+            var unitError = unit is null
+                ? UnitOfMeasure.UsableError(null, request.UnitOfMeasureCode)
+                : product.UnitOfMeasureChangeError(unit);
+            if (unitError is not null)
+                return Result.Failure([unitError], ErrorType.BadRequest);
 
             var supplierCodes = await ProductSupplierCodeRules.CheckAsync(request.SupplierCodes, product, _businessPartnerRepository, _productRepository);
             if (!supplierCodes.IsSuccess)
-                return supplierCodes;
+                return Result.Failure(supplierCodes.Errors, supplierCodes.ErrorType!.Value);
 
             product.UpdateCode(request.Code);
             product.UpdateName(request.Name);
-            product.UpdateUnitOfMeasure(request.UnitOfMeasureCode);
+            product.UpdateUnitOfMeasure(unit!);
             product.UpdateIgvAffectation(request.IgvAffectation);
             product.UpdateSalePrice(request.SalePrice);
-            product.SetSupplierCodes(request.SupplierCodes.Select(c => (c.SupplierId, c.Code)).ToArray());
+            product.SetSupplierCodes(supplierCodes.Value!);
 
             await _unitOfWork.SaveChangesAsync();
 

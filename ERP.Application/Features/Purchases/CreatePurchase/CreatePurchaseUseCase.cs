@@ -77,7 +77,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             if (errors.Count > 0)
                 return Result<CreatedResponseDto>.Failure(errors, ErrorType.BadRequest);
 
-            var lineProducts = _lineProducts.Resolve(lines, supplier, products);
+            var lineProducts = _lineProducts.Resolve(lines, supplier, products, units);
 
             var purchase = Purchase.Create(
                 company,

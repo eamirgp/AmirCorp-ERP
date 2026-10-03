@@ -13,44 +13,8 @@ namespace ERP.Api.Controllers.Products.Requests
         IReadOnlyCollection<ProductSupplierCodeRequest?>? SupplierCodes
         )
     {
-        public IReadOnlyCollection<string> Validate()
-        {
-            var errors = new List<string>();
-
-            if (string.IsNullOrWhiteSpace(Code))
-                errors.Add("El código interno es requerido.");
-
-            if (!string.IsNullOrWhiteSpace(Code) && Code.Length > Product.CodeMaxLength)
-                errors.Add($"El código interno no puede exceder los {Product.CodeMaxLength} caracteres.");
-
-            if (string.IsNullOrWhiteSpace(Name))
-                errors.Add("El nombre es requerido.");
-
-            if (!string.IsNullOrWhiteSpace(Name) && Name.Length > Product.NameMaxLength)
-                errors.Add($"El nombre no puede exceder los {Product.NameMaxLength} caracteres.");
-
-            if (string.IsNullOrWhiteSpace(UnitOfMeasureCode))
-                errors.Add("La unidad de medida es requerida.");
-
-            if (IgvAffectation is null)
-                errors.Add("El tipo de afectación del IGV es requerido.");
-
-            if (IgvAffectation is not null && !Enum.IsDefined(IgvAffectation.Value))
-                errors.Add("El tipo de afectación del IGV es inválido.");
-
-            if (SalePrice is null)
-                errors.Add("Ingresa el precio de venta como un número, por ejemplo 12.90.");
-
-            if (SalePrice is not null && SalePrice < 0)
-                errors.Add("El precio de venta no puede ser negativo.");
-
-            if (SalePrice is not null && SalePrice > Product.SalePriceMax)
-                errors.Add("El precio de venta es demasiado grande. Revisa que esté bien escrito.");
-
-            errors.AddRange(ProductSupplierCodeRequest.Validate(SupplierCodes));
-
-            return errors;
-        }
+        public IReadOnlyCollection<string> Validate() =>
+            ProductRequestRules.Validate(Code, Name, UnitOfMeasureCode, IgvAffectation, SalePrice, SupplierCodes);
 
         public CreateProductDto ToDto() =>
             new(Code!, Name!, UnitOfMeasureCode!, IgvAffectation!.Value, SalePrice!.Value, ProductSupplierCodeRequest.ToDtos(SupplierCodes));

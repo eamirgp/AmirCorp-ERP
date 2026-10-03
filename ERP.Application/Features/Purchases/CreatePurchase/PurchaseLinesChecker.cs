@@ -1,5 +1,4 @@
 using ERP.Application.Contracts.Persistence.Commands;
-using ERP.Application.Features.UnitsOfMeasure;
 using ERP.Domain.Partners;
 using ERP.Domain.Products;
 using ERP.Domain.Purchases;
@@ -42,7 +41,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
 
                 var code = lines[i].InvoiceUnitOfMeasureCode;
                 var unit = units.GetValueOrDefault(UnitOfMeasure.NormalizeCode(code));
-                if (UnitOfMeasureRules.CheckUsable(unit, code) is { } unitError)
+                if (UnitOfMeasure.UsableError(unit, code) is { } unitError)
                     errors.Add($"Línea {lineNumber}: {unitError}");
                 else if (PurchaseLine.ConversionFactorError(unit!, lines[i].ConversionFactor) is { } factorError)
                     errors.Add($"Línea {lineNumber}: {factorError}");
@@ -114,7 +113,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             }
 
             // Los productos nuevos se cuentan en unidades: esa unidad tiene que estar activa.
-            if (UnitOfMeasureRules.CheckUsable(units.GetValueOrDefault(UnitOfMeasure.BaseUnitCode), UnitOfMeasure.BaseUnitCode) is { } unitError)
+            if (UnitOfMeasure.UsableError(units.GetValueOrDefault(UnitOfMeasure.BaseUnitCode), UnitOfMeasure.BaseUnitCode) is { } unitError)
                 errors.Add($"Los productos nuevos se cuentan en unidades: {unitError}");
 
             return errors;

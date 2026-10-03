@@ -202,11 +202,10 @@ namespace ERP.Domain.Purchases
             if (string.IsNullOrWhiteSpace(code))
                 return null;
 
-            code = ProductSupplierCode.NormalizeCode(code);
-            if (code.Length > ProductSupplierCode.CodeMaxLength)
-                throw new DomainException($"El código del proveedor no puede superar los {ProductSupplierCode.CodeMaxLength} caracteres.");
+            if (ProductSupplierCode.CodeError(code) is { } error)
+                throw new DomainException(error);
 
-            return code;
+            return ProductSupplierCode.NormalizeCode(code);
         }
 
         private static void ValidateInvoicePriceType(InvoicePriceType invoicePriceType)

@@ -30,24 +30,22 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 errors.Add($"Línea {lineNumber}: Elige un producto registrado o indica uno nuevo, no los dos.");
             else if (NewProduct is not null)
             {
-                if (string.IsNullOrWhiteSpace(NewProduct.Code))
-                    errors.Add($"Línea {lineNumber}: El código interno del producto nuevo es requerido.");
-                else if (NewProduct.Code.Trim().Length > Product.CodeMaxLength)
-                    errors.Add($"Línea {lineNumber}: El código interno no puede exceder los {Product.CodeMaxLength} caracteres.");
+                // El producto nuevo se valida con las mismas reglas del dominio que en su propia pantalla.
+                if (Product.CodeError(NewProduct.Code) is { } codeError)
+                    errors.Add($"Línea {lineNumber}: Producto nuevo: {codeError}");
 
-                if (string.IsNullOrWhiteSpace(NewProduct.Name))
-                    errors.Add($"Línea {lineNumber}: El nombre del producto nuevo es requerido.");
-                else if (NewProduct.Name.Trim().Length > Product.NameMaxLength)
-                    errors.Add($"Línea {lineNumber}: El nombre no puede exceder los {Product.NameMaxLength} caracteres.");
+                if (Product.NameError(NewProduct.Name) is { } nameError)
+                    errors.Add($"Línea {lineNumber}: Producto nuevo: {nameError}");
 
-                if (!string.IsNullOrWhiteSpace(NewProduct.SupplierCode) && NewProduct.SupplierCode.Trim().Length > ProductSupplierCode.CodeMaxLength)
-                    errors.Add($"Línea {lineNumber}: El código de proveedor no puede exceder los {ProductSupplierCode.CodeMaxLength} caracteres.");
+                if (!string.IsNullOrWhiteSpace(NewProduct.SupplierCode) && ProductSupplierCode.CodeError(NewProduct.SupplierCode) is { } supplierCodeError)
+                    errors.Add($"Línea {lineNumber}: {supplierCodeError}");
             }
             else if (ProductId is null || ProductId == Guid.Empty)
                 errors.Add($"Línea {lineNumber}: El producto es requerido.");
 
-            if (!string.IsNullOrWhiteSpace(SupplierCode) && SupplierCode.Trim().Length > ProductSupplierCode.CodeMaxLength)
-                errors.Add($"Línea {lineNumber}: El código de proveedor no puede exceder los {ProductSupplierCode.CodeMaxLength} caracteres.");
+            // El código del proveedor es opcional: si viene, debe estar bien escrito.
+            if (!string.IsNullOrWhiteSpace(SupplierCode) && ProductSupplierCode.CodeError(SupplierCode) is { } linkCodeError)
+                errors.Add($"Línea {lineNumber}: {linkCodeError}");
 
             if (InvoiceIgvAffectation is null)
                 errors.Add($"Línea {lineNumber}: El tipo de afectación del IGV es requerido.");

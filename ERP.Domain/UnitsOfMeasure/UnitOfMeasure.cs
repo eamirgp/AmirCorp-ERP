@@ -45,6 +45,18 @@ namespace ERP.Domain.UnitsOfMeasure
         public static string NormalizeCode(string code) =>
             code.Trim().ToUpperInvariant();
 
+        /// <summary>
+        /// Qué impide usar la unidad en un producto o una compra, o null si se puede: que no exista en el catálogo o
+        /// que la empresa no la use (desactivada).
+        /// </summary>
+        /// <param name="unit">La unidad encontrada con ese código, o null si no existe.</param>
+        public static string? UsableError(UnitOfMeasure? unit, string code) =>
+            unit is null
+                ? $"La unidad de medida '{code.Trim()}' no existe en el catálogo de SUNAT."
+                : !unit.IsActive
+                    ? $"La unidad de medida '{unit.Name}' está desactivada. Actívala en Administración › Unidades de medida."
+                    : null;
+
         public void UpdateName(string name) =>
             Name = ValidateName(name);
 
