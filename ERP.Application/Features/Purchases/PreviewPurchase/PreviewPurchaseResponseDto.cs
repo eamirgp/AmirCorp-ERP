@@ -21,6 +21,8 @@ namespace ERP.Application.Features.Purchases.PreviewPurchase
         decimal? Total,
         decimal? InventoryQuantity,
         decimal? InventoryUnitCost,
+        // "48 und. (24 por caja) · costo 2.00 c/u", el mismo texto del detalle de la compra; null si no se calculó.
+        string? InventoryDescription,
         string? Error
         );
 }

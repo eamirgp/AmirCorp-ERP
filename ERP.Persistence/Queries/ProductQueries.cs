@@ -81,7 +81,8 @@ namespace ERP.Persistence.Queries
                     r.SupplierCodes,
                     r.SupplierCode,
                     r.MatchedSupplierId,
-                    r.RowVersion
+                    r.RowVersion,
+                    listProductsDto.LinkCode
                     ))
                 .ToArray();
 

@@ -10,7 +10,9 @@ namespace ERP.Application.Features.Products.ListProducts
         // Proveedor con el que se está trabajando (una compra): cada producto trae el código de ese proveedor.
         Guid? SupplierId,
         // Solo los enlazados a ese proveedor: en una compra, lo que ya se le compra (con su código).
-        bool OnlySupplierProducts = false
+        bool OnlySupplierProducts = false,
+        // Código de la factura que se quiere enlazar: cada producto dice si se puede elegir para ese código (LinkError).
+        string? LinkCode = null
         )
     {
         /// <summary>Orden de la lista cuando la pantalla no pide uno: por nombre, de la A a la Z.</summary>

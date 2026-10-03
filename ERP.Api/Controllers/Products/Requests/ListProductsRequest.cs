@@ -13,7 +13,9 @@ namespace ERP.Api.Controllers.Products.Requests
         // Si se indica, cada producto trae en SupplierCode el código de este proveedor.
         Guid? SupplierId,
         // Solo los productos enlazados a ese proveedor (los que tienen un código suyo). Sin proveedor, ninguno.
-        bool? OnlySupplierProducts
+        bool? OnlySupplierProducts,
+        // En una compra, el código de la factura que se quiere enlazar: cada producto trae LinkError si no se puede.
+        string? LinkCode
         )
     {
         public ListProductsDto ToDto() =>
@@ -25,7 +27,8 @@ namespace ERP.Api.Controllers.Products.Requests
                 SortBy ?? ListProductsDto.DefaultSortBy,
                 SortBy is null ? ListProductsDto.DefaultSortDescending : SortDescending ?? false,
                 SupplierId,
-                OnlySupplierProducts ?? false
+                OnlySupplierProducts ?? false,
+                string.IsNullOrWhiteSpace(LinkCode) ? null : LinkCode
                 );
     }
 }

@@ -142,12 +142,20 @@ namespace ERP.Domain.Products
         public string? SupplierCodeError(BusinessPartner supplier, string code)
         {
             if (SupplierCodeOf(supplier.Id) is { } existing)
-                return existing.Code == ProductSupplierCode.NormalizeCode(code)
-                    ? null
-                    : $"El producto {Code} ya tiene el código {existing.Code} de {supplier.Name}. Si cambió, corrígelo desde Productos.";
+                return ConflictsWithLinkedCode(existing.Code, code)
+                    ? $"El producto {Code} ya tiene el código {existing.Code} de {supplier.Name}. Si cambió, corrígelo desde Productos."
+                    : null;
 
             return NewSupplierLinkError(supplier);
         }
+
+        /// <summary>
+        /// Si enlazar <paramref name="newCode"/> choca con el código que el producto ya tiene de ese proveedor (uno por
+        /// proveedor). La usa <see cref="SupplierCodeError"/> y la búsqueda de una compra para no ofrecer ese producto.
+        /// </summary>
+        /// <param name="linkedCode">El código que ya tiene de ese proveedor, o null si no tiene.</param>
+        public static bool ConflictsWithLinkedCode(string? linkedCode, string newCode) =>
+            linkedCode is not null && linkedCode != ProductSupplierCode.NormalizeCode(newCode);
 
         /// <summary>
         /// Qué tiene de malo la lista completa de códigos del formulario, o una lista vacía si está bien: un código por

@@ -44,7 +44,7 @@ namespace ERP.Application.Features.Purchases.PreviewPurchase
                     || line.InvoiceAmount is null
                     || (unit.FixedConversionFactor is null && line.ConversionFactor is null))
                 {
-                    results.Add(new PreviewPurchaseLineResponseDto(lineNumber, null, null, null, null, null, null));
+                    results.Add(new PreviewPurchaseLineResponseDto(lineNumber, null, null, null, null, null, null, null));
                     continue;
                 }
 
@@ -58,7 +58,7 @@ namespace ERP.Application.Features.Purchases.PreviewPurchase
                     line.ConversionFactor
                     ) is { } error)
                 {
-                    results.Add(new PreviewPurchaseLineResponseDto(lineNumber, null, null, null, null, null, error));
+                    results.Add(new PreviewPurchaseLineResponseDto(lineNumber, null, null, null, null, null, null, error));
                     continue;
                 }
 
@@ -79,6 +79,7 @@ namespace ERP.Application.Features.Purchases.PreviewPurchase
                     amounts.Total,
                     amounts.InventoryQuantity,
                     amounts.InventoryUnitCost,
+                    PurchaseLineText.Inventory(amounts.InventoryQuantity, amounts.ConversionFactor, unit.Name, amounts.InventoryUnitCost),
                     null
                     ));
             }

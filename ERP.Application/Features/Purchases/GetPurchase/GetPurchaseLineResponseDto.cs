@@ -27,8 +27,6 @@ namespace ERP.Application.Features.Purchases.GetPurchase
 
         /// <summary>Lo que entró al inventario: "120 und. (24 por caja) · costo 5.00 c/u". Sin conversión, solo las unidades.</summary>
         public string InventoryDescription =>
-            NumberText.Decimal(InventoryQuantity) + " und."
-            + (ConversionFactor == 1 ? "" : $" ({NumberText.Decimal(ConversionFactor)} por {InvoiceUnitOfMeasureName.ToLowerInvariant()})")
-            + " · costo " + NumberText.Cost(InventoryUnitCost) + " c/u";
+            PurchaseLineText.Inventory(InventoryQuantity, ConversionFactor, InvoiceUnitOfMeasureName, InventoryUnitCost);
     }
 }

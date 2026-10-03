@@ -325,4 +325,18 @@ Completa las decisiones 17, 20 y 21: reglas que estaban en los casos de uso, en 
 - **Historial solo al guardar con `SaveChangesAsync`:** el historial necesita consultar la base, así que un `SaveChanges` sin await se rechaza en vez de guardar sin historial.
 - **Errores inesperados:** un pedido que el navegador canceló (cambió de página) no se registra como error ni intenta responder; si la respuesta ya empezó a enviarse, queda solo en el log.
 - **Consultas a SUNAT y RENIEC:** cuando se acaban las consultas del mes (429) el mensaje lo dice ("vuelven el próximo mes") en vez de "inténtalo en unos minutos"; un RUC que el servicio rechaza con 400 se trata como "no registrado"; una respuesta que no es JSON se trata como "no respondió". Si SUNAT no envía estado o condición, el aviso ya no sale con huecos ("está  y ."), y el aviso del formulario de clientes y proveedores sirve para los dos ("antes de comprarle o venderle").
+- **Productos (búsqueda en una compra):** "un producto que ya tiene otro código de ese proveedor no se puede enlazar" estaba repetido en la pantalla. La regla es `Product.ConflictsWithLinkedCode` y la búsqueda con `LinkCode` trae en cada producto `LinkError` con el motivo.
 - **Productos:** al crear, el código repetido se avisa junto con los demás errores. La carga con Excel se separó en quien lee las filas (`ProductImportRowParser`) y quien decide (`ProductImportPlanner`). La vista previa entrega una huella del plan (`planVersion`) y la confirmación la devuelve: si alguien creó o editó esos productos después de revisar, responde 409 y pide revisar de nuevo, en vez de guardar algo distinto de lo que se vio.
+
+### 30. Pantalla sin textos ni reglas propios (revisión de octubre)
+**Fecha:** octubre 2026
+
+Completa la decisión 10.
+
+- **Estados:** las listas de productos, usuarios, empresas, unidades y compras, y el detalle de una compra, traen `StatusDescription` ("Activo", "Activa", "Registrada", "Anulada"), como ya lo hacían clientes y proveedores. La pantalla solo elige el color.
+- **Activar y desactivar:** la fila cambia cuando la API responde y la lista se recarga, en vez de cambiarla la pantalla por adelantado (la pastilla habría mostrado un color con el texto anterior). Cada clic tiene su propio aviso: antes, al activar dos filas seguidas, solo avisaba la última.
+- **Nueva compra:** lo que entra al inventario ("48 und. (24 por caja) · costo 2.00 c/u") lo arma la API también en la vista previa (`InventoryDescription`, el mismo texto del detalle). Si el cálculo falla, se muestra el motivo en vez de totales en 0. Mientras llega un cálculo, si se agregó o quitó una línea, los resultados anteriores no se muestran en filas que ya no corresponden. La página se dividió: tipo de cambio (`useExchangeRateField`), cambio de proveedor (`useSupplierChange`), líneas (`PurchaseLinesTable`) y los datos del formulario (`purchase-form`).
+- **Campos de números:** si lo escrito no es un número ("12a"), al salir del campo avisa "Escribe solo números, con punto para los decimales." Antes viajaba vacío y la API decía "es requerido".
+- **Buscador de las listas:** ya no borra letras escritas mientras llegaba el resultado de la búsqueda anterior.
+- **Proveedor de una compra:** si se pidió un RUC a SUNAT y antes de la respuesta se eligió otro proveedor de la lista, la respuesta tardía ya no reemplaza lo elegido.
+- **Mi cuenta:** editar un usuario recarga también los datos de quien está usando el sistema (su nombre en el menú).

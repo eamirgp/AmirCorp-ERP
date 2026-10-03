@@ -36,5 +36,7 @@ namespace ERP.Application.Features.Purchases.GetPurchase
         public string InvoicePriceTypeDescription => InvoicePriceType.Description;
         public string SupplierIdentityDocumentTypeDescription => SupplierIdentityDocumentType.Description;
         public string FullNumber => Serie + "-" + Number;
+        /// <summary>"Registrada" o "Anulada", junto al título del comprobante.</summary>
+        public string StatusDescription => IsCancelled ? "Anulada" : "Registrada";
     }
 }

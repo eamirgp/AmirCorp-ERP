@@ -13,5 +13,8 @@ namespace ERP.Application.Features.Users.ListUsers
         )
     {
         public string RoleDescription => Role.Description;
+
+        /// <summary>"Activo" o "Inactivo", para la columna Estado.</summary>
+        public string StatusDescription => IsActive ? "Activo" : "Inactivo";
     }
 }

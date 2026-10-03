@@ -20,6 +20,9 @@ namespace ERP.Application.Features.UnitsOfMeasure.ListAllUnitsOfMeasure
             ? $"{NumberText.Decimal(factor)} {(factor == 1 ? "unidad" : "unidades")}"
             : "Según la compra";
 
+        /// <summary>"Activa" o "Inactiva", para la columna Estado.</summary>
+        public string StatusDescription => IsActive ? "Activa" : "Inactiva";
+
         /// <summary>"35 productos", "1 producto" o "Ninguno".</summary>
         public string ProductCountDescription => ProductCount switch
         {
