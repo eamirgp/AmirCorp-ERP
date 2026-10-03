@@ -19,6 +19,9 @@ namespace ERP.Domain.Users
         // BCrypt solo usa los primeros 72 bytes: más larga, el resto se ignoraría sin avisar.
         public const int PasswordMaxBytes = 72;
 
+        /// <summary>Un usuario desactivado no entra ni sigue usando el sistema: al iniciar sesión y en cada pedido.</summary>
+        public const string DeactivatedError = "Tu cuenta está desactivada. Si crees que es un error, habla con el administrador.";
+
         public string Name { get; private set; }
         public string Email { get; private set; }
         public string PasswordHash { get; private set; }

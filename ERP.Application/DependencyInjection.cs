@@ -4,6 +4,7 @@ using ERP.Application.Features.Audit.ListAuditActions;
 using ERP.Application.Features.Audit.ListAuditEntityTypes;
 using ERP.Application.Features.Audit.ListAuditEntries;
 using ERP.Application.Features.Auth.Login;
+using ERP.Application.Features.Auth.Session;
 using ERP.Application.Features.Catalogs.GetExchangeRate;
 using ERP.Application.Features.Catalogs.ListCountries;
 using ERP.Application.Features.Catalogs.ListCurrencies;
@@ -93,6 +94,7 @@ namespace ERP.Application
                     .AddScoped<IChangeUserRoleUseCase, ChangeUserRoleUseCase>()
                     .AddScoped<IResetUserPasswordUseCase, ResetUserPasswordUseCase>()
                     .AddScoped<ILoginUseCase, LoginUseCase>()
+                    .AddScoped<IValidateSessionUseCase, ValidateSessionUseCase>()
                     .AddScoped<IGetUserUseCase, GetUserUseCase>()
                     .AddScoped<IEnsureSuperAdminUseCase, EnsureSuperAdminUseCase>()
 

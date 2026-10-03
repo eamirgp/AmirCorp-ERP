@@ -18,6 +18,9 @@ namespace ERP.Infrastructure
                     .AddSingleton<IPasswordService, PasswordService>()
                     .Configure<JwtSettings>(configuration.GetSection("JwtSettings"))
                     .AddSingleton<IJwtService, JwtService>()
+                    // Una sola instancia: guarda en memoria los intentos fallidos de inicio de sesión.
+                    .AddSingleton(TimeProvider.System)
+                    .AddSingleton<ILoginThrottle, MemoryLoginThrottle>()
                     .AddSingleton<IProductSpreadsheet, ProductSpreadsheet>()
                     // Consulta de RUC: sin RucLookup:Token la consulta no está disponible y el sistema funciona igual.
                     .Configure<RucLookupSettings>(configuration.GetSection("RucLookup"))

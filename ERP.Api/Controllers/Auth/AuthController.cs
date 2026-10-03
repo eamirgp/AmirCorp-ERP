@@ -26,7 +26,8 @@ namespace ERP.Api.Controllers.Auth
             if (errors.Count > 0)
                 return errors.ToBadRequest();
 
-            var result = await _loginUseCase.ExecuteAsync(loginRequest.ToDto());
+            // La dirección del equipo sirve para contar los intentos fallidos desde ahí, además de los de ese correo.
+            var result = await _loginUseCase.ExecuteAsync(loginRequest.ToDto(HttpContext.Connection.RemoteIpAddress?.ToString()));
             return result.ToActionResult(StatusCodes.Status200OK);
         }
     }

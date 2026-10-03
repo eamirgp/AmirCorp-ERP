@@ -8,6 +8,8 @@
         NotFound,
         Conflict,
         /// <summary>Un servicio externo (por ejemplo, la consulta de RUC) no respondió: 503.</summary>
-        Unavailable
+        Unavailable,
+        /// <summary>Demasiados intentos seguidos (por ejemplo, contraseñas equivocadas): 429.</summary>
+        TooManyRequests
     }
 }

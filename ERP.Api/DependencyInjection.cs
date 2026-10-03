@@ -100,6 +100,8 @@ namespace ERP.Api
                             ValidAudience = configuration["JwtSettings:Audience"],
                             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
                         };
+                        // En cada pedido: el usuario sigue activo y se usa su rol actual (decisión 22).
+                        options.Events = SessionValidation.Events();
                     });
 
                 return services;

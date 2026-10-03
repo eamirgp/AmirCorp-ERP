@@ -23,7 +23,7 @@ namespace ERP.Api.Controllers.Auth.Requests
             return errors;
         }
 
-        public LoginDto ToDto() =>
-            new(Email!, Password!);
+        public LoginDto ToDto(string? clientIp) =>
+            new(Email!, Password!, clientIp);
     }
 }

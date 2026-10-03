@@ -1,5 +1,6 @@
 ﻿using ERP.Application.Contracts.Persistence.Queries;
 using ERP.Application.Features.Accounts.GetMyProfile;
+using ERP.Application.Features.Auth.Session;
 using ERP.Application.Features.Users.GetUser;
 using ERP.Application.Features.Users.ListUsers;
 using ERP.Persistence.Context;
@@ -43,6 +44,13 @@ namespace ERP.Persistence.Queries
                 u.UpdatedAt,
                 _context.Users.Where(c => c.Id == u.UpdatedBy).Select(c => c.Name).FirstOrDefault()
                 ))
+            .FirstOrDefaultAsync();
+
+        public async Task<SessionUserDto?> GetSessionUserAsync(Guid id) =>
+            await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id == id)
+            .Select(u => new SessionUserDto(u.IsActive, u.Role))
             .FirstOrDefaultAsync();
 
         public async Task<GetMyProfileResponseDto?> GetMyProfileAsync(Guid id) =>
