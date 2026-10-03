@@ -11,11 +11,11 @@ namespace ERP.Application.Features.Products.SupplierCodes
     /// </summary>
     internal static class ProductSupplierCodeRules
     {
-        /// <param name="product">El producto que se crea o se edita (el nuevo aún sin códigos).</param>
+        /// <param name="product">El producto que se edita, o null si se está creando (aún no tiene códigos).</param>
         /// <returns>Cada código con su proveedor, listos para <see cref="Product.SetSupplierCodes"/>.</returns>
         public static async Task<Result<IReadOnlyCollection<(BusinessPartner Supplier, string Code)>>> CheckAsync(
             IReadOnlyCollection<ProductSupplierCodeDto> codes,
-            Product product,
+            Product? product,
             IBusinessPartnerRepository businessPartnerRepository,
             IProductRepository productRepository
             )
@@ -31,13 +31,14 @@ namespace ERP.Application.Features.Products.SupplierCodes
 
             var resolved = codes.Select(c => (suppliers[c.SupplierId], c.Code)).ToArray();
 
-            if (product.SupplierCodesErrors(resolved) is { Count: > 0 } errors)
+            var errors = product is null ? Product.NewProductSupplierCodesErrors(resolved) : product.SupplierCodesErrors(resolved);
+            if (errors.Count > 0)
                 return Failure(errors, ErrorType.BadRequest);
 
-            var inUse = await productRepository.SupplierCodesInUseAsync(codes.Select(c => (c.SupplierId, c.Code)).ToArray(), product.Id);
+            var inUse = await productRepository.SupplierCodesInUseAsync(codes.Select(c => (c.SupplierId, c.Code)).ToArray(), product?.Id);
             if (inUse.Count > 0)
                 return Failure(
-                    inUse.Select(c => $"El código {c.Code} de {suppliers[c.SupplierId].Name} ya está en el producto {c.ProductCode} · {c.ProductName}.").ToArray(),
+                    inUse.Select(c => ProductSupplierCode.CodeTakenError(c.Code, suppliers[c.SupplierId].Name, c.ProductCode, c.ProductName, c.ProductIsActive)).ToArray(),
                     ErrorType.Conflict
                     );
 

@@ -43,6 +43,11 @@ namespace ERP.Persistence.Configurations
 
             builder.Property(v => v.UpdatedBy);
 
+            // Versión (xmin): marcar una vista como predeterminada desmarca la anterior. Si dos pestañas lo hacen a la vez,
+            // las dos desmarcan la misma vista y la segunda choca con la versión (409), en vez de dejar dos predeterminadas.
+            builder.Property<uint>("RowVersion")
+                .IsRowVersion();
+
             builder.HasOne<User>()
                 .WithMany()
                 .HasForeignKey(v => v.UserId)

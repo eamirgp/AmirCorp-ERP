@@ -20,10 +20,23 @@ namespace ERP.Domain.Partners
         /// </summary>
         public static string Describe(string status, string condition)
         {
-            var parts = new[] { status.Trim(), condition.Trim() }.Where(p => p.Length > 0).ToArray();
+            var parts = PartsOf(status, condition);
             return parts.Length == 0
                 ? "SUNAT no informa si está activo y habido"
                 : $"Según SUNAT está {string.Join(" y ", parts)}";
         }
+
+        /// <summary>
+        /// "ACTIVO · HABIDO" para mostrar junto a lo consultado, sin huecos si SUNAT no envió alguno de los dos (antes
+        /// salía "ACTIVO · " o "null · null"); null si no envió ninguno.
+        /// </summary>
+        public static string? Summary(string? status, string? condition)
+        {
+            var parts = PartsOf(status, condition);
+            return parts.Length == 0 ? null : string.Join(" · ", parts);
+        }
+
+        private static string[] PartsOf(string? status, string? condition) =>
+            new[] { status?.Trim() ?? "", condition?.Trim() ?? "" }.Where(p => p.Length > 0).ToArray();
     }
 }

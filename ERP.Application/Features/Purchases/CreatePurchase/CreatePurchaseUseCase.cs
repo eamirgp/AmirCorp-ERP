@@ -56,15 +56,16 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             if (supplier is null)
                 return Result<CreatedResponseDto>.Failure(["El proveedor no existe."], ErrorType.NotFound);
 
-            // La misma regla del dominio, revisada antes para responder con el mensaje en vez de una excepción.
+            // Las reglas del dominio, revisadas antes para avisar todos los errores juntos en vez de lanzar una excepción.
+            var errors = new List<string>();
             if (Purchase.PartiesError(company, supplier) is { } partiesError)
-                return Result<CreatedResponseDto>.Failure([partiesError], ErrorType.BadRequest);
+                errors.Add(partiesError);
 
             var number = Purchase.NormalizeNumber(request.Number);
 
-            if (await _purchaseRepository.FindDocumentAsync(request.TaxDocumentType, supplier.Id, request.Serie, number) is { } registered)
-                return Result<CreatedResponseDto>.Failure(
-                    [Purchase.DuplicateDocumentError(company.Id, registered.CompanyId, registered.CompanyName)], ErrorType.Conflict);
+            var registered = await _purchaseRepository.FindDocumentAsync(request.TaxDocumentType, supplier.Id, request.Serie, number);
+            if (registered is not null)
+                errors.Add(Purchase.DuplicateDocumentError(company.Id, registered.CompanyId, registered.CompanyName));
 
             var lines = request.Lines.ToArray();
             var productIds = lines.Where(l => l.ProductId is not null).Select(l => l.ProductId!.Value).ToArray();
@@ -78,9 +79,10 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 .ToArray();
             var units = (await _unitOfMeasureRepository.GetByCodesAsync(unitCodes)).ToDictionary(u => u.Code);
 
-            var errors = await _linesChecker.CheckAsync(lines, request.InvoicePriceType, supplier, products, units);
+            errors.AddRange(await _linesChecker.CheckAsync(lines, request.InvoicePriceType, supplier, products, units));
             if (errors.Count > 0)
-                return Result<CreatedResponseDto>.Failure(errors, ErrorType.BadRequest);
+                // Solo el comprobante ya registrado es un conflicto con lo guardado; con otros errores, la compra está mal llenada.
+                return Result<CreatedResponseDto>.Failure(errors, registered is not null && errors.Count == 1 ? ErrorType.Conflict : ErrorType.BadRequest);
 
             var lineProducts = _lineProducts.Resolve(lines, supplier, products, units);
 

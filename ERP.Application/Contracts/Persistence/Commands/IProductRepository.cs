@@ -20,5 +20,5 @@ namespace ERP.Application.Contracts.Persistence.Commands
         uint VersionOf(Product product);
     }
 
-    public sealed record SupplierCodeInUse(Guid SupplierId, string Code, string ProductCode, string ProductName);
+    public sealed record SupplierCodeInUse(Guid SupplierId, string Code, string ProductCode, string ProductName, bool ProductIsActive);
 }

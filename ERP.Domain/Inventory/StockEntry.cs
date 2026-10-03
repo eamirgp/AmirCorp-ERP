@@ -63,10 +63,12 @@ namespace ERP.Domain.Inventory
                 throw new DomainException("El producto del ingreso de stock es requerido.");
             if (purchaseLineId == Guid.Empty)
                 throw new DomainException("La línea de compra del ingreso de stock es requerida.");
-            if (originalQuantity <= 0)
-                throw new DomainException("La cantidad que ingresa al stock debe ser mayor a cero.");
-            if (unitCost < 0)
-                throw new DomainException("El costo de cada unidad no puede ser negativo.");
+            DomainException.ThrowIf(QuantityError(originalQuantity, "La cantidad que ingresa al stock"));
+            // El costo sale de la línea de compra, que ya lo revisó: aquí se cuida que nunca quede uno imposible.
+            if (unitCost <= 0)
+                throw new DomainException("El costo de cada unidad debe ser mayor a cero.");
+            if (unitCost > PurchaseLine.NumberMax || PurchaseLine.HasTooManyDecimals(unitCost))
+                throw new DomainException($"El costo de cada unidad debe tener hasta {PurchaseLine.Decimals} decimales y no ser demasiado grande.");
             if (entryDate == default)
                 throw new DomainException("La fecha del ingreso de stock es requerida.");
 
@@ -82,13 +84,22 @@ namespace ERP.Domain.Inventory
 
         public void Consume(decimal quantity)
         {
-            if (quantity <= 0)
-                throw new DomainException("La cantidad a consumir debe ser mayor a 0.");
+            DomainException.ThrowIf(QuantityError(quantity, "La cantidad a consumir"));
 
             if (quantity > RemainingQuantity)
                 throw new DomainException("La cantidad supera el stock disponible en ese lote.");
 
             RemainingQuantity -= quantity;
         }
+
+        // Las cantidades van en columnas numeric(18,6), como las de la línea de compra.
+        private static string? QuantityError(decimal quantity, string label) =>
+            quantity switch
+            {
+                <= 0 => $"{label} debe ser mayor a cero.",
+                > PurchaseLine.NumberMax => $"{label} es demasiado grande.",
+                _ when PurchaseLine.HasTooManyDecimals(quantity) => $"{label} puede tener hasta {PurchaseLine.Decimals} decimales.",
+                _ => null
+            };
     }
 }

@@ -36,11 +36,20 @@ namespace ERP.Application.Features.Products.CreateProduct
             if (owner is not null)
                 errors.Add(Product.CodeTakenError(owner));
 
-            // La misma regla del dominio, revisada antes para responder con el mensaje en vez de una excepción. Sin una
-            // unidad que sirva no se puede armar el producto para revisar lo demás.
+            // Las mismas reglas del dominio, revisadas antes para responder con el mensaje en vez de una excepción.
             var unit = await _unitOfMeasureRepository.GetByCodeAsync(request.UnitOfMeasureCode);
-            if (UnitOfMeasure.UsableError(unit, request.UnitOfMeasureCode) is { } unitError)
-                return Result<CreatedResponseDto>.Failure([.. errors, unitError], ErrorType.BadRequest);
+            var unitError = UnitOfMeasure.UsableError(unit, request.UnitOfMeasureCode);
+            if (unitError is not null)
+                errors.Add(unitError);
+
+            var supplierCodes = await ProductSupplierCodeRules.CheckAsync(request.SupplierCodes, product: null, _businessPartnerRepository, _productRepository);
+            if (!supplierCodes.IsSuccess)
+                errors.AddRange(supplierCodes.Errors);
+
+            if (errors.Count > 0)
+                return Result<CreatedResponseDto>.Failure(
+                    errors,
+                    codeTaken ? ErrorType.Conflict : unitError is not null ? ErrorType.BadRequest : supplierCodes.ErrorType!.Value);
 
             var product = Product.Create(
                 request.Code,
@@ -49,14 +58,6 @@ namespace ERP.Application.Features.Products.CreateProduct
                 request.IgvAffectation,
                 request.SalePrice
                 );
-
-            var supplierCodes = await ProductSupplierCodeRules.CheckAsync(request.SupplierCodes, product, _businessPartnerRepository, _productRepository);
-            if (!supplierCodes.IsSuccess)
-                errors.AddRange(supplierCodes.Errors);
-
-            if (errors.Count > 0)
-                return Result<CreatedResponseDto>.Failure(errors, codeTaken ? ErrorType.Conflict : supplierCodes.ErrorType!.Value);
-
             product.SetSupplierCodes(supplierCodes.Value!);
 
             _productRepository.Add(product);

@@ -169,7 +169,8 @@ namespace ERP.Domain.Products
                 return codeError;
 
             if (SupplierCodeOf(supplier.Id) is { } existing)
-                return ConflictsWithLinkedCode(existing.Code, code)
+                // CodeError ya revisó que no esté vacío.
+                return ConflictsWithLinkedCode(existing.Code, code!)
                     ? $"El producto {Code} ya tiene el código {existing.Code} de {supplier.Name}. Si cambió, corrígelo desde Productos."
                     : null;
 
@@ -190,7 +191,19 @@ namespace ERP.Domain.Products
         /// (se puede corregir), pero no se le agrega uno nuevo. Que el código no lo use otro producto lo revisa quien
         /// puede buscar en la base.
         /// </summary>
-        public IReadOnlyList<string> SupplierCodesErrors(IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes)
+        public IReadOnlyList<string> SupplierCodesErrors(IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes) =>
+            SupplierCodesErrors(codes, SupplierCodeOf);
+
+        /// <summary>
+        /// Lo mismo que <see cref="SupplierCodesErrors(IReadOnlyCollection{ValueTuple{BusinessPartner, string}})"/> para un
+        /// producto que todavía no se crea (no tiene códigos): así se avisa junto con los demás errores del formulario.
+        /// </summary>
+        public static IReadOnlyList<string> NewProductSupplierCodesErrors(IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes) =>
+            SupplierCodesErrors(codes, _ => null);
+
+        private static IReadOnlyList<string> SupplierCodesErrors(
+            IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes,
+            Func<Guid, ProductSupplierCode?> linkedCodeOf)
         {
             var errors = new List<string>();
 
@@ -205,7 +218,7 @@ namespace ERP.Domain.Products
                     if (ProductSupplierCode.CodeError(code) is { } codeError)
                         errors.Add($"{supplier.Name}: {codeError}");
 
-                if (SupplierCodeOf(supplier.Id) is null && NewSupplierLinkError(supplier) is { } linkError)
+                if (linkedCodeOf(supplier.Id) is null && NewSupplierLinkError(supplier) is { } linkError)
                     errors.Add(linkError);
             }
 
@@ -226,6 +239,11 @@ namespace ERP.Domain.Products
 
             if (NormalizeCode(code).Length > CodeMaxLength)
                 return $"El código interno no puede exceder los {CodeMaxLength} caracteres.";
+
+            // Un salto de línea o una tabulación vienen de pegar o de una celda de Excel (Alt+Enter), y el código va en
+            // la factura electrónica.
+            if (NormalizeCode(code).Any(char.IsControl))
+                return "El código interno no puede tener saltos de línea ni tabulaciones.";
 
             return null;
         }

@@ -186,6 +186,7 @@ namespace ERP.Infrastructure.Services.Spreadsheets
                 ? value.GetNumber().ToString(CultureInfo.InvariantCulture)
                 : value.ToString(CultureInfo.InvariantCulture);
 
+            // Sin recortar más: un salto de línea en medio (Alt+Enter) llega al dominio, que lo rechaza con su mensaje.
             return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
         }
 
@@ -209,13 +210,23 @@ namespace ERP.Infrastructure.Services.Spreadsheets
         }
 
         // Precio escrito como texto: punto para los decimales y, si hay separador de miles, solo espacios
-        // ("1500.50", "1 500.50", "S/ 1 500.50"). Con coma no se adivina: la fila queda con error.
+        // ("1500.50", "1 500.50", "S/ 1 500.50", "S/. 1500"). Con coma no se adivina: la fila queda con error.
         private static readonly Regex Spaces = new(@"[\s   ]", RegexOptions.Compiled);
+
+        // El símbolo de soles solo al inicio, con o sin su punto ("S/" o "S/."). El punto es parte del símbolo: "S/. 1500"
+        // es mil quinientos, no 0.1500.
+        private static readonly Regex CurrencySymbol = new(@"^S/\.?\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         internal static bool TryParsePrice(string text, out decimal price)
         {
             price = 0;
-            var clean = Spaces.Replace(text.Replace("S/", "", StringComparison.OrdinalIgnoreCase), "");
+            var trimmed = text.Trim();
+            var number = CurrencySymbol.Replace(trimmed, "");
+            // Después del símbolo va el número: "S/ .50" no se adivina.
+            if (number.Length != trimmed.Length && (number.Length == 0 || !char.IsAsciiDigit(number[0])))
+                return false;
+
+            var clean = Spaces.Replace(number, "");
             if (clean.Contains(','))
                 return false;
 

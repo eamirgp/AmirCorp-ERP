@@ -43,8 +43,14 @@ namespace ERP.Api.Controllers.Purchases
         /// </summary>
         [HttpPost("preview")]
         [ProducesResponseType<PreviewPurchaseResponseDto>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> Preview([FromBody] PreviewPurchaseRequest previewPurchaseRequest) =>
-            Ok(await _previewPurchaseUseCase.ExecuteAsync(previewPurchaseRequest.ToDto()));
+        public async Task<IActionResult> Preview([FromBody] PreviewPurchaseRequest previewPurchaseRequest)
+        {
+            var errors = previewPurchaseRequest.Validate();
+            if (errors.Count > 0)
+                return errors.ToBadRequest();
+
+            return Ok(await _previewPurchaseUseCase.ExecuteAsync(previewPurchaseRequest.ToDto()));
+        }
 
         [HttpPost]
         [ProducesResponseType<CreatedResponseDto>(StatusCodes.Status201Created)]

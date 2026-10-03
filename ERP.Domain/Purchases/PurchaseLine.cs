@@ -136,9 +136,7 @@ namespace ERP.Domain.Purchases
             )
         {
             var (amounts, error) = Compute(invoicePriceType, invoiceIgvAffectation, invoiceUnitOfMeasure, invoiceQuantity, invoiceAmount, requestedConversionFactor);
-            if (error is not null)
-                throw new DomainException(error);
-
+            DomainException.ThrowIf(error);
             return amounts!;
         }
 
@@ -250,6 +248,9 @@ namespace ERP.Domain.Purchases
             var inventoryUnitCost = Math.Round(baseAmount / inventoryQuantity, Decimals, MidpointRounding.AwayFromZero);
             if (inventoryUnitCost == 0)
                 return (null, "El costo de cada unidad sale 0. Revisa la cantidad, el monto y las unidades por caja.");
+            // Muy pocas unidades para un monto grande (0.000001 unidades por caja): el costo no cabe en su columna.
+            if (inventoryUnitCost > NumberMax)
+                return (null, "El costo de cada unidad sale demasiado grande. Revisa la cantidad, el monto y las unidades por caja.");
 
             return (new PurchaseLineAmounts(invoiceUnitValue, invoiceUnitPrice, conversionFactor, inventoryQuantity, inventoryUnitCost, baseAmount, igvAmount, total), null);
         }
@@ -280,7 +281,7 @@ namespace ERP.Domain.Purchases
         }
 
         // Más decimales de los que guarda la base: se perderían sin aviso al guardar.
-        private static bool HasTooManyDecimals(decimal value) =>
+        internal static bool HasTooManyDecimals(decimal value) =>
             Math.Round(value, Decimals) != value;
 
         private static void ValidateProduct(Guid productId)
@@ -295,9 +296,7 @@ namespace ERP.Domain.Purchases
             if (string.IsNullOrWhiteSpace(code))
                 return null;
 
-            if (ProductSupplierCode.CodeError(code) is { } error)
-                throw new DomainException(error);
-
+            DomainException.ThrowIf(ProductSupplierCode.CodeError(code));
             return ProductSupplierCode.NormalizeCode(code);
         }
 

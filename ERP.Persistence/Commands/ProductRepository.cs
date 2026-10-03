@@ -41,7 +41,7 @@ namespace ERP.Persistence.Commands
             var candidates = await _context.ProductSupplierCodes
                 .Where(c => supplierIds.Contains(c.SupplierId) && values.Contains(c.Code))
                 .Where(c => excludeProductId == null || c.ProductId != excludeProductId)
-                .Join(_context.Products, c => c.ProductId, p => p.Id, (c, p) => new SupplierCodeInUse(c.SupplierId, c.Code, p.Code, p.Name))
+                .Join(_context.Products, c => c.ProductId, p => p.Id, (c, p) => new SupplierCodeInUse(c.SupplierId, c.Code, p.Code, p.Name, p.IsActive))
                 .ToListAsync();
 
             return candidates

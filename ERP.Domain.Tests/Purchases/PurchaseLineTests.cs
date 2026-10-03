@@ -116,6 +116,15 @@ namespace ERP.Domain.Tests.Purchases
         }
 
         [Fact]
+        public void Un_costo_por_unidad_que_no_cabe_se_rechaza()
+        {
+            // Inafecto: subtotal 10 000 000.00 entre 0.000001 unidades = 10 000 000 000 000 por unidad (13 dígitos enteros).
+            var error = PurchaseLine.AmountsError(InvoicePriceType.UnitValue, IgvAffectation.Inafecto, Box(), 1m, 10_000_000m, 0.000001m);
+
+            Assert.Equal("El costo de cada unidad sale demasiado grande. Revisa la cantidad, el monto y las unidades por caja.", error);
+        }
+
+        [Fact]
         public void El_monto_de_la_factura_es_el_valor_o_el_precio_segun_la_compra()
         {
             Assert.Equal(10m, PurchaseLine.InvoiceAmountFor(InvoicePriceType.UnitValue, 10m, 11.8m));

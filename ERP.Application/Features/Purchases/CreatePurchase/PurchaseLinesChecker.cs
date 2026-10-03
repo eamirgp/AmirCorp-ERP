@@ -90,9 +90,12 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 if (product?.SupplierCodeError(supplier, code) is { } linkError)
                     errors.Add($"Línea {number}: {linkError}");
                 else if (inUse.FirstOrDefault(c => c.Code == code && c.ProductCode != product?.Code) is { } used)
-                    errors.Add($"Línea {number}: El código {code} de {supplier.Name} ya está en el producto {used.ProductCode} · {used.ProductName}. Elígelo de la lista.");
+                    errors.Add($"Línea {number}: "
+                        + ProductSupplierCode.CodeTakenError(code, supplier.Name, used.ProductCode, used.ProductName, used.ProductIsActive)
+                        // Activo, aparece al buscar el código en la línea.
+                        + (used.ProductIsActive ? " Elígelo de la lista." : ""));
                 else if (links.Count(l => l.Code == code) > 1)
-                    errors.Add($"Línea {number}: El código {code} de {supplier.Name} está en más de una línea de esta compra.");
+                    errors.Add($"Línea {number}: {Purchase.RepeatedSupplierCodeError(code)}");
             }
 
             return errors;

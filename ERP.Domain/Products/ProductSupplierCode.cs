@@ -39,7 +39,19 @@ namespace ERP.Domain.Products
             if (NormalizeCode(code).Length > CodeMaxLength)
                 return $"El código del proveedor no puede exceder los {CodeMaxLength} caracteres.";
 
+            // Un salto de línea o una tabulación vienen de pegar o de una celda de Excel, nunca de la factura.
+            if (NormalizeCode(code).Any(char.IsControl))
+                return "El código del proveedor no puede tener saltos de línea ni tabulaciones.";
+
             return null;
         }
+
+        /// <summary>
+        /// El aviso de "código del proveedor ocupado", el mismo en Productos y en una compra: dice de qué producto es, y si
+        /// está desactivado (entonces no aparece en las listas y hay que activarlo para usarlo).
+        /// </summary>
+        public static string CodeTakenError(string code, string supplierName, string productCode, string productName, bool productIsActive) =>
+            $"El código {code} de {supplierName} ya es del producto {productCode} · {productName}"
+            + (productIsActive ? "." : ", que está desactivado. Actívalo en Productos para usarlo.");
     }
 }

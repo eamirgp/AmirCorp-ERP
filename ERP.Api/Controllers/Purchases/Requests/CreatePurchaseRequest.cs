@@ -52,22 +52,17 @@ namespace ERP.Api.Controllers.Purchases.Requests
             else if (SupplierId is null || SupplierId == Guid.Empty)
                 errors.Add("El proveedor es requerido.");
 
-            if (Lines is null || Lines.Count == 0)
-                errors.Add("La compra debe tener al menos una línea.");
+            if (Purchase.LineCountError(Lines?.Count ?? 0) is { } lineCountError)
+                errors.Add(lineCountError);
             else
             {
-                var lines = Lines.ToArray();
+                var lines = Lines!.ToArray();
                 for (var i = 0; i < lines.Length; i++)
-                    errors.AddRange(lines[i].Validate(i + 1, InvoicePriceType));
+                    errors.AddRange(lines[i] is { } line
+                        ? line.Validate(i + 1, InvoicePriceType)
+                        : [$"Línea {i + 1}: La línea está vacía."]);
 
-                var duplicatedGroups = lines
-                    .Select((line, index) => new { line.ProductId, LineNumber = index + 1 })
-                    .Where(l => l.ProductId is not null)
-                    .GroupBy(l => l.ProductId!.Value)
-                    .Where(g => g.Count() > 1);
-
-                foreach (var group in duplicatedGroups)
-                    errors.Add($"El producto está duplicado en las líneas {string.Join(", ", group.Select(x => x.LineNumber))}.");
+                errors.AddRange(Purchase.RepeatedProductsErrors(lines.Select(l => l?.ProductId).ToArray()));
             }
 
             return errors;

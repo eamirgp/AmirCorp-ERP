@@ -14,6 +14,9 @@ namespace ERP.Domain.Purchases
         public const int SerieMaxLength = 4;
         public const int NumberMaxLength = 8;
         public const int CancellationReasonMaxLength = 200;
+        // Ninguna factura real llega a tantas líneas, y así la suma de la compra cabe en su columna numeric(18,2) aunque
+        // cada línea llegue a su tope (PurchaseLine.LineTotalMax).
+        public const int MaxLines = 500;
         private static readonly DateOnly MinIssueDate = new(2000, 1, 1);
 
 
@@ -160,14 +163,11 @@ namespace ERP.Domain.Purchases
             decimal? conversionFactor
             )
         {
-            if (IsCancelled)
-                throw new DomainException("No se pueden agregar productos a una compra anulada.");
-
-            if (ProductError(product) is { } productError)
-                throw new DomainException(productError);
+            DomainException.ThrowIf(AddLineError());
+            DomainException.ThrowIf(ProductError(product));
 
             if (_lines.Any(l => l.ProductId == product.Id))
-                throw new DomainException($"El producto {product.Code} está más de una vez en la compra.");
+                throw new DomainException(RepeatedProductError(product.Code));
 
             var purchaseLine = PurchaseLine.Create(
                 Id,
@@ -186,12 +186,55 @@ namespace ERP.Domain.Purchases
 
             // Un código del proveedor es un solo producto, y un producto va en una sola línea.
             if (purchaseLine.SupplierProductCode is { } code && _lines.Any(l => l.SupplierProductCode == code))
-                throw new DomainException($"El código {code} del proveedor está en más de una línea de la compra.");
+                throw new DomainException(RepeatedSupplierCodeError(code));
 
             _lines.Add(purchaseLine);
             RecalculateTotals();
             return purchaseLine;
         }
+
+        /// <summary>Qué impide agregar otra línea, o null si se puede: la compra está anulada o ya tiene el máximo.</summary>
+        public string? AddLineError()
+        {
+            if (IsCancelled)
+                return "No se pueden agregar productos a una compra anulada.";
+
+            if (_lines.Count >= MaxLines)
+                return $"La compra no puede tener más de {MaxLines} líneas.";
+
+            return null;
+        }
+
+        /// <summary>
+        /// Qué tiene de malo la cantidad de líneas, o null si está bien: al menos una y hasta <see cref="MaxLines"/>.
+        /// La API la revisa antes, junto con los demás errores.
+        /// </summary>
+        public static string? LineCountError(int count) =>
+            count switch
+            {
+                0 => "La compra debe tener al menos una línea.",
+                > MaxLines => $"La compra no puede tener más de {MaxLines} líneas.",
+                _ => null
+            };
+
+        /// <summary>
+        /// Las líneas que repiten un producto, con su mensaje: un producto va en una sola línea de la compra. La API la
+        /// revisa antes con los Id de cada línea (null en las que todavía no eligen uno).
+        /// </summary>
+        public static IEnumerable<string> RepeatedProductsErrors(IReadOnlyList<Guid?> productIds) =>
+            productIds
+                .Select((id, index) => (Id: id, LineNumber: index + 1))
+                .Where(l => l.Id is not null)
+                .GroupBy(l => l.Id)
+                .Where(g => g.Count() > 1)
+                .Select(g => $"Líneas {string.Join(", ", g.Select(l => l.LineNumber))}: es el mismo producto. Un producto va en una sola línea de la compra.");
+
+        private static string RepeatedProductError(string productCode) =>
+            $"El producto {productCode} está en más de una línea. Un producto va en una sola línea de la compra.";
+
+        /// <summary>Un código del proveedor es un solo producto: no puede estar en dos líneas de la compra.</summary>
+        public static string RepeatedSupplierCodeError(string supplierCode) =>
+            $"El código {supplierCode} del proveedor está en más de una línea de la compra.";
 
         /// <summary>
         /// Por qué no se puede registrar un comprobante que ya está registrado (no anulado). Un comprobante del proveedor
@@ -209,11 +252,8 @@ namespace ERP.Domain.Purchases
         public static string? ProductError(Product product) =>
             product.IsActive ? null : $"El producto '{product.Name}' está desactivado.";
 
-        public void EnsureHasLines()
-        {
-            if (_lines.Count == 0)
-                throw new DomainException("La compra debe tener al menos una línea.");
-        }
+        public void EnsureHasLines() =>
+            DomainException.ThrowIf(LineCountError(_lines.Count));
 
         /// <summary>
         /// Totales de la compra a partir de los montos de sus líneas. La usan el registro y la vista previa.
@@ -249,14 +289,18 @@ namespace ERP.Domain.Purchases
         }
 
         /// <summary>Qué impide anular la compra, o null si se puede. El caso de uso la revisa antes para responder el mensaje.</summary>
-        /// <param name="stockEntries">Los ingresos de stock de las líneas de esta compra.</param>
+        /// <param name="stockEntries">Los ingresos de stock de las líneas de esta compra: uno por cada línea.</param>
         public string? CancelError(IReadOnlyCollection<StockEntry> stockEntries)
         {
             if (IsCancelled)
                 return "La compra ya se encuentra anulada.";
 
-            if (stockEntries.Any(e => _lines.All(l => l.Id != e.PurchaseLineId)))
-                throw new DomainException("Los ingresos de stock no son de esta compra.");
+            // Sin la compra con sus líneas, o con una lista incompleta, se anularía sin revisar toda su mercadería. Es un
+            // error de quien llama, no del usuario.
+            if (_lines.Count == 0
+                || stockEntries.Count != _lines.Count
+                || _lines.Any(l => stockEntries.Count(e => e.PurchaseLineId == l.Id) != 1))
+                throw new DomainException("Los ingresos de stock no corresponden a las líneas de esta compra.");
 
             if (stockEntries.Any(e => !e.IsIntact))
                 return "No se puede anular la compra porque su mercadería ya tuvo movimientos de salida.";

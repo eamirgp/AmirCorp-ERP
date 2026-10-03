@@ -79,7 +79,9 @@ namespace ERP.Infrastructure.Services.RucLookup
                 using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
                 if (json.RootElement.ValueKind != JsonValueKind.Array)
                 {
-                    _monthQueryUseless = true;
+                    // Solo si respondió con un día: un objeto de error o con otra forma puede ser pasajero.
+                    if (Parse(json.RootElement).Count == 1)
+                        _monthQueryUseless = true;
                     return [];
                 }
 
@@ -111,6 +113,8 @@ namespace ERP.Infrastructure.Services.RucLookup
 
                 if (Number(item, "buy_price") is { } buy && Number(item, "sell_price") is { } sell && buy > 0 && sell > 0
                     && item.TryGetProperty("date", out var date)
+                    // Una fecha que no venga como texto se descarta igual que una mal escrita.
+                    && date.ValueKind == JsonValueKind.String
                     && DateOnly.TryParseExact(date.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day))
                     rates.Add(new ExchangeRateData(day, buy, sell));
             }
@@ -125,7 +129,7 @@ namespace ERP.Infrastructure.Services.RucLookup
 
             return value.ValueKind switch
             {
-                JsonValueKind.String when decimal.TryParse(value.GetString(), NumberStyles.Number, CultureInfo.InvariantCulture, out var d) => d,
+                JsonValueKind.String when decimal.TryParse(value.GetString(), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var d) => d,
                 JsonValueKind.Number when value.TryGetDecimal(out var d) => d,
                 _ => null
             };

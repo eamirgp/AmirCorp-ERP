@@ -42,9 +42,11 @@ namespace ERP.Persistence.Commands
 
         public async Task RemoveExpiredForUserAsync(Guid userId, DateTime now)
         {
+            // Un DELETE directo: borrar entidades cargadas revisa su versión, y dos inicios de sesión a la vez chocaban (409).
             var limit = now - RefreshToken.KeepAfterExpiry;
-            _context.RefreshTokens.RemoveRange(
-                await _context.RefreshTokens.Where(t => t.UserId == userId && t.ExpiresAt < limit).ToListAsync());
+            await _context.RefreshTokens
+                .Where(t => t.UserId == userId && t.ExpiresAt < limit)
+                .ExecuteDeleteAsync();
         }
     }
 }

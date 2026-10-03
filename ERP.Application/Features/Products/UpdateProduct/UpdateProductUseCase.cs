@@ -39,8 +39,11 @@ namespace ERP.Application.Features.Products.UpdateProduct
                     ErrorType.Conflict
                     );
 
-            if (await _productRepository.FindByCodeAsync(request.Code, request.Id) is { } owner)
-                return Result.Failure([Product.CodeTakenError(owner)], ErrorType.Conflict);
+            // Todos los errores juntos: el código repetido, la unidad y los códigos de proveedores.
+            var errors = new List<string>();
+            var owner = await _productRepository.FindByCodeAsync(request.Code, request.Id);
+            if (owner is not null)
+                errors.Add(Product.CodeTakenError(owner));
 
             // Las mismas reglas del dominio, revisadas antes para responder con el mensaje en vez de una excepción. Si no
             // cambia la unidad, se acepta aunque ya no esté activa: el producto puede seguir editándose.
@@ -49,11 +52,16 @@ namespace ERP.Application.Features.Products.UpdateProduct
                 ? UnitOfMeasure.UsableError(null, request.UnitOfMeasureCode)
                 : product.UnitOfMeasureChangeError(unit);
             if (unitError is not null)
-                return Result.Failure([unitError], ErrorType.BadRequest);
+                errors.Add(unitError);
 
             var supplierCodes = await ProductSupplierCodeRules.CheckAsync(request.SupplierCodes, product, _businessPartnerRepository, _productRepository);
             if (!supplierCodes.IsSuccess)
-                return Result.Failure(supplierCodes.Errors, supplierCodes.ErrorType!.Value);
+                errors.AddRange(supplierCodes.Errors);
+
+            if (errors.Count > 0)
+                return Result.Failure(
+                    errors,
+                    owner is not null ? ErrorType.Conflict : unitError is not null ? ErrorType.BadRequest : supplierCodes.ErrorType!.Value);
 
             product.UpdateCode(request.Code);
             product.UpdateName(request.Name);

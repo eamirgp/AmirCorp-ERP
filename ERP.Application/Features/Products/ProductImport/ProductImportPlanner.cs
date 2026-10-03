@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using ERP.Application.Common.Formatting;
@@ -147,16 +148,22 @@ namespace ERP.Application.Features.Products.ProductImport
         private static string FormatPrice(decimal price) => NumberText.Money(price);
 
         /// <summary>
-        /// Huella del plan: qué se hará con cada fila y la versión de cada producto existente que toca. La vista previa la
-        /// entrega y la confirmación la devuelve: si no coincide, alguien creó o editó esos productos después de revisar,
-        /// y no se guarda algo distinto de lo que se vio.
+        /// Huella del plan: qué se hará con cada fila, con qué valores, y la versión de cada producto existente que toca. La
+        /// vista previa la entrega y la confirmación la devuelve: si no coincide, alguien creó o editó esos productos
+        /// después de revisar, o el archivo que se confirma no es el que se revisó, y no se guarda algo distinto de lo que
+        /// se vio.
         /// </summary>
         public string VersionOf(IReadOnlyList<ProductImportEntry> plan)
         {
             var text = string.Join('\n', plan.Select(e =>
-                $"{e.RowNumber}|{e.Code}|{e.Action}|{(e.Existing is { } existing ? _productRepository.VersionOf(existing) : 0)}"));
+                $"{e.RowNumber}|{e.Code}|{e.Action}|{(e.Existing is { } existing ? _productRepository.VersionOf(existing) : 0)}|{ValuesOf(e.Candidate)}"));
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
         }
+
+        private static string ValuesOf(Product? candidate) =>
+            candidate is null
+                ? ""
+                : string.Create(CultureInfo.InvariantCulture, $"{candidate.Name}|{candidate.UnitOfMeasureCode}|{candidate.IgvAffectation}|{candidate.SalePrice}");
     }
 
     internal sealed record ProductImportEntry(

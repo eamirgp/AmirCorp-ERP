@@ -1,5 +1,6 @@
 using ERP.Application.Features.Purchases.PreviewPurchase;
 using ERP.Domain.Catalogs;
+using ERP.Domain.Purchases;
 
 namespace ERP.Api.Controllers.Purchases.Requests
 {
@@ -11,15 +12,20 @@ namespace ERP.Api.Controllers.Purchases.Requests
         IReadOnlyCollection<PreviewPurchaseLineRequest>? Lines
         )
     {
+        /// <summary>Solo el máximo de líneas: una compra a medio llenar puede no tener ninguna todavía.</summary>
+        public IReadOnlyCollection<string> Validate() =>
+            Lines is { Count: > 0 } && Purchase.LineCountError(Lines.Count) is { } error ? [error] : [];
+
         public PreviewPurchaseDto ToDto() =>
             new(
                 InvoicePriceType,
+                // Una línea null es una línea vacía: no se calcula, como las incompletas.
                 (Lines ?? []).Select(l => new PreviewPurchaseLineDto(
-                    l.InvoiceIgvAffectation,
-                    l.InvoiceUnitOfMeasureCode,
-                    l.InvoiceQuantity,
-                    l.InvoiceAmount,
-                    l.ConversionFactor
+                    l?.InvoiceIgvAffectation,
+                    l?.InvoiceUnitOfMeasureCode,
+                    l?.InvoiceQuantity,
+                    l?.InvoiceAmount,
+                    l?.ConversionFactor
                     )).ToArray()
                 );
     }

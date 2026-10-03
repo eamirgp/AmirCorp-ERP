@@ -360,3 +360,33 @@ Una revisión de todos los módulos contra la arquitectura limpia encontró regl
 - **Pantalla:** la consulta a SUNAT o RENIEC del nombre (borrar el nombre traído si cambia el número, no llenar con una respuesta tardía, Enter para consultar) es un solo hook para empresas y para clientes y proveedores (`useLookedUpName`); el aviso "ya existe" de clientes y proveedores es su propio componente (`ExistingPartnerNotice`). Se quitaron `Panel` y `formatCost`, que no se usaban.
 - **Pruebas automáticas:** nuevo proyecto `ERP.Domain.Tests` (xUnit) con las reglas que más cuestan si fallan: la fórmula de la línea de compra (valor o precio, cajas, docenas, inafecto, redondeos), los totales, el tipo de cambio que aplica a cada fecha y las reglas de unidades y fechas. Se ejecutan con `dotnet test ERP.Domain.Tests`.
 - **Pendiente a propósito:** pasar `CancellationToken` a todas las consultas de la base. Hoy lo tienen las consultas externas, que son las lentas; las de la base responden en milisegundos y el cambio tocaría todos los casos de uso sin un beneficio visible.
+
+### 32. Datos que no deben romperse (tercera revisión de octubre, grupo 1)
+**Fecha:** octubre 2026
+
+Una tercera revisión, por módulo completo (del dominio a la pantalla), encontró datos que terminaban en un error 500, se guardaban distintos de lo escrito o dejaban al usuario sin salida. Completa las decisiones 21, 26, 27 y 29.
+
+- **Compras:**
+  - El costo por unidad tiene tope (`PurchaseLine.NumberMax`): un monto grande con muy pocas unidades por caja daba un costo que no cabe en su columna (500 al guardar).
+  - Una compra tiene hasta 500 líneas (`Purchase.MaxLines`, `LineCountError`), así el total siempre cabe en `numeric(18,2)`.
+  - Una línea vacía (`null`) ya no da 500: al registrar es un error de esa línea y en la vista previa, una línea sin calcular.
+  - Las reglas de "un producto va en una sola línea" (`RepeatedProductsErrors`), "un código del proveedor en una sola línea" (`RepeatedSupplierCodeError`) y "al menos una línea" las define el dominio una vez; la API y el registro las usan en vez de tener su copia.
+  - El registro avisa todo junto: la empresa o el proveedor que no sirven, el comprobante ya registrado y los errores de las líneas. Si solo es el comprobante repetido sigue siendo 409.
+  - Anular revisa que reciba un ingreso de stock por cada línea (antes confiaba en la lista que le pasaban).
+- **Ingreso de stock:** el costo debe ser mayor a 0, y costo y cantidades tienen tope y hasta 6 decimales, también al consumir.
+- **Códigos:** el código interno y el del proveedor no aceptan saltos de línea ni tabulaciones (vienen de pegar o de una celda de Excel con Alt+Enter). Si el código del proveedor ya es de un producto **desactivado**, el mensaje lo dice y pide activarlo en Productos (`ProductSupplierCode.CodeTakenError`, el mismo en Productos y en compras); antes decía "Elígelo de la lista" y el producto no aparecía en ninguna.
+- **Productos:** crear y editar avisan juntos el código ocupado, la unidad y los códigos de proveedores (`Product.NewProductSupplierCodesErrors` para el que todavía no existe). La lista y los montos ya no redondean al mostrar: un precio antiguo de 10.555 se ve 10.555. Al editar un producto cuya unidad se desactivó, la unidad se ve (antes quedaba vacía).
+- **Precio escrito con el símbolo de soles:** "S/. 1500" es 1500, en el Excel y en la pantalla. Antes se quitaba "S/" y quedaba ".1500" = 0.15. El símbolo solo se acepta al inicio; "S/ .50" no se adivina.
+- **Importación de Excel:** la huella del plan incluye los valores de cada fila: si el archivo que se confirma no es el que se revisó, responde 409 en vez de guardar algo que nadie vio. "Subir otro archivo" pide elegirlo de nuevo.
+- **Tipo de cambio (Decolecta):** una fecha que no venga como texto se descarta (antes 500), los montos no aceptan comas de miles, y la consulta por mes solo se apaga si el servicio respondió con un solo día.
+- **Vistas guardadas:** tienen versión (`xmin`, migración `AddSavedViewRowVersion`, que no cambia la tabla). Si dos pestañas cambian la predeterminada a la vez, la segunda recibe 409 en vez de dejar dos.
+- **Inicio de sesión:** los tokens vencidos se borran con un `DELETE` directo; dos inicios de sesión a la vez ya no chocan (409). Es limpieza y no espera al guardado.
+- **Consulta de SUNAT o RENIEC:** la API envía `Summary` ("Según SUNAT: ACTIVO · HABIDO", sin huecos si falta un dato; `TaxpayerStatus.Summary`). La pantalla mostraba "null · null".
+- **Pantalla:**
+  - Un 409 vuelve a pedir los datos (un solo lugar, `MutationCache` en `main.tsx`): antes, al reabrir el formulario se enviaba la versión vieja y el 409 se repetía hasta recargar la página.
+  - Las ventanas no se cierran con un clic fuera, Esc no las cierra si ya se escribió algo, y mientras guardan no se cierran (`Dialog`, sin cambiar cada formulario).
+  - Si al abrir la página la API no responde, se muestra "No se pudo abrir el sistema" con "Reintentar", no el inicio de sesión (decisión 28).
+  - Si en otra pestaña se inicia sesión con otro usuario (la cookie es una por navegador), esta pestaña limpia lo que mostraba y no envía el pedido con la otra cuenta.
+  - Un número con más de 15 cifras se avisa en vez de redondearse al enviarlo, y al reordenarlo se trabaja sobre el texto.
+  - Un proveedor nuevo sin razón social (SUNAT no respondió) ya permite elegir productos.
+- **Pendiente:** importar con "actualizar" un producto cuya unidad está desactivada sigue dando error en la fila (se resolverá con la pregunta de en qué unidad se cuenta el stock), y qué caracteres admite el código interno (espacios dobles) lo decide el negocio.
