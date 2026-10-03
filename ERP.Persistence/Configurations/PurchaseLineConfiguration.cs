@@ -32,6 +32,9 @@ namespace ERP.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(Product.NameMaxLength);
 
+            builder.Property(pl => pl.SupplierProductCode)
+                .HasMaxLength(ProductSupplierCode.CodeMaxLength);
+
             builder.Property(pl => pl.InvoicePriceType)
                 .IsRequired()
                 .HasMaxLength(20)

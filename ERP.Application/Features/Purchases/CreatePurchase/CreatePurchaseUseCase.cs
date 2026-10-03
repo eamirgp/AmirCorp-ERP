@@ -193,6 +193,9 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                     product.Id,
                     product.Code,
                     product.Name,
+                    // El código de este proveedor en el producto: el que ya tenía (se encontró por él), el que se acaba
+                    // de enlazar o el del producto nuevo. Queda copiado en la compra tal como venía en la factura.
+                    product.SupplierCodes.FirstOrDefault(c => c.SupplierId == supplier.Id)?.Code,
                     line.InvoiceIgvAffectation,
                     units[UnitOfMeasure.NormalizeCode(line.InvoiceUnitOfMeasureCode)],
                     line.InvoiceQuantity,

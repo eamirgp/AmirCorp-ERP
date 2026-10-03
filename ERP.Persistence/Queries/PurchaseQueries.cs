@@ -138,6 +138,7 @@ namespace ERP.Persistence.Queries
                     l.ProductId,
                     l.ProductCode,
                     l.ProductName,
+                    l.SupplierProductCode,
                     l.InvoiceIgvAffectation,
                     l.InvoiceUnitOfMeasureCode,
                     _context.UnitsOfMeasure.Where(u => u.Code == l.InvoiceUnitOfMeasureCode).Select(u => u.Name).First(),
@@ -145,6 +146,9 @@ namespace ERP.Persistence.Queries
                     l.InvoicePriceType == InvoicePriceType.UnitValue
                         ? l.InvoiceUnitValue
                         : l.InvoiceUnitPrice,
+                    l.ConversionFactor,
+                    l.InventoryQuantity,
+                    l.InventoryUnitCost,
                     l.BaseAmount,
                     l.IgvAmount,
                     l.Total

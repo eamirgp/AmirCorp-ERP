@@ -15,6 +15,9 @@ namespace ERP.Application.Common.Formatting
 
         public static string Decimal(decimal value) => Group(value.ToString("#,##0.######", CultureInfo.InvariantCulture));
 
+        /// <summary>Costo unitario: dos decimales como un monto, pero sin perder los de un costo muy pequeño (0.004237).</summary>
+        public static string Cost(decimal value) => Group(value.ToString("#,##0.00####", CultureInfo.InvariantCulture));
+
         public static string Integer(int value) => Group(value.ToString("#,##0", CultureInfo.InvariantCulture));
 
         private static string Group(string invariant) => invariant.Replace(',', ThousandsSeparator);

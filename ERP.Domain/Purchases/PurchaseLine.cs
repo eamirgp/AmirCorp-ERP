@@ -1,5 +1,6 @@
 ﻿using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
+using ERP.Domain.Products;
 using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Domain.Purchases
@@ -11,6 +12,11 @@ namespace ERP.Domain.Purchases
         public Guid ProductId { get; }
         public string ProductCode { get; }
         public string ProductName { get; }
+        /// <summary>
+        /// Código del producto tal como viene en la factura del proveedor (null si la factura no trae código). Es una
+        /// copia: si después se corrige el enlace en Productos, la compra sigue mostrando lo que decía su comprobante.
+        /// </summary>
+        public string? SupplierProductCode { get; }
         public InvoicePriceType InvoicePriceType { get; }
         public IgvAffectation InvoiceIgvAffectation { get; }
         /// <summary>Código SUNAT de la unidad en que viene la factura (NIU, DZN, BX…).</summary>
@@ -32,6 +38,7 @@ namespace ERP.Domain.Purchases
             Guid productId,
             string productCode,
             string productName,
+            string? supplierProductCode,
             InvoicePriceType invoicePriceType,
             IgvAffectation invoiceIgvAffectation,
             string invoiceUnitOfMeasureCode,
@@ -51,6 +58,7 @@ namespace ERP.Domain.Purchases
             ProductId = productId;
             ProductCode = productCode;
             ProductName = productName;
+            SupplierProductCode = supplierProductCode;
             InvoicePriceType = invoicePriceType;
             InvoiceIgvAffectation = invoiceIgvAffectation;
             InvoiceUnitOfMeasureCode = invoiceUnitOfMeasureCode;
@@ -71,6 +79,7 @@ namespace ERP.Domain.Purchases
             Guid productId,
             string productCode,
             string productName,
+            string? supplierProductCode,
             InvoicePriceType invoicePriceType,
             IgvAffectation invoiceIgvAffectation,
             UnitOfMeasure invoiceUnitOfMeasure,
@@ -80,6 +89,7 @@ namespace ERP.Domain.Purchases
             )
         {
             ValidateProduct(productId);
+            supplierProductCode = NormalizeSupplierProductCode(supplierProductCode);
 
             var amounts = Calculate(invoicePriceType, invoiceIgvAffectation, invoiceUnitOfMeasure, invoiceQuantity, invoiceAmount, conversionFactor);
 
@@ -93,6 +103,7 @@ namespace ERP.Domain.Purchases
                 productId,
                 productCode,
                 productName,
+                supplierProductCode,
                 invoicePriceType,
                 invoiceIgvAffectation,
                 invoiceUnitOfMeasure.Code,
@@ -183,6 +194,19 @@ namespace ERP.Domain.Purchases
         {
             if (productId == Guid.Empty)
                 throw new DomainException("El producto es requerido.");
+        }
+
+        /// <summary>Igual que el código guardado en el producto (mayúsculas, sin espacios de sobra); vacío es "sin código".</summary>
+        private static string? NormalizeSupplierProductCode(string? code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+                return null;
+
+            code = ProductSupplierCode.NormalizeCode(code);
+            if (code.Length > ProductSupplierCode.CodeMaxLength)
+                throw new DomainException($"El código del proveedor no puede superar los {ProductSupplierCode.CodeMaxLength} caracteres.");
+
+            return code;
         }
 
         private static void ValidateInvoicePriceType(InvoicePriceType invoicePriceType)

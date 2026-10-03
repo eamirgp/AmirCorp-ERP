@@ -112,6 +112,8 @@ namespace ERP.Domain.Purchases
             Guid productId,
             string productCode,
             string productName,
+            // Código del producto en la factura del proveedor; null si la factura no trae código.
+            string? supplierProductCode,
             IgvAffectation invoiceIgvAffectation,
             UnitOfMeasure invoiceUnitOfMeasure,
             decimal invoiceQuantity,
@@ -129,6 +131,7 @@ namespace ERP.Domain.Purchases
                 productId,
                 productCode,
                 productName,
+                supplierProductCode,
                 InvoicePriceType,
                 invoiceIgvAffectation,
                 invoiceUnitOfMeasure,
@@ -136,6 +139,10 @@ namespace ERP.Domain.Purchases
                 invoiceAmount,
                 conversionFactor
                 );
+
+            // Un código del proveedor es un solo producto, y un producto va en una sola línea.
+            if (purchaseLine.SupplierProductCode is { } code && _lines.Any(l => l.SupplierProductCode == code))
+                throw new DomainException($"El código {code} del proveedor está en más de una línea de la compra.");
 
             _lines.Add(purchaseLine);
             RecalculateTotals();
