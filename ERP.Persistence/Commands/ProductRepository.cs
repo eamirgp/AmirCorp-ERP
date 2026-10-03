@@ -51,6 +51,8 @@ namespace ERP.Persistence.Commands
 
         public async Task<IReadOnlyCollection<Product>> GetByIdsAsync(IReadOnlyCollection<Guid> ids) =>
             await _context.Products
+            // Con sus códigos de proveedores: una compra puede enlazar el código del proveedor a un producto existente.
+            .Include(p => p.SupplierCodes)
             .Where(p => ids.Contains(p.Id))
             .ToListAsync();
 

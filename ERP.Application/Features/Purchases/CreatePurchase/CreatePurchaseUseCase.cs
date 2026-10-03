@@ -132,6 +132,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             }
 
             errors.AddRange(await CheckNewProductsAsync(lines, supplier, units));
+            errors.AddRange(await CheckSupplierCodesAsync(lines, supplier, productsDictionary));
 
             if (errors.Count > 0)
                 return Result<CreatedResponseDto>.Failure(errors, ErrorType.BadRequest);
@@ -144,7 +145,11 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             {
                 if (lines[i].NewProduct is not { } newProduct)
                 {
-                    lineProducts[i] = productsDictionary[lines[i].ProductId!.Value];
+                    var existing = productsDictionary[lines[i].ProductId!.Value];
+                    // El código de esta factura queda enlazado al producto: la próxima compra a este proveedor lo encuentra.
+                    if (lines[i].SupplierCode is { } linkedCode)
+                        existing.AddSupplierCode(supplier.Id, linkedCode);
+                    lineProducts[i] = existing;
                     continue;
                 }
 
@@ -219,6 +224,42 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
         }
 
         /// <summary>
+        /// Códigos del proveedor que la compra enlaza (a productos existentes o nuevos): no se repiten en la compra, no
+        /// los usa otro producto de este proveedor, y un producto que ya tiene otro código de este proveedor no se cambia
+        /// desde aquí (se corrige en Productos).
+        /// </summary>
+        private async Task<List<string>> CheckSupplierCodesAsync(CreatePurchaseLineDto[] lines, BusinessPartner supplier, Dictionary<Guid, Product> products)
+        {
+            var errors = new List<string>();
+            var links = lines
+                .Select((line, i) => (
+                    Number: i + 1,
+                    Product: line.ProductId is { } id ? products.GetValueOrDefault(id) : null,
+                    Code: line.NewProduct?.SupplierCode ?? line.SupplierCode))
+                .Where(x => x.Code is not null && (x.Product is not null || lines[x.Number - 1].NewProduct is not null))
+                .Select(x => (x.Number, x.Product, Code: ProductSupplierCode.NormalizeCode(x.Code!)))
+                .ToList();
+
+            if (links.Count == 0)
+                return errors;
+
+            var inUse = await _productRepository.SupplierCodesInUseAsync(links.Select(l => (supplier.Id, l.Code)).ToArray());
+
+            foreach (var (number, product, code) in links)
+            {
+                var own = product?.SupplierCodes.FirstOrDefault(c => c.SupplierId == supplier.Id);
+                if (own is not null && own.Code != code)
+                    errors.Add($"Línea {number}: El producto {product!.Code} ya tiene el código {own.Code} de {supplier.Name}. Si cambió, corrígelo desde Productos.");
+                else if (inUse.FirstOrDefault(c => c.Code == code && c.ProductCode != product?.Code) is { } used)
+                    errors.Add($"Línea {number}: El código {code} de {supplier.Name} ya está en el producto {used.ProductCode} · {used.ProductName}. Elígelo de la lista.");
+                else if (links.Count(l => l.Code == code) > 1)
+                    errors.Add($"Línea {number}: El código {code} de {supplier.Name} está en más de una línea de esta compra.");
+            }
+
+            return errors;
+        }
+
+        /// <summary>
         /// Reglas de los productos nuevos que necesitan datos: el código interno no lo usa otro producto ni otra línea,
         /// el código del proveedor tampoco, y la unidad en que se cuenta su stock está activa.
         /// </summary>
@@ -232,14 +273,6 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
             var codes = news.Select(x => Product.NormalizeCode(x.Line.NewProduct!.Code)).ToArray();
             var taken = (await _productRepository.GetByCodesAsync(codes.Distinct().ToArray())).ToDictionary(p => p.Code);
 
-            var supplierCodes = news
-                .Where(x => x.Line.NewProduct!.SupplierCode is not null)
-                .Select(x => (supplier.Id, Code: ProductSupplierCode.NormalizeCode(x.Line.NewProduct!.SupplierCode!)))
-                .ToArray();
-            var supplierCodesTaken = supplierCodes.Length == 0
-                ? []
-                : (await _productRepository.SupplierCodesInUseAsync(supplierCodes)).ToDictionary(c => c.Code);
-
             foreach (var (line, number) in news)
             {
                 var newProduct = line.NewProduct!;
@@ -249,16 +282,6 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                     errors.Add($"Línea {number}: El código interno {code} ya es de {existing.Name}. Elígelo de la lista o usa otro código.");
                 else if (codes.Count(c => c == code) > 1)
                     errors.Add($"Línea {number}: El código interno {code} está en más de un producto nuevo de esta compra.");
-
-                if (newProduct.SupplierCode is { } supplierCode)
-                {
-                    var normalized = ProductSupplierCode.NormalizeCode(supplierCode);
-                    if (supplierCodesTaken.TryGetValue(normalized, out var used))
-                        errors.Add($"Línea {number}: El código {normalized} de {supplier.Name} ya está en el producto {used.ProductCode} · {used.ProductName}. Elígelo de la lista.");
-                    else if (supplierCodes.Count(c => c.Code == normalized) > 1)
-                        errors.Add($"Línea {number}: El código de proveedor {normalized} está en más de un producto nuevo de esta compra.");
-                }
-
             }
 
             // Los productos nuevos se cuentan en unidades: esa unidad tiene que estar activa.

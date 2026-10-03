@@ -12,7 +12,9 @@ namespace ERP.Api.Controllers.Purchases.Requests
         string? InvoiceUnitOfMeasureCode,
         decimal? InvoiceQuantity,
         decimal? InvoiceAmount,
-        decimal? ConversionFactor
+        decimal? ConversionFactor,
+        // Con un producto ya registrado: el código con que lo vende el proveedor de esta compra, para enlazarlo. Opcional.
+        string? SupplierCode
         )
     {
         public IReadOnlyCollection<string> Validate(int lineNumber, InvoicePriceType? invoicePriceType)
@@ -43,6 +45,9 @@ namespace ERP.Api.Controllers.Purchases.Requests
             }
             else if (ProductId is null || ProductId == Guid.Empty)
                 errors.Add($"Línea {lineNumber}: El producto es requerido.");
+
+            if (!string.IsNullOrWhiteSpace(SupplierCode) && SupplierCode.Trim().Length > ProductSupplierCode.CodeMaxLength)
+                errors.Add($"Línea {lineNumber}: El código de proveedor no puede exceder los {ProductSupplierCode.CodeMaxLength} caracteres.");
 
             if (InvoiceIgvAffectation is null)
                 errors.Add($"Línea {lineNumber}: El tipo de afectación del IGV es requerido.");
@@ -86,7 +91,9 @@ namespace ERP.Api.Controllers.Purchases.Requests
                 InvoiceUnitOfMeasureCode!,
                 InvoiceQuantity!.Value,
                 InvoiceAmount!.Value,
-                ConversionFactor
+                ConversionFactor,
+                // Solo con un producto registrado: el producto nuevo trae su código del proveedor en NewProduct.
+                NewProduct is null ? NullIfBlank(SupplierCode) : null
                 );
     }
 

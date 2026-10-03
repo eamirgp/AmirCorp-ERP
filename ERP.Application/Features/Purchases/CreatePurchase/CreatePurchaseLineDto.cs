@@ -11,7 +11,10 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
         decimal InvoiceQuantity,
         decimal InvoiceAmount,
         // Unidades por cada unidad de la factura. Solo con unidades variables (Caja); con fijas la pone el catálogo.
-        decimal? ConversionFactor
+        decimal? ConversionFactor,
+        // Con un producto ya registrado: el código con que lo vende el proveedor de esta compra, para enlazarlo al
+        // producto si todavía no lo tiene. (Un producto nuevo lo trae en NewProduct.)
+        string? SupplierCode
         );
 
     /// <summary>

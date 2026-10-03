@@ -79,6 +79,22 @@ namespace ERP.Domain.Products
             }
         }
 
+        /// <summary>
+        /// Enlaza el código con que un proveedor vende este producto (por ejemplo, desde una compra a un proveedor nuevo).
+        /// Si ya tiene ese mismo código no cambia nada; si tiene otro de ese proveedor, se corrige desde Productos.
+        /// </summary>
+        public void AddSupplierCode(Guid supplierId, string code)
+        {
+            var normalized = ValidateSupplierCode(supplierId, code);
+            var existing = _supplierCodes.FirstOrDefault(c => c.SupplierId == supplierId);
+
+            if (existing is not null && existing.Code != normalized)
+                throw new DomainException($"El producto {Code} ya tiene el código {existing.Code} de este proveedor. Si cambió, corrígelo desde Productos.");
+
+            if (existing is null)
+                _supplierCodes.Add(ProductSupplierCode.Create(Id, supplierId, normalized));
+        }
+
         public void Activate() =>
             IsActive = true;
 
