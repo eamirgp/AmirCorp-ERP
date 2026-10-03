@@ -39,6 +39,10 @@ namespace ERP.Persistence.Configurations
             builder.Property(u => u.CreatedBy)
                 .IsRequired();
 
+            // Versión (xmin): el formulario del nombre corto la devuelve y no pisa el cambio de otra persona.
+            builder.Property<uint>("RowVersion")
+                .IsRowVersion();
+
             // Productos y líneas de compra guardan el código SUNAT, no el Id: es el dato que va en la factura.
             builder.HasAlternateKey(u => u.Code);
         }

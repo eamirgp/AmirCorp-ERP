@@ -34,7 +34,8 @@ namespace ERP.Application.Features.Partners.LookupDocument
             var warnings = new List<string>();
 
             if (data.Ruc is { } ruc && !TaxpayerStatus.IsActiveAndLocated(ruc.Status, ruc.Condition))
-                warnings.Add($"Según SUNAT está {ruc.Status} y {ruc.Condition}. Revisa antes de comprarle: sus facturas podrían no servir para el crédito fiscal del IGV.");
+                // El mismo formulario sirve para clientes y proveedores: el aviso vale para los dos.
+                warnings.Add($"{TaxpayerStatus.Describe(ruc.Status, ruc.Condition)}. Revísalo antes de comprarle o venderle: sus comprobantes podrían no ser válidos para SUNAT.");
 
             if (await _businessPartnerRepository.FindByDocumentAsync(identityDocumentType, data.DocumentNumber) is { } existing && existing.Id != partnerId)
                 warnings.Add($"Ya está registrado en el sistema como {existing.Name}.");

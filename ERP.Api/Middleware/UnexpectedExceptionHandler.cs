@@ -16,7 +16,19 @@ namespace ERP.Api.Middleware
 
         public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
         {
+            // El navegador cerró el pedido (cambió de página, cerró la pestaña): no es un error y no hay a quién responder.
+            if (exception is OperationCanceledException && httpContext.RequestAborted.IsCancellationRequested)
+            {
+                _logger.LogInformation("Pedido cancelado por el cliente: {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+                httpContext.Response.StatusCode = 499;
+                return true;
+            }
+
             _logger.LogError(exception, "Error no controlado en {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+
+            // Si la respuesta ya empezó a enviarse (por ejemplo, un archivo), no se puede cambiar: queda solo en el log.
+            if (httpContext.Response.HasStarted)
+                return true;
 
             httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 

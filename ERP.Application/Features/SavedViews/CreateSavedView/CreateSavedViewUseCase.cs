@@ -27,19 +27,11 @@ namespace ERP.Application.Features.SavedViews.CreateSavedView
         {
             var views = await _savedViewRepository.ListByUserAndScreenAsync(_currentUser.Id, request.Screen);
 
-            if (views.Count >= SavedView.MaxPerScreen)
-                return Result<CreatedResponseDto>.Failure(
-                    [$"Ya tienes {SavedView.MaxPerScreen} vistas guardadas en esta pantalla. Elimina alguna para guardar otra."],
-                    ErrorType.BadRequest
-                    );
+            // La regla del dominio (máximo por pantalla, nombre repetido), revisada antes para responder el mensaje.
+            if (SavedView.CreateError(request.Name, views) is { } error)
+                return Result<CreatedResponseDto>.Failure([error], ErrorType.Conflict);
 
-            if (SavedViewRules.NameTaken(views, request.Name))
-                return Result<CreatedResponseDto>.Failure([$"Ya tienes una vista llamada «{SavedView.NormalizeName(request.Name)}»."], ErrorType.Conflict);
-
-            var view = SavedView.Create(_currentUser.Id, request.Screen, request.Name, request.Filters, isDefault: false);
-
-            if (request.IsDefault)
-                SavedViewRules.MakeDefault(views, view);
+            var view = SavedView.Create(_currentUser.Id, request.Screen, request.Name, request.Filters, request.IsDefault, views);
 
             _savedViewRepository.Add(view);
 

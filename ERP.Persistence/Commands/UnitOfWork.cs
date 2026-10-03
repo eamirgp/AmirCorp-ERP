@@ -23,10 +23,12 @@ namespace ERP.Persistence.Commands
                 throw new ConcurrencyException(ex);
             }
             // Los casos de uso revisan que un código o documento no se repita, pero si dos personas guardan el mismo
-            // a la vez, lo frena el índice único de la base. Se responde 409 en vez de un error del servidor.
-            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            // a la vez, lo frena el índice único de la base. Se responde 409 en vez de un error del servidor; el texto
+            // lo arma Application según la entidad de la tabla.
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg)
             {
-                throw new ConcurrencyException("Otra persona acaba de guardar un registro con el mismo código o documento. Revisa los datos y vuelve a intentarlo.", ex);
+                var entityType = _context.Model.GetEntityTypes().FirstOrDefault(e => e.GetTableName() == pg.TableName)?.ClrType;
+                throw ConcurrencyException.Duplicate(entityType, ex);
             }
         }
     }

@@ -10,7 +10,9 @@ namespace ERP.Application.Features.UnitsOfMeasure.ListAllUnitsOfMeasure
         string SunatName,
         decimal? FixedConversionFactor,
         bool IsActive,
-        int ProductCount
+        int ProductCount,
+        // Versión del registro: el formulario del nombre corto la devuelve al guardar.
+        uint RowVersion
         )
     {
         /// <summary>"12 unidades" si siempre trae lo mismo; "Según la compra" si cada factura lo indica.</summary>

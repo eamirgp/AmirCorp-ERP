@@ -51,7 +51,7 @@ namespace ERP.Api.Controllers.UnitsOfMeasure
             if (errors.Count > 0)
                 return errors.ToBadRequest();
 
-            var result = await _updateUseCase.ExecuteAsync(new UpdateUnitOfMeasureDto(id, request.Name!));
+            var result = await _updateUseCase.ExecuteAsync(new UpdateUnitOfMeasureDto(id, request.Name!, request.RowVersion!.Value));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }
 
@@ -77,11 +77,14 @@ namespace ERP.Api.Controllers.UnitsOfMeasure
     /// Aviso previo: lo que se puede revisar sin el catálogo. Que el nombre no sea el de otra unidad lo revisa el caso de
     /// uso con <see cref="UnitOfMeasure.NameError"/>, la regla del dominio.
     /// </summary>
-    public sealed record UpdateUnitOfMeasureRequest(string? Name)
+    public sealed record UpdateUnitOfMeasureRequest(string? Name, uint? RowVersion)
     {
         public IReadOnlyCollection<string> Validate()
         {
             var errors = new List<string>();
+
+            if (RowVersion is null)
+                errors.Add("Falta la versión de la unidad. Vuelve a abrir el formulario.");
 
             if (string.IsNullOrWhiteSpace(Name))
                 errors.Add("El nombre es requerido.");

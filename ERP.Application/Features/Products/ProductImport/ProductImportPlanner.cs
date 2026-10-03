@@ -1,4 +1,5 @@
-using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using ERP.Application.Common.Formatting;
 using ERP.Application.Contracts.Infrastructure;
 using ERP.Application.Contracts.Persistence.Commands;
@@ -10,8 +11,9 @@ namespace ERP.Application.Features.Products.ProductImport
 {
     /// <summary>
     /// Decide qué pasará con cada fila de la planilla: crear, actualizar, omitir, sin cambios o error.
-    /// Valida con las mismas reglas de <see cref="Product"/>. No guarda nada: la vista previa y la
-    /// confirmación usan este mismo plan, así nunca pueden decidir distinto.
+    /// Valida con las mismas reglas de <see cref="Product"/> (los textos de la fila los lee <see cref="ProductImportRowParser"/>).
+    /// No guarda nada: la vista previa y la confirmación usan este mismo plan, y la confirmación revisa con
+    /// <see cref="VersionOf"/> que sea el mismo que se vio.
     /// </summary>
     internal sealed class ProductImportPlanner
     {
@@ -48,9 +50,9 @@ namespace ERP.Application.Features.Products.ProductImport
                     errors.Add(codeError);
                 if (Product.NameError(row.Name) is { } nameError)
                     errors.Add(nameError);
-                var unit = ParseUnit(row.UnitOfMeasure, units, errors);
-                var igv = ParseIgvAffectation(row.IgvAffectation, errors);
-                var price = ParsePrice(row, errors);
+                var unit = ProductImportRowParser.Unit(row.UnitOfMeasure, units, errors);
+                var igv = ProductImportRowParser.IgvAffectation(row.IgvAffectation, errors);
+                var price = ProductImportRowParser.Price(row, errors);
                 if (price is not null && Product.SalePriceError(price) is { } priceError)
                     errors.Add(priceError);
 
@@ -145,77 +147,15 @@ namespace ERP.Application.Features.Products.ProductImport
         private static string FormatPrice(decimal price) => NumberText.Money(price);
 
         /// <summary>
-        /// La unidad se reconoce por su nombre corto ("Docena"), su nombre SUNAT ("UNIDAD (BIENES)") o su código ("DZN"),
-        /// sin distinguir mayúsculas ni tildes (<see cref="UnitOfMeasure.IsKnownAs"/>). Debe estar activa. Si el texto
-        /// sirve para más de una activa, no se adivina: la fila queda con error, para no cambiar la unidad sin que se note.
+        /// Huella del plan: qué se hará con cada fila y la versión de cada producto existente que toca. La vista previa la
+        /// entrega y la confirmación la devuelve: si no coincide, alguien creó o editó esos productos después de revisar,
+        /// y no se guarda algo distinto de lo que se vio.
         /// </summary>
-        private static UnitOfMeasure? ParseUnit(string? text, IReadOnlyCollection<UnitOfMeasure> units, List<string> errors)
+        public string VersionOf(IReadOnlyList<ProductImportEntry> plan)
         {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                errors.Add("La unidad de medida es requerida.");
-                return null;
-            }
-
-            var matches = units.Where(u => u.IsKnownAs(text)).ToList();
-            var active = matches.Where(u => u.IsActive).ToList();
-
-            if (active.Count > 1)
-            {
-                errors.Add($"La unidad de medida '{text.Trim()}' puede ser {string.Join(" o ", active.Select(u => $"{u.Name} ({u.Code})"))}. Escribe su código.");
-                return null;
-            }
-
-            var unit = active.FirstOrDefault() ?? matches.FirstOrDefault();
-            if (unit is null)
-            {
-                errors.Add($"La unidad de medida '{text.Trim()}' no existe. Elige una de la lista.");
-                return null;
-            }
-
-            if (UnitOfMeasure.UsableError(unit, text) is { } unitError)
-            {
-                errors.Add(unitError);
-                return null;
-            }
-
-            return unit;
-        }
-
-        private static bool MatchesIgnoringAccents(string text, string value) =>
-            string.Compare(text.Trim(), value, CultureInfo.InvariantCulture, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) == 0;
-
-        private static IgvAffectation? ParseIgvAffectation(string? text, List<string> errors)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                errors.Add("La afectación del IGV es requerida.");
-                return null;
-            }
-
-            // Igual que la unidad: sin distinguir mayúsculas ni tildes ("Operacion" es "Operación").
-            foreach (var igv in Enum.GetValues<IgvAffectation>())
-                if (MatchesIgnoringAccents(text, igv.Description) || MatchesIgnoringAccents(text, igv.ToString()))
-                    return igv;
-
-            errors.Add($"La afectación del IGV '{text.Trim()}' no existe. Elige una de la lista.");
-            return null;
-        }
-
-        private static decimal? ParsePrice(ProductSheetRow row, List<string> errors)
-        {
-            // Con más de 2 decimales la fila queda con error (Product.SalePriceError): no se redondea sin avisar.
-            if (row.SalePrice is not null)
-                return row.SalePrice.Value;
-
-            if (!string.IsNullOrWhiteSpace(row.SalePriceText) && row.SalePriceText.Contains(','))
-                errors.Add($"El precio de venta '{row.SalePriceText.Trim()}' tiene coma. Usa punto para los decimales y no separes los miles con comas, por ejemplo 1500.50.");
-            else if (!string.IsNullOrWhiteSpace(row.SalePriceText))
-                errors.Add($"El precio de venta '{row.SalePriceText.Trim()}' no es un número.");
-            else
-                errors.Add("El precio de venta es requerido.");
-
-            return null;
+            var text = string.Join('\n', plan.Select(e =>
+                $"{e.RowNumber}|{e.Code}|{e.Action}|{(e.Existing is { } existing ? _productRepository.VersionOf(existing) : 0)}"));
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
         }
     }
 

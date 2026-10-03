@@ -5,7 +5,8 @@ using ERP.Domain.UnitsOfMeasure;
 namespace ERP.Application.Features.UnitsOfMeasure.UpdateUnitOfMeasure
 {
     /// <summary>Solo el nombre corto se puede cambiar: el código y el nombre oficial son de SUNAT.</summary>
-    public sealed record UpdateUnitOfMeasureDto(Guid Id, string Name);
+    /// <param name="RowVersion">La versión que se vio en la lista.</param>
+    public sealed record UpdateUnitOfMeasureDto(Guid Id, string Name, uint RowVersion);
 
     public interface IUpdateUnitOfMeasureUseCase
     {
@@ -28,6 +29,12 @@ namespace ERP.Application.Features.UnitsOfMeasure.UpdateUnitOfMeasure
             var unit = await _unitOfMeasureRepository.GetByIdAsync(request.Id);
             if (unit is null)
                 return Result.Failure(["La unidad de medida no existe."], ErrorType.NotFound);
+
+            if (_unitOfMeasureRepository.VersionOf(unit) != request.RowVersion)
+                return Result.Failure(
+                    ["Otra persona modificó esta unidad mientras la editabas. Cierra el formulario y vuelve a abrirlo para ver los datos actuales."],
+                    ErrorType.Conflict
+                    );
 
             // Todo el catálogo (son pocas): el nombre no puede confundirse con el de otra unidad.
             var units = await _unitOfMeasureRepository.ListAllAsync();

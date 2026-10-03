@@ -15,8 +15,8 @@ namespace ERP.Api.Controllers.SavedViews.Requests
         {
             var errors = new List<string>();
 
-            if (Screen is null)
-                errors.Add("La pantalla es requerida.");
+            if (SavedView.ScreenError(Screen) is { } screenError)
+                errors.Add(screenError);
 
             SavedViewRequestRules.Validate(Name, Filters, errors);
 

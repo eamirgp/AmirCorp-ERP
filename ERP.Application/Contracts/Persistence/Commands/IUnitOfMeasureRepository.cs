@@ -13,5 +13,7 @@ namespace ERP.Application.Contracts.Persistence.Commands
 
         /// <summary>Cuántos productos usan la unidad, activos o no.</summary>
         Task<int> CountProductsUsingAsync(string code);
+
+        uint VersionOf(UnitOfMeasure unit);
     }
 }

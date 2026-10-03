@@ -13,6 +13,9 @@ namespace ERP.Api.Controllers.Products.Requests
         /// <summary>Si es true, los productos cuyo código ya existe se actualizan; si no, se omiten.</summary>
         public bool UpdateExisting { get; init; }
 
+        /// <summary>Al confirmar: la huella (<c>planVersion</c>) que entregó la vista previa. Sin ella no se importa.</summary>
+        public string? PlanVersion { get; init; }
+
         public IReadOnlyCollection<string> Validate()
         {
             var errors = new List<string>();
@@ -27,6 +30,6 @@ namespace ERP.Api.Controllers.Products.Requests
             return errors;
         }
 
-        public ImportProductsDto ToDto(Stream file) => new(file, UpdateExisting);
+        public ImportProductsDto ToDto(Stream file) => new(file, UpdateExisting, PlanVersion);
     }
 }

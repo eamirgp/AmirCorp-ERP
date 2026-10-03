@@ -6,6 +6,8 @@ namespace ERP.Domain.SavedViews
     /// <summary>
     /// Filtros, orden y filas por página que un usuario guarda con un nombre para una pantalla de lista.
     /// Es una preferencia personal: cada usuario ve solo las suyas. Una por pantalla puede ser la predeterminada.
+    /// Las reglas entre vistas (nombre que no se repite, máximo por pantalla, una sola predeterminada) reciben las demás
+    /// vistas del mismo usuario y pantalla.
     /// </summary>
     public sealed class SavedView : AuditableEntity
     {
@@ -29,54 +31,106 @@ namespace ERP.Domain.SavedViews
             IsDefault = isDefault;
         }
 
-        public static SavedView Create(Guid userId, SavedViewScreen screen, string name, string filters, bool isDefault)
+        /// <param name="siblings">Las vistas que el usuario ya tiene en esa pantalla.</param>
+        public static SavedView Create(Guid userId, SavedViewScreen screen, string name, string filters, bool isDefault, IReadOnlyCollection<SavedView> siblings)
         {
             if (userId == Guid.Empty)
                 throw new DomainException("El usuario es requerido.");
+            Throw(ScreenError(screen));
+            EnsureSiblings(userId, screen, siblings, exceptId: null);
+            Throw(NameError(name));
+            Throw(FiltersError(filters));
+            Throw(CreateError(name, siblings));
 
-            if (!Enum.IsDefined(screen))
-                throw new DomainException("La pantalla es inválida.");
+            var view = new SavedView(Guid.CreateVersion7(), userId, screen, NormalizeName(name), filters, isDefault: false);
+            if (isDefault)
+                view.MakeDefault(siblings);
+            return view;
+        }
 
-            return new(Guid.CreateVersion7(), userId, screen, ValidateName(name), ValidateFilters(filters), isDefault);
+        /// <summary>Renombra, cambia los filtros y marca o desmarca como predeterminada.</summary>
+        /// <param name="siblings">Las vistas del usuario en esa pantalla (puede incluir esta).</param>
+        public void Update(string name, string filters, bool isDefault, IReadOnlyCollection<SavedView> siblings)
+        {
+            EnsureSiblings(UserId, Screen, siblings, exceptId: Id);
+            Throw(NameError(name));
+            Throw(FiltersError(filters));
+            Throw(NameTakenError(name, siblings, Id));
+
+            Name = NormalizeName(name);
+            Filters = filters;
+
+            if (isDefault)
+                MakeDefault(siblings);
+            else
+                IsDefault = false;
         }
 
         public static string NormalizeName(string name) =>
             TextNormalizer.CollapseSpaces(name);
 
-        public void Rename(string name) =>
-            Name = ValidateName(name);
+        public static string? ScreenError(SavedViewScreen? screen) =>
+            screen switch
+            {
+                null => "La pantalla es requerida.",
+                { } value when !Enum.IsDefined(value) => "La pantalla es inválida.",
+                _ => null
+            };
 
-        public void UpdateFilters(string filters) =>
-            Filters = ValidateFilters(filters);
-
-        public void MarkAsDefault() =>
-            IsDefault = true;
-
-        public void UnmarkAsDefault() =>
-            IsDefault = false;
-
-        private static string ValidateName(string name)
+        public static string? NameError(string? name)
         {
             if (string.IsNullOrWhiteSpace(name))
-                throw new DomainException("El nombre de la vista es requerido.");
+                return "El nombre de la vista es requerido.";
 
-            var normalized = NormalizeName(name);
+            if (NormalizeName(name).Length > NameMaxLength)
+                return $"El nombre de la vista no puede exceder los {NameMaxLength} caracteres.";
 
-            if (normalized.Length > NameMaxLength)
-                throw new DomainException($"El nombre de la vista no puede exceder los {NameMaxLength} caracteres.");
-
-            return normalized;
+            return null;
         }
 
-        private static string ValidateFilters(string filters)
+        /// <summary>Los filtros son el texto que guarda la pantalla: pueden ir vacíos, pero no faltar.</summary>
+        public static string? FiltersError(string? filters) =>
+            filters switch
+            {
+                null => "Los filtros de la vista son requeridos.",
+                { Length: > FiltersMaxLength } => $"Los filtros de la vista no pueden exceder los {FiltersMaxLength} caracteres.",
+                _ => null
+            };
+
+        /// <summary>Qué impide guardar una vista nueva con ese nombre: el máximo por pantalla o un nombre repetido.</summary>
+        public static string? CreateError(string name, IReadOnlyCollection<SavedView> siblings) =>
+            siblings.Count >= MaxPerScreen
+                ? $"Ya tienes {MaxPerScreen} vistas guardadas en esta pantalla. Elimina alguna para guardar otra."
+                : NameTakenError(name, siblings, exceptId: null);
+
+        /// <summary>El nombre no se repite en la pantalla, sin distinguir mayúsculas.</summary>
+        public static string? NameTakenError(string name, IReadOnlyCollection<SavedView> siblings, Guid? exceptId)
         {
-            if (filters is null)
-                throw new DomainException("Los filtros de la vista son requeridos.");
+            var normalized = NormalizeName(name);
+            return siblings.Any(v => v.Id != exceptId && string.Equals(v.Name, normalized, StringComparison.OrdinalIgnoreCase))
+                ? $"Ya tienes una vista llamada «{normalized}»."
+                : null;
+        }
 
-            if (filters.Length > FiltersMaxLength)
-                throw new DomainException($"Los filtros de la vista no pueden exceder los {FiltersMaxLength} caracteres.");
+        // Solo una vista por pantalla es la predeterminada: al elegir esta, las demás dejan de serlo.
+        private void MakeDefault(IReadOnlyCollection<SavedView> siblings)
+        {
+            foreach (var view in siblings.Where(v => v.Id != Id && v.IsDefault))
+                view.IsDefault = false;
 
-            return filters;
+            IsDefault = true;
+        }
+
+        private static void EnsureSiblings(Guid userId, SavedViewScreen screen, IReadOnlyCollection<SavedView> siblings, Guid? exceptId)
+        {
+            if (siblings.Any(v => v.Id != exceptId && (v.UserId != userId || v.Screen != screen)))
+                throw new DomainException("Las vistas comparadas deben ser del mismo usuario y pantalla.");
+        }
+
+        private static void Throw(string? error)
+        {
+            if (error is not null)
+                throw new DomainException(error);
         }
     }
 }

@@ -1,12 +1,12 @@
 using ERP.Application.Common.Pagination;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Queries;
+using ERP.Domain.Common;
 
 namespace ERP.Application.Features.Audit.ListAuditEntries
 {
     internal sealed class ListAuditEntriesUseCase : IListAuditEntriesUseCase
     {
-        private static readonly TimeZoneInfo PeruTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
         private static readonly DateOnly MinDay = new(2000, 1, 1);
         private static readonly DateOnly MaxDay = new(2100, 12, 31);
 
@@ -32,16 +32,12 @@ namespace ERP.Application.Features.Audit.ListAuditEntries
                 request.EntityId,
                 request.UserId,
                 request.Action,
-                request.From is { } start ? StartOfDayUtc(start) : null,
-                request.To is { } end ? StartOfDayUtc(end.AddDays(1)) : null,
+                request.From is { } start ? PeruCalendar.StartOfDayUtc(start) : null,
+                request.To is { } end ? PeruCalendar.StartOfDayUtc(end.AddDays(1)) : null,
                 request.SearchTerm
                 );
 
             return Result<PagedResult<AuditEntryDto>>.Success(await _auditQueries.ListAsync(filter));
         }
-
-        // Un día en Perú empieza a las 00:00 de Lima, que en UTC son las 05:00.
-        private static DateTime StartOfDayUtc(DateOnly day) =>
-            TimeZoneInfo.ConvertTimeToUtc(day.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified), PeruTimeZone);
     }
 }

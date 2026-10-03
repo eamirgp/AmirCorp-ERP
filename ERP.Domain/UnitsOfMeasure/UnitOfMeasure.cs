@@ -106,8 +106,27 @@ namespace ERP.Domain.UnitsOfMeasure
         public void Activate() =>
             IsActive = true;
 
-        public void Deactivate() =>
+        /// <param name="productsUsing">Cuántos productos (activos o no) la tienen como unidad.</param>
+        public void Deactivate(int productsUsing)
+        {
+            if (DeactivateError(productsUsing) is { } error)
+                throw new DomainException(error);
+
             IsActive = false;
+        }
+
+        /// <summary>
+        /// Qué impide desactivarla, o null si se puede. Una unidad que usa algún producto no se desactiva: el producto
+        /// quedaría con una unidad que ya no aparece en las listas. Primero hay que cambiarles la unidad.
+        /// </summary>
+        public string? DeactivateError(int productsUsing) =>
+            productsUsing switch
+            {
+                < 0 => throw new DomainException("La cantidad de productos no puede ser negativa."),
+                0 => null,
+                1 => $"No se puede desactivar {Name}: la usa 1 producto. Cámbiale la unidad de medida y vuelve a intentarlo.",
+                _ => $"No se puede desactivar {Name}: la usan {productsUsing.ToString(CultureInfo.InvariantCulture)} productos. Cámbiales la unidad de medida y vuelve a intentarlo."
+            };
 
         private static bool SameText(string a, string b) =>
             string.Compare(a, b, CultureInfo.InvariantCulture, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) == 0;

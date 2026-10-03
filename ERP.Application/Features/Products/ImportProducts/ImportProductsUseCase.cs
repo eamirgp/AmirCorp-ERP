@@ -44,6 +44,16 @@ namespace ERP.Application.Features.Products.ImportProducts
                 return Result<ProductImportResultDto>.Failure(shown, ErrorType.BadRequest);
             }
 
+            // Se guarda exactamente lo que se revisó: si alguien creó o editó esos productos mientras tanto, el plan ya no
+            // es el mismo y la importación pisaría su cambio sin que nadie lo viera.
+            if (string.IsNullOrWhiteSpace(request.PlanVersion))
+                return Result<ProductImportResultDto>.Failure(["Revisa el archivo antes de importar."], ErrorType.BadRequest);
+
+            if (request.PlanVersion != _planner.VersionOf(plan))
+                return Result<ProductImportResultDto>.Failure(
+                    ["Los productos cambiaron desde que revisaste el archivo: alguien los creó o editó mientras tanto. Vuelve a revisarlo antes de importar."],
+                    ErrorType.Conflict);
+
             var created = plan.Count(e => e.Action == ProductImportAction.Create);
             var updated = plan.Count(e => e.Action == ProductImportAction.Update);
 

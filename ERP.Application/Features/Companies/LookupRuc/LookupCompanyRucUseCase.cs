@@ -34,7 +34,7 @@ namespace ERP.Application.Features.Companies.LookupRuc
             var warnings = new List<string>();
 
             if (data.Ruc is { } sunat && !TaxpayerStatus.IsActiveAndLocated(sunat.Status, sunat.Condition))
-                warnings.Add($"Según SUNAT está {sunat.Status} y {sunat.Condition}. Revísalo con tu contador: sus comprobantes podrían no ser válidos.");
+                warnings.Add($"{TaxpayerStatus.Describe(sunat.Status, sunat.Condition)}. Revísalo con tu contador: sus comprobantes podrían no ser válidos.");
 
             if (await _companyRepository.RucExistsAsync(data.DocumentNumber, companyId))
                 warnings.Add("Ya hay una empresa registrada con este RUC.");

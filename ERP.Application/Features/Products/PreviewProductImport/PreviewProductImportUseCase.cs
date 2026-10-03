@@ -32,7 +32,8 @@ namespace ERP.Application.Features.Products.PreviewProductImport
                 plan.Count(e => e.Action == ProductImportAction.Update),
                 plan.Count(e => e.Action == ProductImportAction.Skip),
                 plan.Count(e => e.Action == ProductImportAction.Unchanged),
-                plan.Count(e => e.Action == ProductImportAction.Error)
+                plan.Count(e => e.Action == ProductImportAction.Error),
+                _planner.VersionOf(plan)
                 ));
         }
     }

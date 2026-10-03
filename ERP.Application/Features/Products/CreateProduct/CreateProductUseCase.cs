@@ -29,13 +29,17 @@ namespace ERP.Application.Features.Products.CreateProduct
 
         public async Task<Result<CreatedResponseDto>> ExecuteAsync(CreateProductDto request)
         {
-            if (await _productRepository.CodeExistsAsync(request.Code))
-                return Result<CreatedResponseDto>.Failure(["El código interno ya se encuentra en uso."], ErrorType.Conflict);
+            // Todos los errores juntos: el código repetido, la unidad y los códigos de proveedores.
+            var errors = new List<string>();
+            var codeTaken = await _productRepository.CodeExistsAsync(request.Code);
+            if (codeTaken)
+                errors.Add("El código interno ya se encuentra en uso.");
 
-            // La misma regla del dominio, revisada antes para responder con el mensaje en vez de una excepción.
+            // La misma regla del dominio, revisada antes para responder con el mensaje en vez de una excepción. Sin una
+            // unidad que sirva no se puede armar el producto para revisar lo demás.
             var unit = await _unitOfMeasureRepository.GetByCodeAsync(request.UnitOfMeasureCode);
             if (UnitOfMeasure.UsableError(unit, request.UnitOfMeasureCode) is { } unitError)
-                return Result<CreatedResponseDto>.Failure([unitError], ErrorType.BadRequest);
+                return Result<CreatedResponseDto>.Failure([.. errors, unitError], ErrorType.BadRequest);
 
             var product = Product.Create(
                 request.Code,
@@ -47,7 +51,10 @@ namespace ERP.Application.Features.Products.CreateProduct
 
             var supplierCodes = await ProductSupplierCodeRules.CheckAsync(request.SupplierCodes, product, _businessPartnerRepository, _productRepository);
             if (!supplierCodes.IsSuccess)
-                return Result<CreatedResponseDto>.Failure(supplierCodes.Errors, supplierCodes.ErrorType!.Value);
+                errors.AddRange(supplierCodes.Errors);
+
+            if (errors.Count > 0)
+                return Result<CreatedResponseDto>.Failure(errors, codeTaken ? ErrorType.Conflict : supplierCodes.ErrorType!.Value);
 
             product.SetSupplierCodes(supplierCodes.Value!);
 

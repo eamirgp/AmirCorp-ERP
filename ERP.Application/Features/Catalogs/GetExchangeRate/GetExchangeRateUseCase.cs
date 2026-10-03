@@ -3,6 +3,7 @@ using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Infrastructure;
 using ERP.Application.Contracts.Persistence.Commands;
 using ERP.Domain.Catalogs;
+using ERP.Domain.Common;
 
 namespace ERP.Application.Features.Catalogs.GetExchangeRate
 {
@@ -35,10 +36,6 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
     internal sealed class GetExchangeRateUseCase : IGetExchangeRateUseCase
     {
         private const string Source = "SUNAT";
-        // Cuánto se retrocede como máximo buscando el último publicado (feriados largos incluidos).
-        private const int MaxDaysBack = 10;
-        private static readonly DateOnly MinDate = new(2000, 1, 1);
-        private static readonly TimeZoneInfo PeruTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
 
         private readonly IExchangeRateLookup _exchangeRateLookup;
         private readonly IExchangeRateRepository _exchangeRateRepository;
@@ -57,13 +54,10 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
             if (currency is not Currency.USD)
                 return Failure(["Solo hay tipo de cambio para dólares."], ErrorType.BadRequest);
 
-            var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, PeruTimeZone));
-            if (date > today)
-                return Failure(["La fecha no puede ser mayor a la fecha actual."], ErrorType.BadRequest);
-
-            // Un año mal escrito (0001, 1900): no hay nada que consultar.
-            if (date < MinDate)
-                return Failure(["La fecha es demasiado antigua. Revisa el año."], ErrorType.BadRequest);
+            var now = DateTime.UtcNow;
+            var today = PeruCalendar.Today(now);
+            if (ExchangeRate.LookupDateError(date, today) is { } dateError)
+                return Failure([dateError], ErrorType.BadRequest);
 
             if (await _exchangeRateRepository.GetAsync(currency, date) is { } stored)
                 return Success(stored.SellRate, stored.PublishedDate, date);
@@ -74,8 +68,7 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
             if (!_exchangeRateLookup.IsConfigured)
                 return Failure([$"La consulta del tipo de cambio en {Source} no está configurada. Escríbelo a mano."], ErrorType.Unavailable);
 
-            var now = DateTime.UtcNow;
-            var notBefore = date.AddDays(-MaxDaysBack);
+            var notBefore = ExchangeRate.OldestApplicable(date);
             // Lo que ya está guardado en los meses consultados (el de la fecha y, si hace falta, el anterior), para no
             // guardarlo dos veces.
             var monthStart = new DateOnly(date.Year, date.Month, 1);
@@ -106,7 +99,7 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
 
             // 3) El que aplica: el de la fecha o, si ese día no se publicó, el último anterior (lo recién traído o lo guardado).
             // Si el servicio no respondió, no se usa lo guardado: ese día pudo tener una publicación que todavía no se conoce.
-            var providerFailed = failure is RucLookupFailure.Unauthorized or RucLookupFailure.Unavailable;
+            var providerFailed = failure is RucLookupFailure.Unauthorized or RucLookupFailure.Unavailable or RucLookupFailure.QuotaExceeded;
             var fromProvider = published.Where(r => r.Date <= date && r.Date >= notBefore).OrderByDescending(r => r.Date).FirstOrDefault();
             var fromStore = providerFailed ? null : await _exchangeRateRepository.LatestOnOrBeforeAsync(currency, date, notBefore);
 
@@ -125,14 +118,16 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
                         ErrorType.Unavailable),
                     RucLookupFailure.Unavailable => Failure(
                         [$"No se pudo consultar {Source} en este momento. Inténtalo en unos minutos o escribe el tipo de cambio a mano."], ErrorType.Unavailable),
+                    RucLookupFailure.QuotaExceeded => Failure(
+                        [$"Se acabaron las consultas a {Source} de este mes. Escribe el tipo de cambio a mano; las consultas vuelven el próximo mes."], ErrorType.Unavailable),
                     _ => Failure([$"{Source} no tiene tipo de cambio publicado para el {Text(date)}. Escríbelo a mano."], ErrorType.NotFound),
                 };
             }
 
             // Un día pasado sin publicación ya no la tendrá: se guarda con el último publicado para no volver a
-            // consultarlo. Solo si lo confirmó el servicio (lo que trajo es lo que aplica), no con lo guardado solamente.
-            // El de hoy no se guarda así, porque puede publicarse más tarde.
-            if (best.Date != date && date < today && best == fromProvider && known.Add(date))
+            // consultarlo (la regla de cuándo, en el dominio). Solo si lo confirmó el servicio (lo que trajo es lo que
+            // aplica), no con lo guardado solamente.
+            if (ExchangeRate.StoresDayWithoutPublication(date, best.Date, today) && best == fromProvider && known.Add(date))
                 _exchangeRateRepository.Add(ExchangeRate.Create(currency, date, best.Date, best.BuyRate, best.SellRate, Source, now));
 
             await _unitOfWork.SaveChangesAsync();

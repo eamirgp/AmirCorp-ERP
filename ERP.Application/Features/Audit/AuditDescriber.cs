@@ -22,6 +22,10 @@ namespace ERP.Application.Features.Audit
         public const string PasswordProperty = "PasswordHash";
         /// <summary>El producto guarda el código de la unidad; el historial muestra su nombre ("NIU" → "Unidad").</summary>
         public const string UnitOfMeasureCodeProperty = nameof(Product.UnitOfMeasureCode);
+        /// <summary>Autor de los cambios que hace el sistema sin un usuario (por ejemplo, el SuperAdmin al arrancar).</summary>
+        public const string SystemUserName = "Sistema";
+        /// <summary>Si el proveedor de un código ya no se encuentra (no debería pasar: hay llave foránea).</summary>
+        public const string UnknownSupplierName = "proveedor";
 
 
         // Map: para campos que guardan un código y se muestran con su nombre (el país "CN" → "China").

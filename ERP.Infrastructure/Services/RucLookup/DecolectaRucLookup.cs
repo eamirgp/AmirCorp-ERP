@@ -48,8 +48,11 @@ namespace ERP.Infrastructure.Services.RucLookup
                 if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
                     return RucLookupOutcome.Failed(RucLookupFailure.Unauthorized);
 
-                // Decolecta responde 422 cuando el RUC no existe o no es válido.
-                if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity)
+                if (response.StatusCode is HttpStatusCode.TooManyRequests)
+                    return RucLookupOutcome.Failed(RucLookupFailure.QuotaExceeded);
+
+                // Decolecta responde 422 (o 400) cuando el RUC no existe o no es válido.
+                if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity)
                     return RucLookupOutcome.Failed(RucLookupFailure.NotFound);
 
                 if (!response.IsSuccessStatusCode)
@@ -67,7 +70,7 @@ namespace ERP.Infrastructure.Services.RucLookup
                     Address(body)
                     ));
             }
-            catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException) && !ct.IsCancellationRequested)
+            catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException or NotSupportedException) && !ct.IsCancellationRequested)
             {
                 return RucLookupOutcome.Failed(RucLookupFailure.Unavailable);
             }
@@ -89,6 +92,9 @@ namespace ERP.Infrastructure.Services.RucLookup
                 if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
                     return DniLookupOutcome.Failed(RucLookupFailure.Unauthorized);
 
+                if (response.StatusCode is HttpStatusCode.TooManyRequests)
+                    return DniLookupOutcome.Failed(RucLookupFailure.QuotaExceeded);
+
                 if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity)
                     return DniLookupOutcome.Failed(RucLookupFailure.NotFound);
 
@@ -101,7 +107,7 @@ namespace ERP.Infrastructure.Services.RucLookup
 
                 return DniLookupOutcome.Found(body.FullName.Trim());
             }
-            catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException) && !ct.IsCancellationRequested)
+            catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException or NotSupportedException) && !ct.IsCancellationRequested)
             {
                 return DniLookupOutcome.Failed(RucLookupFailure.Unavailable);
             }

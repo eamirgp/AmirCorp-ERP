@@ -1,4 +1,3 @@
-using ERP.Application.Common.Formatting;
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
 
@@ -61,17 +60,12 @@ namespace ERP.Application.Features.UnitsOfMeasure.ToggleUnitOfMeasure
             if (unit is null)
                 return Result.Failure(["La unidad de medida no existe."], ErrorType.NotFound);
 
+            // El caso de uso cuenta los productos; la regla la decide el dominio.
             var products = await _unitOfMeasureRepository.CountProductsUsingAsync(unit.Code);
-            if (products > 0)
-            {
-                var count = products == 1 ? "1 producto" : $"{NumberText.Integer(products)} productos";
-                return Result.Failure(
-                    [$"No se puede desactivar {unit.Name}: la usan {count}. Cámbiales la unidad de medida y vuelve a intentarlo."],
-                    ErrorType.Conflict
-                    );
-            }
+            if (unit.DeactivateError(products) is { } error)
+                return Result.Failure([error], ErrorType.Conflict);
 
-            unit.Deactivate();
+            unit.Deactivate(products);
 
             await _unitOfWork.SaveChangesAsync();
 

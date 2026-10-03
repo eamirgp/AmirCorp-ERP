@@ -1,4 +1,5 @@
 ﻿using ERP.Domain.Common;
+using ERP.Domain.Purchases;
 
 namespace ERP.Domain.Inventory
 {
@@ -30,6 +31,21 @@ namespace ERP.Domain.Inventory
             RemainingQuantity = originalQuantity;
             UnitCost = unitCost;
             EntryDate = entryDate;
+        }
+
+        /// <summary>
+        /// Lo que entra al stock por una línea de compra: sus unidades y su costo por unidad (sin IGV), en la empresa que
+        /// compra y con la fecha de emisión del comprobante.
+        /// </summary>
+        public static StockEntry FromPurchaseLine(Purchase purchase, PurchaseLine line)
+        {
+            if (purchase.IsCancelled)
+                throw new DomainException("Una compra anulada no ingresa mercadería al stock.");
+
+            if (line.PurchaseId != purchase.Id)
+                throw new DomainException("La línea no es de esta compra.");
+
+            return Create(purchase.CompanyId, line.ProductId, line.Id, line.InventoryQuantity, line.InventoryUnitCost, purchase.IssueDate);
         }
 
         public static StockEntry Create(

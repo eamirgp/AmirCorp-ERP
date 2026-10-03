@@ -32,7 +32,8 @@ namespace ERP.Persistence.Queries
                 u.SunatName,
                 u.FixedConversionFactor,
                 u.IsActive,
-                _context.Products.Count(p => p.UnitOfMeasureCode == u.Code)
+                _context.Products.Count(p => p.UnitOfMeasureCode == u.Code),
+                EF.Property<uint>(u, "RowVersion")
                 ))
             .ToArrayAsync();
     }

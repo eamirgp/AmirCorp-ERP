@@ -7,7 +7,9 @@ namespace ERP.Application.Features.Products.ProductImport
         int ToUpdate,
         int Skipped,
         int Unchanged,
-        int WithErrors
+        int WithErrors,
+        // Huella del plan: la confirmación la devuelve y, si los productos cambiaron desde esta revisión, no guarda.
+        string PlanVersion
         )
     {
         /// <summary>Productos que se guardarán al confirmar: los nuevos más los actualizados.</summary>

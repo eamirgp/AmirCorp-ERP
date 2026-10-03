@@ -1,6 +1,7 @@
 using ERP.Domain.Catalogs;
 using ERP.Domain.Common;
 using ERP.Domain.Companies;
+using ERP.Domain.Inventory;
 using ERP.Domain.Partners;
 using ERP.Domain.Partners.Enums;
 using ERP.Domain.Products;
@@ -13,12 +14,11 @@ namespace ERP.Domain.Purchases
         public const int SerieMaxLength = 4;
         public const int NumberMaxLength = 8;
         public const int CancellationReasonMaxLength = 200;
-        // La columna es numeric(18,6). Un dólar nunca valdrá tanto: más es un error de tipeo.
-        public const decimal ExchangeRateMax = 1000m;
-        public const int ExchangeRateDecimals = 6;
+        // Los mismos límites del tipo de cambio guardado: más es un error de tipeo.
+        public const decimal ExchangeRateMax = Catalogs.ExchangeRate.RateMax;
+        public const int ExchangeRateDecimals = Catalogs.ExchangeRate.RateDecimals;
         private static readonly DateOnly MinIssueDate = new(2000, 1, 1);
 
-        private static readonly TimeZoneInfo PeruTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Lima");
 
         public Guid CompanyId { get; }
         /// <summary>Copia del RUC y la razón social de la empresa al registrar la compra (el comprador del comprobante).</summary>
@@ -161,6 +161,9 @@ namespace ERP.Domain.Purchases
             decimal? conversionFactor
             )
         {
+            if (IsCancelled)
+                throw new DomainException("No se pueden agregar productos a una compra anulada.");
+
             if (ProductError(product) is { } productError)
                 throw new DomainException(productError);
 
@@ -232,14 +235,34 @@ namespace ERP.Domain.Purchases
             Total = totals.Total;
         }
 
-        public void Cancel(string cancellationReason)
+        /// <summary>
+        /// Anula la compra. Su mercadería sale del stock (quien llama quita sus ingresos), así que no se puede anular si
+        /// ya tuvo salidas: se vendió o se movió algo de lo que trajo.
+        /// </summary>
+        /// <param name="stockEntries">Los ingresos de stock de las líneas de esta compra.</param>
+        public void Cancel(string cancellationReason, IReadOnlyCollection<StockEntry> stockEntries)
         {
-            if (IsCancelled)
-                throw new DomainException("La compra ya se encuentra anulada.");
+            Throw(CancelError(stockEntries));
             Throw(CancellationReasonError(cancellationReason));
 
             CancellationReason = TextNormalizer.CollapseSpaces(cancellationReason);
             IsCancelled = true;
+        }
+
+        /// <summary>Qué impide anular la compra, o null si se puede. El caso de uso la revisa antes para responder el mensaje.</summary>
+        /// <param name="stockEntries">Los ingresos de stock de las líneas de esta compra.</param>
+        public string? CancelError(IReadOnlyCollection<StockEntry> stockEntries)
+        {
+            if (IsCancelled)
+                return "La compra ya se encuentra anulada.";
+
+            if (stockEntries.Any(e => _lines.All(l => l.Id != e.PurchaseLineId)))
+                throw new DomainException("Los ingresos de stock no son de esta compra.");
+
+            if (stockEntries.Any(e => !e.IsIntact))
+                return "No se puede anular la compra porque su mercadería ya tuvo movimientos de salida.";
+
+            return null;
         }
 
         // Sin espacios alrededor: un "F001 " pegado de otro lado es la serie F001.
@@ -316,7 +339,7 @@ namespace ERP.Domain.Purchases
             if (issueDate is null)
                 return "La fecha de emisión es requerida.";
 
-            if (issueDate > DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, PeruTimeZone)))
+            if (issueDate > PeruCalendar.Today(DateTime.UtcNow))
                 return "La fecha de emisión no puede ser mayor a la fecha actual.";
 
             if (issueDate < MinIssueDate)

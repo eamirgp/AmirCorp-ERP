@@ -107,14 +107,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                     line.ConversionFactor
                     );
 
-                stockEntries.Add(StockEntry.Create(
-                    company.Id,
-                    purchaseLine.ProductId,
-                    purchaseLine.Id,
-                    purchaseLine.InventoryQuantity,
-                    purchaseLine.InventoryUnitCost,
-                    request.IssueDate
-                    ));
+                stockEntries.Add(StockEntry.FromPurchaseLine(purchase, purchaseLine));
             }
 
             purchase.EnsureHasLines();

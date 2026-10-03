@@ -9,9 +9,6 @@ namespace ERP.Persistence.Queries
 {
     internal sealed class AuditQueries : IAuditQueries
     {
-        // Nombre del autor de los cambios que hace el sistema sin un usuario (ej.: el SuperAdmin al arrancar).
-        private const string SystemUserName = "Sistema";
-
         private readonly ErpDbContext _context;
 
         public AuditQueries(ErpDbContext context) => _context = context;
@@ -73,7 +70,7 @@ namespace ERP.Persistence.Queries
                     a.Id,
                     a.OccurredAt,
                     a.UserId,
-                    a.UserName ?? SystemUserName,
+                    a.UserName ?? AuditDescriber.SystemUserName,
                     a.EntityType,
                     a.EntityId,
                     a.EntityLabel,

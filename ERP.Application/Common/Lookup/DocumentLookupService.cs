@@ -60,6 +60,9 @@ namespace ERP.Application.Common.Lookup
                 RucLookupFailure.Unauthorized => Failure(
                     ["El servicio de consulta rechazó la clave: puede haber vencido. Avisa al administrador del sistema y, mientras tanto, escribe el nombre a mano."],
                     ErrorType.Unavailable),
+                RucLookupFailure.QuotaExceeded => Failure(
+                    [$"Se acabaron las consultas a {source} de este mes. Escribe el nombre a mano; las consultas vuelven el próximo mes."],
+                    ErrorType.Unavailable),
                 _ => Failure(
                     [$"No se pudo consultar {source} en este momento. Inténtalo en unos minutos o escribe el nombre a mano."], ErrorType.Unavailable),
             };

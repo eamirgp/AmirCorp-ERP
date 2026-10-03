@@ -38,7 +38,9 @@ namespace ERP.Application.Contracts.Infrastructure
         /// <summary>El proveedor rechazó la clave (vencida o mal copiada).</summary>
         Unauthorized,
         /// <summary>El proveedor no respondió o falló.</summary>
-        Unavailable
+        Unavailable,
+        /// <summary>Se acabaron las consultas del plan (Decolecta da 1000 al mes): reintentar no sirve hasta el próximo mes.</summary>
+        QuotaExceeded
     }
 
     /// <summary>Resultado de la consulta: los datos o el motivo por el que no se obtuvieron.</summary>

@@ -42,6 +42,9 @@ namespace ERP.Infrastructure.Services.RucLookup
                 if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
                     return ExchangeRateOutcome.Failed(RucLookupFailure.Unauthorized);
 
+                if (response.StatusCode is HttpStatusCode.TooManyRequests)
+                    return ExchangeRateOutcome.Failed(RucLookupFailure.QuotaExceeded);
+
                 if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity)
                     return ExchangeRateOutcome.Failed(RucLookupFailure.NotFound);
 

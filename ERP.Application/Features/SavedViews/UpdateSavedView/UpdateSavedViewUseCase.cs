@@ -32,16 +32,11 @@ namespace ERP.Application.Features.SavedViews.UpdateSavedView
 
             var views = await _savedViewRepository.ListByUserAndScreenAsync(_currentUser.Id, view.Screen);
 
-            if (SavedViewRules.NameTaken(views, request.Name, view.Id))
-                return Result.Failure([$"Ya tienes una vista llamada «{SavedView.NormalizeName(request.Name)}»."], ErrorType.Conflict);
+            // La regla del dominio, revisada antes para responder el mensaje.
+            if (SavedView.NameTakenError(request.Name, views, view.Id) is { } error)
+                return Result.Failure([error], ErrorType.Conflict);
 
-            view.Rename(request.Name);
-            view.UpdateFilters(request.Filters);
-
-            if (request.IsDefault)
-                SavedViewRules.MakeDefault(views, view);
-            else
-                view.UnmarkAsDefault();
+            view.Update(request.Name, request.Filters, request.IsDefault, views);
 
             await _unitOfWork.SaveChangesAsync();
 

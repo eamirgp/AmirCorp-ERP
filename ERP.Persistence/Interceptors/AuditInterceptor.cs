@@ -22,6 +22,11 @@ namespace ERP.Persistence.Interceptors
 
         public AuditInterceptor(ICurrentUser currentUser) => _currentUser = currentUser;
 
+        // El historial necesita consultar la base (nombres de unidades y proveedores), así que solo se guarda con
+        // SaveChangesAsync. Un SaveChanges sin await guardaría sin historial: se rechaza para que no pase sin aviso.
+        public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result) =>
+            throw new InvalidOperationException("Usa SaveChangesAsync: el historial de cambios solo se registra al guardar de forma asíncrona.");
+
         public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
             DbContextEventData eventData,
             InterceptionResult<int> result,
@@ -143,7 +148,7 @@ namespace ERP.Persistence.Interceptors
                         .Select(e =>
                         {
                             var code = e.Property(c => c.Code);
-                            var name = names.GetValueOrDefault(e.Entity.SupplierId, "proveedor");
+                            var name = names.GetValueOrDefault(e.Entity.SupplierId, AuditDescriber.UnknownSupplierName);
                             return e.State switch
                             {
                                 EntityState.Added => AuditDescriber.SupplierCodeChange(name, null, code.CurrentValue),
