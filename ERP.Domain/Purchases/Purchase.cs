@@ -199,7 +199,8 @@ namespace ERP.Domain.Purchases
         public static string DuplicateDocumentError(Guid companyId, Guid registeredCompanyId, string registeredCompanyName) =>
             registeredCompanyId == companyId
                 ? "El comprobante ya se encuentra registrado para este proveedor."
-                : $"El comprobante ya está registrado en la empresa {registeredCompanyName}. Un comprobante del proveedor va a una sola empresa: revisa cuál hizo la compra.";
+                // El nombre no cierra la oración: las razones sociales suelen terminar en punto ("E.I.R.L.").
+                : $"La empresa {registeredCompanyName} ya tiene registrado este comprobante, y un comprobante del proveedor va a una sola empresa. Revisa cuál hizo la compra.";
 
         /// <summary>Qué impide comprar el producto, o null si se puede.</summary>
         public static string? ProductError(Product product) =>
