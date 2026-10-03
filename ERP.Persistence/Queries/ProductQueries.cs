@@ -20,6 +20,16 @@ namespace ERP.Persistence.Queries
         {
             var query = Filter(_context.Products.AsNoTracking(), listProductsDto.SearchTerm, listProductsDto.IsActive);
 
+            // En una compra, la primera búsqueda es entre lo que ya se le compra a ese proveedor. Un proveedor que
+            // todavía no está registrado (se crea con la compra) no tiene ninguno.
+            if (listProductsDto.OnlySupplierProducts)
+            {
+                var onlySupplierId = listProductsDto.SupplierId;
+                query = onlySupplierId is null
+                    ? query.Where(p => false)
+                    : query.Where(p => p.SupplierCodes.Any(c => c.SupplierId == onlySupplierId));
+            }
+
             var totalCount = await query.CountAsync();
 
             // Si la página pedida ya no existe, se devuelve la última.

@@ -11,7 +11,9 @@ namespace ERP.Api.Controllers.Products.Requests
         ProductSortBy? SortBy,
         bool? SortDescending,
         // Si se indica, cada producto trae en SupplierCode el código de este proveedor.
-        Guid? SupplierId
+        Guid? SupplierId,
+        // Solo los productos enlazados a ese proveedor (los que tienen un código suyo). Sin proveedor, ninguno.
+        bool? OnlySupplierProducts
         )
     {
         public ListProductsDto ToDto() =>
@@ -22,7 +24,8 @@ namespace ERP.Api.Controllers.Products.Requests
                 IsActive,
                 SortBy ?? ListProductsDto.DefaultSortBy,
                 SortBy is null ? ListProductsDto.DefaultSortDescending : SortDescending ?? false,
-                SupplierId
+                SupplierId,
+                OnlySupplierProducts ?? false
                 );
     }
 }
