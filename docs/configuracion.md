@@ -22,6 +22,7 @@ El código siempre lee `configuration["Clave"]` y no sabe de dónde viene el val
 |---|---|---|
 | `ConnectionStrings:DB` | Conexión a PostgreSQL | La API no arranca y muestra qué falta |
 | `JwtSettings:Secret` | Firma de los tokens (mínimo 32 caracteres) | La API no arranca y muestra qué falta |
+| `JwtSettings:Issuer`, `:Audience`, `:ExpirationInMinutes` | Emisor, audiencia y duración del token de acceso (vienen en `appsettings.json`) | La API no arranca y muestra qué falta (antes arrancaba y cada pedido daba 401) |
 | `SuperAdmin:Name`, `:Email`, `:Password` | Crear el primer usuario | La API arranca con un aviso; solo hacen falta con la base vacía |
 
 ## Claves opcionales
