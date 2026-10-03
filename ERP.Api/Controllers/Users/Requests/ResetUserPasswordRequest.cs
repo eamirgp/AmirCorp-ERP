@@ -10,17 +10,9 @@ namespace ERP.Api.Controllers.Users.Requests
         string? NewPassword
         )
     {
-        public IReadOnlyCollection<string> Validate()
-        {
-            var errors = new List<string>();
-
-            if (string.IsNullOrWhiteSpace(NewPassword))
-                errors.Add("La contraseña es requerida.");
-            else if (NewPassword.Length < User.PasswordMinLength)
-                errors.Add($"La contraseña debe tener al menos {User.PasswordMinLength} caracteres.");
-
-            return errors;
-        }
+        // La misma regla del dominio, revisada antes para responder con el mensaje.
+        public IReadOnlyCollection<string> Validate() =>
+            User.PasswordError(NewPassword) is { } error ? [error] : [];
 
         public ResetUserPasswordDto ToDto(Guid id) =>
             new(id, NewPassword!);

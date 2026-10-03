@@ -1,16 +1,24 @@
-﻿using ERP.Domain.Users.Enums;
+using ERP.Application.Contracts.Api;
+using ERP.Domain.Users;
+using ERP.Domain.Users.Enums;
 
 namespace ERP.Application.Features.Users.ListAssignableRoles
 {
+    /// <summary>
+    /// Los roles que quien consulta puede dar: solo los menores al suyo (<see cref="User.AssignRoleError"/>). Así el
+    /// formulario no ofrece uno que después se rechazaría.
+    /// </summary>
     internal sealed class ListAssignableRolesUseCase : IListAssignableRolesUseCase
     {
-        private static readonly IReadOnlyCollection<ListAssignableRolesResponseDto> _userRoles =
-            Enum.GetValues<UserRole>()
-            .Where(ur => ur != UserRole.SuperAdmin)
-            .Select(ur => new ListAssignableRolesResponseDto(ur, ur.Description))
-            .ToArray();
+        private readonly ICurrentUser _currentUser;
+
+        public ListAssignableRolesUseCase(ICurrentUser currentUser) => _currentUser = currentUser;
 
         public Task<IReadOnlyCollection<ListAssignableRolesResponseDto>> ExecuteAsync() =>
-            Task.FromResult(_userRoles);
+            Task.FromResult<IReadOnlyCollection<ListAssignableRolesResponseDto>>(
+                Enum.GetValues<UserRole>()
+                    .Where(role => User.AssignRoleError(_currentUser.Role, role) is null)
+                    .Select(role => new ListAssignableRolesResponseDto(role, role.Description))
+                    .ToArray());
     }
 }

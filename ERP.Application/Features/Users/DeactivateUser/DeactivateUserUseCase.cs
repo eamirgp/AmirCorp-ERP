@@ -1,7 +1,6 @@
-﻿using ERP.Application.Common.Results;
+using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Api;
 using ERP.Application.Contracts.Persistence.Commands;
-using ERP.Domain.Users.Enums;
 
 namespace ERP.Application.Features.Users.DeactivateUser
 {
@@ -28,10 +27,11 @@ namespace ERP.Application.Features.Users.DeactivateUser
             if (user is null)
                 return Result.Failure(["El usuario no existe."], ErrorType.NotFound);
 
-            if (!_currentUser.Role.CanManage(user.Role))
-                return Result.Failure(["No tienes permisos sobre este usuario."], ErrorType.Forbidden);
+            // La misma regla del dominio, revisada antes para responder 403 con el mensaje.
+            if (user.ManageError(_currentUser.Role) is { } permissionError)
+                return Result.Failure([permissionError], ErrorType.Forbidden);
 
-            user.Deactivate();
+            user.Deactivate(_currentUser.Role);
 
             await _unitOfWork.SaveChangesAsync();
 

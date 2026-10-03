@@ -1,7 +1,7 @@
 ﻿using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Api;
 using ERP.Application.Contracts.Persistence.Commands;
-using ERP.Domain.Users.Enums;
+using ERP.Domain.Users;
 
 namespace ERP.Application.Features.Users.ChangeUserRole
 {
@@ -28,13 +28,11 @@ namespace ERP.Application.Features.Users.ChangeUserRole
             if (user is null)
                 return Result.Failure(["El usuario no existe."], ErrorType.NotFound);
 
-            if (!_currentUser.Role.CanManage(user.Role))
-                return Result.Failure(["No tienes permisos sobre este usuario."], ErrorType.Forbidden);
+            // Las mismas reglas del dominio, revisadas antes para responder 403 con el mensaje.
+            if ((user.ManageError(_currentUser.Role) ?? User.AssignRoleError(_currentUser.Role, request.Role)) is { } permissionError)
+                return Result.Failure([permissionError], ErrorType.Forbidden);
 
-            if (!_currentUser.Role.CanManage(request.Role))
-                return Result.Failure(["No tienes permisos para asignar este rol."], ErrorType.Forbidden);
-
-            user.UpdateRole(request.Role);
+            user.ChangeRole(request.Role, _currentUser.Role);
 
             await _unitOfWork.SaveChangesAsync();
 

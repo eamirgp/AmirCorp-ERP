@@ -30,8 +30,9 @@ namespace ERP.Application.Features.Users.CreateUser
 
         public async Task<Result<CreatedResponseDto>> ExecuteAsync(CreateUserDto request)
         {
-            if (!_currentUser.Role.CanManage(request.Role))
-                return Result<CreatedResponseDto>.Failure(["No tienes permisos para asignar este rol."], ErrorType.Forbidden);
+            // La misma regla del dominio, revisada antes para responder 403 con el mensaje.
+            if (User.AssignRoleError(_currentUser.Role, request.Role) is { } roleError)
+                return Result<CreatedResponseDto>.Failure([roleError], ErrorType.Forbidden);
 
             if (await _userRepository.EmailExistsAsync(request.Email))
                 return Result<CreatedResponseDto>.Failure(["El correo ya se encuentra en uso."], ErrorType.Conflict);
@@ -39,8 +40,10 @@ namespace ERP.Application.Features.Users.CreateUser
             var user = User.Create(
                 request.Name,
                 request.Email,
-                _passwordService.Hash(request.Password),
-                request.Role
+                request.Password,
+                _passwordService.Hash,
+                request.Role,
+                _currentUser.Role
                 );
 
             _userRepository.Add(user);
