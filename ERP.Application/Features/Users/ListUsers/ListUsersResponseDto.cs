@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Users.Enums;
+using ERP.Domain.Users.Enums;
 
 namespace ERP.Application.Features.Users.ListUsers
 {
@@ -7,7 +7,9 @@ namespace ERP.Application.Features.Users.ListUsers
         string Name,
         string Email,
         UserRole Role,
-        bool IsActive
+        bool IsActive,
+        // Versión del usuario: el formulario la devuelve al editar para no pisar cambios de otra persona.
+        uint RowVersion
         )
     {
         public string RoleDescription => Role.Description;

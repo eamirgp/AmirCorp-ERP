@@ -26,5 +26,8 @@ namespace ERP.Persistence.Commands
         public async Task<Company?> GetByIdAsync(Guid id) =>
             await _context.Companies
             .FindAsync(id);
+
+        public uint VersionOf(Company company) =>
+            _context.Entry(company).Property<uint>("RowVersion").CurrentValue;
     }
 }

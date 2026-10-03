@@ -26,6 +26,13 @@ namespace ERP.Application.Features.Companies.UpdateCompany
             if (company is null)
                 return Result.Failure(["La empresa no existe."], ErrorType.NotFound);
 
+            // Si alguien la modificó después de abrir el formulario, no se pisa su cambio.
+            if (_companyRepository.VersionOf(company) != request.RowVersion)
+                return Result.Failure(
+                    ["Otra persona modificó esta empresa mientras la editabas. Cierra el formulario y vuelve a abrirlo para ver los datos actuales."],
+                    ErrorType.Conflict
+                    );
+
             var hasPurchases = await _purchaseRepository.ExistsByCompanyAsync(company.Id);
 
             // La misma regla del dominio, revisada antes para responder con el mensaje en vez de una excepción.

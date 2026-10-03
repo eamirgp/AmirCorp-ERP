@@ -27,6 +27,10 @@ namespace ERP.Application.Features.Users.UpdateUserProfile
             if (user is null)
                 return Result.Failure(["El usuario no existe."], ErrorType.NotFound);
 
+            // Si alguien lo modificó después de abrir el formulario, no se pisa su cambio.
+            if (_userRepository.VersionOf(user) != request.RowVersion)
+                return Result.Failure([UserRules.ModifiedByOther], ErrorType.Conflict);
+
             // La misma regla del dominio, revisada antes para responder 403 con el mensaje.
             if (user.ManageError(_currentUser.Role) is { } permissionError)
                 return Result.Failure([permissionError], ErrorType.Forbidden);

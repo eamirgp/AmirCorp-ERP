@@ -34,6 +34,10 @@ namespace ERP.Persistence.Configurations
 
             builder.Property(c => c.UpdatedBy);
 
+            // En PostgreSQL se mapea a la columna de sistema xmin, que cambia en cada actualización de la fila.
+            builder.Property<uint>("RowVersion")
+                .IsRowVersion();
+
             builder.HasIndex(c => c.Ruc)
                 .IsUnique();
         }

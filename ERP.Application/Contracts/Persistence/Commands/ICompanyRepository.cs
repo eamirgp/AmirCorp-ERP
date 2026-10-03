@@ -7,5 +7,8 @@ namespace ERP.Application.Contracts.Persistence.Commands
         void Add(Company company);
         Task<bool> RucExistsAsync(string ruc, Guid? excludeId = null);
         Task<Company?> GetByIdAsync(Guid id);
+
+        /// <summary>Versión actual de la empresa en la base (cambia con cada modificación).</summary>
+        uint VersionOf(Company company);
     }
 }

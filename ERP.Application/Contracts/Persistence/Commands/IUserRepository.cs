@@ -10,5 +10,8 @@ namespace ERP.Application.Contracts.Persistence.Commands
         Task<bool> EmailExistsAsync(string email, Guid? excludeId = null);
         Task<User?> GetByEmailAsync(string email);
         Task<bool> RoleExistsAsync(UserRole role);
+
+        /// <summary>Versión actual del usuario en la base (cambia con cada modificación).</summary>
+        uint VersionOf(User user);
     }
 }

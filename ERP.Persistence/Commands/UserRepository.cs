@@ -40,5 +40,8 @@ namespace ERP.Persistence.Commands
         public async Task<bool> RoleExistsAsync(UserRole role) =>
             await _context.Users
             .AnyAsync(u => u.Role == role);
+
+        public uint VersionOf(User user) =>
+            _context.Entry(user).Property<uint>("RowVersion").CurrentValue;
     }
 }

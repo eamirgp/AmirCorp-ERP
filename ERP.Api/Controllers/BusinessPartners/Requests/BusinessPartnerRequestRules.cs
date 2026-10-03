@@ -32,6 +32,9 @@ namespace ERP.Api.Controllers.BusinessPartners.Requests
             return errors;
         }
 
+        public static string? RowVersionError(uint? rowVersion) =>
+            rowVersion is null ? "Falta la versión del registro. Vuelve a abrir la lista." : null;
+
         /// <summary>Al crear: al menos un rol, y que el documento sirva para ese rol.</summary>
         public static List<string> ValidateRoles(IdentityDocumentType? identityDocumentType, bool? isClient, bool? isSupplier) =>
             BusinessPartner.RolesError(identityDocumentType, isClient ?? false, isSupplier ?? false) is { } error ? [error] : [];

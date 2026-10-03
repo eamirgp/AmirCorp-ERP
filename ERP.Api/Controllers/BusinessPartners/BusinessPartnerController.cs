@@ -127,15 +127,19 @@ namespace ERP.Api.Controllers.BusinessPartners
             if (errors.Count > 0)
                 return errors.ToBadRequest();
 
-            var result = await _blockRoleUseCase.ExecuteAsync(new BlockBusinessPartnerRoleDto(id, role, Blocked: true, request.Reason));
+            var result = await _blockRoleUseCase.ExecuteAsync(new BlockBusinessPartnerRoleDto(id, role, Blocked: true, request.Reason, request.RowVersion!.Value));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }
 
         [HttpPatch("{id:guid}/roles/{role}/unblock")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<IActionResult> UnblockRole(Guid id, BusinessPartnerRole role)
+        public async Task<IActionResult> UnblockRole(Guid id, BusinessPartnerRole role, [FromBody] UnblockBusinessPartnerRoleRequest request)
         {
-            var result = await _blockRoleUseCase.ExecuteAsync(new BlockBusinessPartnerRoleDto(id, role, Blocked: false, Reason: null));
+            var errors = request.Validate();
+            if (errors.Count > 0)
+                return errors.ToBadRequest();
+
+            var result = await _blockRoleUseCase.ExecuteAsync(new BlockBusinessPartnerRoleDto(id, role, Blocked: false, Reason: null, request.RowVersion!.Value));
             return result.ToActionResult(StatusCodes.Status204NoContent);
         }
 

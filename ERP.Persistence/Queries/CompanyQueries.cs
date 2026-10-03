@@ -16,7 +16,7 @@ namespace ERP.Persistence.Queries
             await _context.Companies
             .AsNoTracking()
             .OrderBy(c => c.Name)
-            .Select(c => new ListCompaniesResponseDto(c.Id, c.Ruc, c.Name, c.IsActive))
+            .Select(c => new ListCompaniesResponseDto(c.Id, c.Ruc, c.Name, c.IsActive, EF.Property<uint>(c, "RowVersion")))
             .ToArrayAsync();
 
         public async Task<GetCompanyResponseDto?> GetCompanyAsync(GetCompanyDto getCompanyDto) =>

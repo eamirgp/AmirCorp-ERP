@@ -5,7 +5,8 @@ using ERP.Application.Features.Partners.AddBusinessPartnerRole;
 namespace ERP.Application.Features.Partners.BlockBusinessPartnerRole
 {
     /// <param name="Reason">Motivo opcional al bloquear ("Mercadería defectuosa"); se ignora al desbloquear.</param>
-    public sealed record BlockBusinessPartnerRoleDto(Guid Id, BusinessPartnerRole Role, bool Blocked, string? Reason);
+    /// <param name="RowVersion">Versión que se veía en la lista.</param>
+    public sealed record BlockBusinessPartnerRoleDto(Guid Id, BusinessPartnerRole Role, bool Blocked, string? Reason, uint RowVersion);
 
     public interface IBlockBusinessPartnerRoleUseCase
     {
@@ -35,6 +36,13 @@ namespace ERP.Application.Features.Partners.BlockBusinessPartnerRole
             var businessPartner = await _businessPartnerRepository.GetByIdAsync(request.Id);
             if (businessPartner is null)
                 return Result.Failure(["El cliente o proveedor no existe."], ErrorType.NotFound);
+
+            // Si alguien lo modificó después de abrir la lista (por ejemplo, ya lo bloqueó con otro motivo), no se pisa su cambio.
+            if (_businessPartnerRepository.VersionOf(businessPartner) != request.RowVersion)
+                return Result.Failure(
+                    ["Otra persona modificó este registro mientras lo veías. Actualiza la lista y vuelve a intentarlo."],
+                    ErrorType.Conflict
+                    );
 
             // Las mismas reglas del dominio, revisadas antes para responder con el mensaje en vez de una excepción.
             // Desbloquear algo que no estaba bloqueado no es un error: no cambia nada.
