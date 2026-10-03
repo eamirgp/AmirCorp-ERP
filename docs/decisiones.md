@@ -110,7 +110,7 @@ Cada cambio en productos, clientes y proveedores, empresas, usuarios y compras q
 - **Acciones:** creación, modificación, activación, desactivación, anulación y cambio de contraseña. De la contraseña nunca se guarda el valor.
 - **Solo lectura:** la API no tiene endpoints para modificar ni borrar el historial.
 - **Consulta:** `GET /api/audit` con filtros por módulo, registro, usuario, acción, rango de fechas (días en hora de Perú) y texto. Solo SuperAdmin y Admin.
-- **Pantallas:** no va en las tablas ni en los formularios. Cada registro tiene su acción "Historial" (panel lateral) y hay una pantalla "Auditoría" en Administración.
+- **Pantallas:** no va en las tablas ni en los formularios. Cada registro tiene su acción "Historial" (panel lateral) y hay una pantalla "Auditoría" en Administración (desde octubre de 2026, en Configuración: decisión 13 de `AmirCorp-ERP-Web`).
 - El historial empieza a registrarse desde la migración `AddAuditLogs`. Lo anterior solo conserva `CreatedBy` y `UpdatedBy` en cada tabla.
 
 ### 13. Vistas guardadas por usuario
@@ -145,7 +145,7 @@ Las unidades de medida están en una tabla (`UnitsOfMeasure`), no fijas en el c�
 
 - **Qué dice SUNAT:** el catálogo N.° 03 del Anexo N.° 8 no es una lista propia, sino el estándar internacional "UN/ECE Recommendation 20" (más de 2000 códigos). Si la factura lleva un código que no está en ese estándar, SUNAT la rechaza.
 - **Qué se carga:** la migración `AddUnitsOfMeasure` carga las 62 unidades de uso común con su nombre oficial (la lista de la Tabla 6 del PLE: unidad, pieza, docena, caja, par, juego, kit, metro, litro…). Si algún día se necesita otro código del estándar, se agrega con una migración. **No se crean desde el sistema**, para no inventar códigos que SUNAT rechace.
-- **Qué elige la empresa:** en Administración › Unidades de medida activa las que usa (al inicio: Unidad, Pieza, Docena y Caja) y puede darles un nombre corto ("Unidad" en vez de "UNIDAD (BIENES)"). En productos, compras y la planilla de Excel solo aparecen las activas (`GET api/catalogs/units-of-measure`).
+- **Qué elige la empresa:** en Administración › Unidades de medida (hoy Configuración › Unidades de medida) activa las que usa (al inicio: Unidad, Pieza, Docena y Caja) y puede darles un nombre corto ("Unidad" en vez de "UNIDAD (BIENES)"). En productos, compras y la planilla de Excel solo aparecen las activas (`GET api/catalogs/units-of-measure`).
 - **Protección:** una unidad que usa algún producto no se puede desactivar (409, con cuántos productos la usan).
 - **Código SUNAT como llave:** productos (`UnitOfMeasureCode`) y líneas de compra (`InvoiceUnitOfMeasureCode`) guardan el código, que es el dato que va en la factura, con llave foránea a `UnitsOfMeasure.Code`.
 - **Factor fijo:** las unidades que siempre traen lo mismo (Docena 12, Par 2, Ciento 100, Millar 1000, Gruesa 144) fijan el factor de conversión en las compras. Las demás (Caja, Paquete, Kilogramo…) lo indica cada compra.
