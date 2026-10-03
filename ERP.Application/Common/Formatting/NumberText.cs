@@ -11,7 +11,11 @@ namespace ERP.Application.Common.Formatting
         /// <summary>Espacio que no se corta entre líneas (U+00A0), el mismo que usa la pantalla.</summary>
         public const char ThousandsSeparator = ' ';
 
-        public static string Money(decimal value) => "S/ " + Group(value.ToString("#,##0.00", CultureInfo.InvariantCulture));
+        /// <summary>
+        /// Monto en soles con dos decimales. Si tiene más (un precio guardado antes de la regla de 2 decimales), se
+        /// muestran: redondearlo escondería un cambio en el historial o en la vista previa del Excel.
+        /// </summary>
+        public static string Money(decimal value) => "S/ " + Group(value.ToString("#,##0.00####", CultureInfo.InvariantCulture));
 
         public static string Decimal(decimal value) => Group(value.ToString("#,##0.######", CultureInfo.InvariantCulture));
 

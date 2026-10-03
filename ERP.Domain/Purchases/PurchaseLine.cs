@@ -7,6 +7,12 @@ namespace ERP.Domain.Purchases
 {
     public sealed class PurchaseLine : BaseEntity
     {
+        // Cantidades, unidades por caja y montos unitarios van en columnas numeric(18,6): 12 dígitos enteros y 6 decimales.
+        public const decimal NumberMax = 999_999_999_999m;
+        public const int Decimals = 6;
+        // Tope del total de una línea: más es un error de tipeo, y así la suma de la compra cabe en su columna numeric(18,2).
+        public const decimal LineTotalMax = 999_999_999_999.99m;
+
         public Guid PurchaseId { get; }
         public int LineNumber { get; }
         public Guid ProductId { get; }
@@ -93,9 +99,6 @@ namespace ERP.Domain.Purchases
 
             var amounts = Calculate(invoicePriceType, invoiceIgvAffectation, invoiceUnitOfMeasure, invoiceQuantity, invoiceAmount, conversionFactor);
 
-            if (!invoiceUnitOfMeasure.IsActive)
-                throw new DomainException($"La unidad de medida '{invoiceUnitOfMeasure.Name}' está desactivada.");
-
             return new(
                 Guid.CreateVersion7(),
                 purchaseId,
@@ -132,12 +135,72 @@ namespace ERP.Domain.Purchases
             decimal? requestedConversionFactor
             )
         {
-            ValidateInvoicePriceType(invoicePriceType);
-            ValidateInvoiceIgvAffectation(invoiceIgvAffectation);
-            ValidateInvoiceQuantity(invoiceQuantity);
-            ValidateInvoiceAmount(invoiceAmount, invoicePriceType);
-            if (ConversionFactorError(invoiceUnitOfMeasure, requestedConversionFactor) is { } factorError)
-                throw new DomainException(factorError);
+            var (amounts, error) = Compute(invoicePriceType, invoiceIgvAffectation, invoiceUnitOfMeasure, invoiceQuantity, invoiceAmount, requestedConversionFactor);
+            if (error is not null)
+                throw new DomainException(error);
+
+            return amounts!;
+        }
+
+        /// <summary>
+        /// Qué tiene de malo la línea para calcular sus montos, o null si está bien: lo mismo que revisa
+        /// <see cref="Calculate"/>, sin lanzar el error. El registro y la vista previa la llaman antes, para mostrar el
+        /// mensaje de cada línea.
+        /// </summary>
+        public static string? AmountsError(
+            InvoicePriceType invoicePriceType,
+            IgvAffectation invoiceIgvAffectation,
+            UnitOfMeasure invoiceUnitOfMeasure,
+            decimal invoiceQuantity,
+            decimal invoiceAmount,
+            decimal? requestedConversionFactor
+            ) =>
+            Compute(invoicePriceType, invoiceIgvAffectation, invoiceUnitOfMeasure, invoiceQuantity, invoiceAmount, requestedConversionFactor).Error;
+
+        /// <summary>Qué tiene de malo la cantidad de la factura, o null si está bien.</summary>
+        public static string? InvoiceQuantityError(decimal? invoiceQuantity) =>
+            invoiceQuantity switch
+            {
+                null => "La cantidad es requerida.",
+                <= 0 => "La cantidad debe ser mayor a cero.",
+                > NumberMax => "La cantidad es demasiado grande. Revisa que esté bien escrita.",
+                { } value when HasTooManyDecimals(value) => $"La cantidad puede tener hasta {Decimals} decimales.",
+                _ => null
+            };
+
+        /// <summary>Qué tiene de malo el monto unitario de la factura (valor o precio, según la compra), o null si está bien.</summary>
+        public static string? InvoiceAmountError(decimal? invoiceAmount, InvoicePriceType invoicePriceType)
+        {
+            var label = $"El {invoicePriceType.Description.ToLowerInvariant()}";
+
+            return invoiceAmount switch
+            {
+                null => $"{label} es requerido.",
+                <= 0 => $"{label} debe ser mayor a cero.",
+                > NumberMax => $"{label} es demasiado grande. Revisa que esté bien escrito.",
+                { } value when HasTooManyDecimals(value) => $"{label} puede tener hasta {Decimals} decimales.",
+                _ => null
+            };
+        }
+
+        private static (PurchaseLineAmounts? Amounts, string? Error) Compute(
+            InvoicePriceType invoicePriceType,
+            IgvAffectation invoiceIgvAffectation,
+            UnitOfMeasure invoiceUnitOfMeasure,
+            decimal invoiceQuantity,
+            decimal invoiceAmount,
+            decimal? requestedConversionFactor
+            )
+        {
+            if (!Enum.IsDefined(invoicePriceType))
+                return (null, "El tipo de precio es inválido.");
+            if (!Enum.IsDefined(invoiceIgvAffectation))
+                return (null, "El tipo de afectación del IGV es inválido.");
+            if ((UnitOfMeasure.UsableError(invoiceUnitOfMeasure, invoiceUnitOfMeasure.Code)
+                ?? InvoiceQuantityError(invoiceQuantity)
+                ?? InvoiceAmountError(invoiceAmount, invoicePriceType)
+                ?? ConversionFactorError(invoiceUnitOfMeasure, requestedConversionFactor)) is { } error)
+                return (null, error);
 
             // Con una unidad de cantidad fija (Unidad 1, Docena 12) la pone el catálogo; con una variable (Caja), la factura.
             var conversionFactor = invoiceUnitOfMeasure.FixedConversionFactor ?? requestedConversionFactor!.Value;
@@ -164,9 +227,20 @@ namespace ERP.Domain.Purchases
             }
 
             var inventoryQuantity = invoiceQuantity * conversionFactor;
-            var inventoryUnitCost = Math.Round(baseAmount / inventoryQuantity, 6, MidpointRounding.AwayFromZero);
 
-            return new PurchaseLineAmounts(invoiceUnitValue, invoiceUnitPrice, conversionFactor, inventoryQuantity, inventoryUnitCost, baseAmount, igvAmount, total);
+            // Lo calculado también tiene que caber en sus columnas y tener sentido para el inventario.
+            if (inventoryQuantity > NumberMax || HasTooManyDecimals(inventoryQuantity))
+                return (null, "La cantidad en unidades no se puede registrar así. Revisa la cantidad y las unidades por caja.");
+            if (total > LineTotalMax || invoiceUnitValue > NumberMax || invoiceUnitPrice > NumberMax)
+                return (null, "El total de la línea es demasiado grande. Revisa la cantidad y el monto.");
+            if (baseAmount == 0)
+                return (null, "El subtotal de la línea sale 0.00. Revisa la cantidad y el monto.");
+
+            var inventoryUnitCost = Math.Round(baseAmount / inventoryQuantity, Decimals, MidpointRounding.AwayFromZero);
+            if (inventoryUnitCost == 0)
+                return (null, "El costo de cada unidad sale 0. Revisa la cantidad, el monto y las unidades por caja.");
+
+            return (new PurchaseLineAmounts(invoiceUnitValue, invoiceUnitPrice, conversionFactor, inventoryQuantity, inventoryUnitCost, baseAmount, igvAmount, total), null);
         }
 
         /// <summary>
@@ -184,11 +258,19 @@ namespace ERP.Domain.Purchases
                     ? null
                     : $"Cada {name} trae {fixedFactor:0.######} unidades: no se puede indicar otra cantidad.";
 
-            if (conversionFactor is null)
-                return $"Indica cuántas unidades trae cada {name}.";
-
-            return conversionFactor <= 0 ? $"Las unidades por {name} deben ser mayores a cero." : null;
+            return conversionFactor switch
+            {
+                null => $"Indica cuántas unidades trae cada {name}.",
+                <= 0 => $"Las unidades por {name} deben ser mayores a cero.",
+                > NumberMax => $"Las unidades por {name} son demasiadas. Revisa que estén bien escritas.",
+                { } value when HasTooManyDecimals(value) => $"Las unidades por {name} pueden tener hasta {Decimals} decimales.",
+                _ => null
+            };
         }
+
+        // Más decimales de los que guarda la base: se perderían sin aviso al guardar.
+        private static bool HasTooManyDecimals(decimal value) =>
+            Math.Round(value, Decimals) != value;
 
         private static void ValidateProduct(Guid productId)
         {
@@ -208,28 +290,5 @@ namespace ERP.Domain.Purchases
             return ProductSupplierCode.NormalizeCode(code);
         }
 
-        private static void ValidateInvoicePriceType(InvoicePriceType invoicePriceType)
-        {
-            if (!Enum.IsDefined(invoicePriceType))
-                throw new DomainException("El tipo de precio es inválido.");
-        }
-
-        private static void ValidateInvoiceIgvAffectation(IgvAffectation invoiceIgvAffectation)
-        {
-            if (!Enum.IsDefined(invoiceIgvAffectation))
-                throw new DomainException("El tipo de afectación del IGV es inválido.");
-        }
-
-        private static void ValidateInvoiceQuantity(decimal invoiceQuantity)
-        {
-            if (invoiceQuantity <= 0)
-                throw new DomainException("La cantidad debe ser mayor a cero.");
-        }
-
-        private static void ValidateInvoiceAmount(decimal invoiceAmount, InvoicePriceType invoicePriceType)
-        {
-            if (invoiceAmount <= 0)
-                throw new DomainException($"El {invoicePriceType.Description.ToLowerInvariant()} debe ser mayor a cero.");
-        }
     }
 }

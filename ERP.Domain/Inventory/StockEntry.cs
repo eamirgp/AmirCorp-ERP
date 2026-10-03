@@ -39,8 +39,22 @@ namespace ERP.Domain.Inventory
             decimal originalQuantity,
             decimal unitCost,
             DateOnly entryDate
-            ) =>
-            new(
+            )
+        {
+            if (companyId == Guid.Empty)
+                throw new DomainException("La empresa del ingreso de stock es requerida.");
+            if (productId == Guid.Empty)
+                throw new DomainException("El producto del ingreso de stock es requerido.");
+            if (purchaseLineId == Guid.Empty)
+                throw new DomainException("La línea de compra del ingreso de stock es requerida.");
+            if (originalQuantity <= 0)
+                throw new DomainException("La cantidad que ingresa al stock debe ser mayor a cero.");
+            if (unitCost < 0)
+                throw new DomainException("El costo de cada unidad no puede ser negativo.");
+            if (entryDate == default)
+                throw new DomainException("La fecha del ingreso de stock es requerida.");
+
+            return new(
                 Guid.CreateVersion7(),
                 companyId, productId,
                 purchaseLineId,
@@ -48,6 +62,7 @@ namespace ERP.Domain.Inventory
                 unitCost,
                 entryDate
                 );
+        }
 
         public void Consume(decimal quantity)
         {

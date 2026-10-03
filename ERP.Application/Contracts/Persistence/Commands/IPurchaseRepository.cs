@@ -6,7 +6,13 @@ namespace ERP.Application.Contracts.Persistence.Commands
     public interface IPurchaseRepository
     {
         void Add(Purchase purchase);
-        Task<bool> DocumentExistsAsync(Guid companyId, TaxDocumentType taxDocumentType, Guid supplierId, string serie, string number);
+
+        /// <summary>
+        /// La compra no anulada con ese comprobante del proveedor, en cualquier empresa, o null si no hay.
+        /// El número va normalizado (<see cref="Purchase.NormalizeNumber"/>).
+        /// </summary>
+        Task<RegisteredDocument?> FindDocumentAsync(TaxDocumentType taxDocumentType, Guid supplierId, string serie, string number);
+
         Task<Purchase?> GetByIdWithLinesAsync(Guid id);
 
         /// <summary>Si el proveedor tiene alguna compra, anuladas incluidas.</summary>
@@ -15,4 +21,7 @@ namespace ERP.Application.Contracts.Persistence.Commands
         /// <summary>Si la empresa tiene alguna compra, anuladas incluidas.</summary>
         Task<bool> ExistsByCompanyAsync(Guid companyId);
     }
+
+    /// <summary>Empresa en la que ya está registrado un comprobante (con su razón social copiada en la compra).</summary>
+    public sealed record RegisteredDocument(Guid CompanyId, string CompanyName);
 }

@@ -1,6 +1,7 @@
 ﻿using ERP.Application.Features.Purchases.CreatePurchase;
 using ERP.Domain.Catalogs;
 using ERP.Domain.Products;
+using ERP.Domain.Purchases;
 
 namespace ERP.Api.Controllers.Purchases.Requests
 {
@@ -20,10 +21,6 @@ namespace ERP.Api.Controllers.Purchases.Requests
         public IReadOnlyCollection<string> Validate(int lineNumber, InvoicePriceType? invoicePriceType)
         {
             var errors = new List<string>();
-
-            var amountLabel = invoicePriceType is InvoicePriceType.UnitPrice
-                ? "El precio unitario"
-                : "El valor unitario";
 
             // El producto: uno registrado o uno nuevo, no los dos. El nuevo se valida como en su propia pantalla.
             if (NewProduct is not null && ProductId is not null)
@@ -56,17 +53,11 @@ namespace ERP.Api.Controllers.Purchases.Requests
             if (string.IsNullOrWhiteSpace(InvoiceUnitOfMeasureCode))
                 errors.Add($"Línea {lineNumber}: La unidad de medida es requerida.");
 
-            if (InvoiceQuantity is null)
-                errors.Add($"Línea {lineNumber}: La cantidad es requerida.");
+            if (PurchaseLine.InvoiceQuantityError(InvoiceQuantity) is { } quantityError)
+                errors.Add($"Línea {lineNumber}: {quantityError}");
 
-            if (InvoiceQuantity is not null && InvoiceQuantity <= 0)
-                errors.Add($"Línea {lineNumber}: La cantidad debe ser mayor a cero.");
-
-            if (InvoiceAmount is null)
-                errors.Add($"Línea {lineNumber}: {amountLabel} es requerido.");
-
-            if (InvoiceAmount is not null && InvoiceAmount <= 0)
-                errors.Add($"Línea {lineNumber}: {amountLabel} debe ser mayor a cero.");
+            if (PurchaseLine.InvoiceAmountError(InvoiceAmount, invoicePriceType ?? InvoicePriceType.UnitValue) is { } amountError)
+                errors.Add($"Línea {lineNumber}: {amountError}");
 
             // Las unidades por caja solo hacen falta con unidades variables (Caja): eso lo revisa el registro con el
             // catálogo de unidades. Aquí solo se descarta un valor imposible.

@@ -2,6 +2,7 @@ using ERP.Api.Extensions;
 using ERP.Application.Features.UnitsOfMeasure.ListAllUnitsOfMeasure;
 using ERP.Application.Features.UnitsOfMeasure.ToggleUnitOfMeasure;
 using ERP.Application.Features.UnitsOfMeasure.UpdateUnitOfMeasure;
+using ERP.Domain.UnitsOfMeasure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -72,6 +73,10 @@ namespace ERP.Api.Controllers.UnitsOfMeasure
         }
     }
 
+    /// <summary>
+    /// Aviso previo: lo que se puede revisar sin el catálogo. Que el nombre no sea el de otra unidad lo revisa el caso de
+    /// uso con <see cref="UnitOfMeasure.NameError"/>, la regla del dominio.
+    /// </summary>
     public sealed record UpdateUnitOfMeasureRequest(string? Name)
     {
         public IReadOnlyCollection<string> Validate()
@@ -80,8 +85,8 @@ namespace ERP.Api.Controllers.UnitsOfMeasure
 
             if (string.IsNullOrWhiteSpace(Name))
                 errors.Add("El nombre es requerido.");
-            else if (Name.Trim().Length > Domain.UnitsOfMeasure.UnitOfMeasure.NameMaxLength)
-                errors.Add($"El nombre no puede exceder los {Domain.UnitsOfMeasure.UnitOfMeasure.NameMaxLength} caracteres.");
+            else if (UnitOfMeasure.NormalizeName(Name).Length > UnitOfMeasure.NameMaxLength)
+                errors.Add($"El nombre no puede exceder los {UnitOfMeasure.NameMaxLength} caracteres.");
 
             return errors;
         }

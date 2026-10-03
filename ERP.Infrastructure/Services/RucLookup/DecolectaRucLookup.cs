@@ -67,7 +67,7 @@ namespace ERP.Infrastructure.Services.RucLookup
                     Address(body)
                     ));
             }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+            catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException) && !ct.IsCancellationRequested)
             {
                 return RucLookupOutcome.Failed(RucLookupFailure.Unavailable);
             }
@@ -101,7 +101,7 @@ namespace ERP.Infrastructure.Services.RucLookup
 
                 return DniLookupOutcome.Found(body.FullName.Trim());
             }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+            catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException) && !ct.IsCancellationRequested)
             {
                 return DniLookupOutcome.Failed(RucLookupFailure.Unavailable);
             }

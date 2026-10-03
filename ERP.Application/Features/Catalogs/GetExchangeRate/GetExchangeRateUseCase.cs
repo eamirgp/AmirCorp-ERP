@@ -71,17 +71,21 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
 
             var now = DateTime.UtcNow;
             var notBefore = date.AddDays(-MaxDaysBack);
-            // Lo que ya está guardado alrededor de la fecha (su mes y los días hacia atrás), para no guardarlo dos veces.
+            // Lo que ya está guardado en los meses consultados (el de la fecha y, si hace falta, el anterior), para no
+            // guardarlo dos veces.
             var monthStart = new DateOnly(date.Year, date.Month, 1);
+            var previousMonthStart = new DateOnly(notBefore.Year, notBefore.Month, 1);
             var known = (await _exchangeRateRepository.ExistingDatesAsync(
-                currency,
-                notBefore < monthStart ? notBefore : monthStart,
-                monthStart.AddMonths(1).AddDays(-1))).ToHashSet();
+                currency, previousMonthStart, monthStart.AddMonths(1).AddDays(-1))).ToHashSet();
 
-            // 1) El mes completo en una consulta: lo publicado que falte se guarda de una vez.
-            var published = (await _exchangeRateLookup.FindMonthAsync(date.Year, date.Month, ct)).Where(r => r.Date <= today).ToList();
+            // 1) El mes completo en una consulta: lo publicado que falte se guarda de una vez. Si la fecha es de los
+            // primeros días y el mes todavía no trae nada hasta ella (1 de enero, feriados), también el mes anterior.
+            var published = (await _exchangeRateLookup.FindMonthAsync(date.Year, date.Month, ct)).ToList();
+            if (previousMonthStart < monthStart && published.All(r => r.Date > date))
+                published.AddRange(await _exchangeRateLookup.FindMonthAsync(previousMonthStart.Year, previousMonthStart.Month, ct));
+            published.RemoveAll(r => r.Date > today);
 
-            // 2) Si el mes no trajo nada de esa fecha ni de antes (o el proveedor no ofrece el mes), se pide la fecha.
+            // 2) Si los meses no trajeron nada de esa fecha ni de antes (o el proveedor no ofrece el mes), se pide la fecha.
             RucLookupFailure? failure = null;
             if (published.All(r => r.Date > date))
             {
@@ -89,15 +93,17 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
                 if (single.Data is { } data && data.Date <= date)
                     published.Add(data);
                 else
-                    failure = single.Failure;
+                    failure = single.Failure ?? RucLookupFailure.NotFound;
             }
 
             foreach (var rate in published.DistinctBy(r => r.Date).Where(r => known.Add(r.Date)))
                 _exchangeRateRepository.Add(ExchangeRate.Create(currency, rate.Date, rate.Date, rate.BuyRate, rate.SellRate, Source, now));
 
             // 3) El que aplica: el de la fecha o, si ese día no se publicó, el último anterior (lo recién traído o lo guardado).
+            // Si el servicio no respondió, no se usa lo guardado: ese día pudo tener una publicación que todavía no se conoce.
+            var providerFailed = failure is RucLookupFailure.Unauthorized or RucLookupFailure.Unavailable;
             var fromProvider = published.Where(r => r.Date <= date && r.Date >= notBefore).OrderByDescending(r => r.Date).FirstOrDefault();
-            var fromStore = await _exchangeRateRepository.LatestOnOrBeforeAsync(currency, date, notBefore);
+            var fromStore = providerFailed ? null : await _exchangeRateRepository.LatestOnOrBeforeAsync(currency, date, notBefore);
 
             var best = fromStore is not null && (fromProvider is null || fromStore.PublishedDate > fromProvider.Date)
                 ? new ExchangeRateData(fromStore.PublishedDate, fromStore.BuyRate, fromStore.SellRate)
@@ -119,8 +125,9 @@ namespace ERP.Application.Features.Catalogs.GetExchangeRate
             }
 
             // Un día pasado sin publicación ya no la tendrá: se guarda con el último publicado para no volver a
-            // consultarlo. El de hoy no se guarda así, porque puede publicarse más tarde.
-            if (best.Date != date && date < today && known.Add(date))
+            // consultarlo. Solo si lo confirmó el servicio (lo que trajo es lo que aplica), no con lo guardado solamente.
+            // El de hoy no se guarda así, porque puede publicarse más tarde.
+            if (best.Date != date && date < today && best == fromProvider && known.Add(date))
                 _exchangeRateRepository.Add(ExchangeRate.Create(currency, date, best.Date, best.BuyRate, best.SellRate, Source, now));
 
             await _unitOfWork.SaveChangesAsync();

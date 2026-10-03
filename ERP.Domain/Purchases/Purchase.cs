@@ -190,6 +190,17 @@ namespace ERP.Domain.Purchases
             return purchaseLine;
         }
 
+        /// <summary>
+        /// Por qué no se puede registrar un comprobante que ya está registrado (no anulado). Un comprobante del proveedor
+        /// va a un solo RUC: no se registra dos veces, ni en dos empresas propias.
+        /// </summary>
+        /// <param name="companyId">La empresa que lo quiere registrar.</param>
+        /// <param name="registeredCompanyId">La empresa en la que ya está.</param>
+        public static string DuplicateDocumentError(Guid companyId, Guid registeredCompanyId, string registeredCompanyName) =>
+            registeredCompanyId == companyId
+                ? "El comprobante ya se encuentra registrado para este proveedor."
+                : $"El comprobante ya está registrado en la empresa {registeredCompanyName}. Un comprobante del proveedor va a una sola empresa: revisa cuál hizo la compra.";
+
         /// <summary>Qué impide comprar el producto, o null si se puede.</summary>
         public static string? ProductError(Product product) =>
             product.IsActive ? null : $"El producto '{product.Name}' está desactivado.";

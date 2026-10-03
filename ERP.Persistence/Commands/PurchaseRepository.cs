@@ -15,19 +15,21 @@ namespace ERP.Persistence.Commands
         public void Add(Purchase purchase) =>
             _context.Add(purchase);
 
-        public async Task<bool> DocumentExistsAsync(Guid companyId, TaxDocumentType taxDocumentType, Guid supplierId, string serie, string number)
+        public async Task<RegisteredDocument?> FindDocumentAsync(TaxDocumentType taxDocumentType, Guid supplierId, string serie, string number)
         {
             var normalizedSerie = Purchase.NormalizeSerie(serie);
 
             return await _context.Purchases
-                .Where(p => !p.IsCancelled)
-                .AnyAsync(p =>
-                    p.CompanyId == companyId &&
+                .AsNoTracking()
+                .Where(p =>
+                    !p.IsCancelled &&
                     p.TaxDocumentType == taxDocumentType &&
                     p.SupplierId == supplierId &&
                     p.Serie == normalizedSerie &&
                     p.Number == number
-                    );
+                    )
+                .Select(p => new RegisteredDocument(p.CompanyId, p.CompanyName))
+                .FirstOrDefaultAsync();
         }
 
         public async Task<Purchase?> GetByIdWithLinesAsync(Guid id) =>

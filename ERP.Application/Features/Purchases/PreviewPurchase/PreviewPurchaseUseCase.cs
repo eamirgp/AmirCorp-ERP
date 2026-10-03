@@ -1,5 +1,4 @@
 using ERP.Application.Contracts.Persistence.Commands;
-using ERP.Domain.Common;
 using ERP.Domain.Purchases;
 using ERP.Domain.UnitsOfMeasure;
 
@@ -49,32 +48,39 @@ namespace ERP.Application.Features.Purchases.PreviewPurchase
                     continue;
                 }
 
-                try
+                // La regla del dominio, revisada antes: la línea muestra el mensaje en vez de calcular.
+                if (PurchaseLine.AmountsError(
+                    request.InvoicePriceType.Value,
+                    line.InvoiceIgvAffectation.Value,
+                    unit,
+                    line.InvoiceQuantity.Value,
+                    line.InvoiceAmount.Value,
+                    line.ConversionFactor
+                    ) is { } error)
                 {
-                    var amounts = PurchaseLine.Calculate(
-                        request.InvoicePriceType.Value,
-                        line.InvoiceIgvAffectation.Value,
-                        unit,
-                        line.InvoiceQuantity.Value,
-                        line.InvoiceAmount.Value,
-                        line.ConversionFactor
-                        );
+                    results.Add(new PreviewPurchaseLineResponseDto(lineNumber, null, null, null, null, null, error));
+                    continue;
+                }
 
-                    calculated.Add(amounts);
-                    results.Add(new PreviewPurchaseLineResponseDto(
-                        lineNumber,
-                        amounts.BaseAmount,
-                        amounts.IgvAmount,
-                        amounts.Total,
-                        amounts.InventoryQuantity,
-                        amounts.InventoryUnitCost,
-                        null
-                        ));
-                }
-                catch (DomainException ex)
-                {
-                    results.Add(new PreviewPurchaseLineResponseDto(lineNumber, null, null, null, null, null, ex.Message));
-                }
+                var amounts = PurchaseLine.Calculate(
+                    request.InvoicePriceType.Value,
+                    line.InvoiceIgvAffectation.Value,
+                    unit,
+                    line.InvoiceQuantity.Value,
+                    line.InvoiceAmount.Value,
+                    line.ConversionFactor
+                    );
+
+                calculated.Add(amounts);
+                results.Add(new PreviewPurchaseLineResponseDto(
+                    lineNumber,
+                    amounts.BaseAmount,
+                    amounts.IgvAmount,
+                    amounts.Total,
+                    amounts.InventoryQuantity,
+                    amounts.InventoryUnitCost,
+                    null
+                    ));
             }
 
             var totals = Purchase.CalculateTotals(calculated.Select(a => (a.BaseAmount, a.IgvAmount)));

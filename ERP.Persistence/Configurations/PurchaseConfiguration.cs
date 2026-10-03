@@ -123,7 +123,8 @@ namespace ERP.Persistence.Configurations
                 .HasForeignKey(p => p.SupplierId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasIndex(p => new { p.CompanyId, p.TaxDocumentType, p.SupplierId, p.Serie, p.Number })
+            // Un comprobante del proveedor va a un solo RUC: no se repite en ninguna empresa (salvo anulado).
+            builder.HasIndex(p => new { p.TaxDocumentType, p.SupplierId, p.Serie, p.Number })
                 .IsUnique()
                 .HasFilter("\"IsCancelled\" = false");
         }

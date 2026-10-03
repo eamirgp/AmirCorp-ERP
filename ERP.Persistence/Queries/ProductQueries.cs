@@ -18,7 +18,7 @@ namespace ERP.Persistence.Queries
 
         public async Task<SortedPagedResult<ListProductsResponseDto, ProductSortBy>> ListProductsAsync(ListProductsDto listProductsDto)
         {
-            var query = Filter(_context.Products.AsNoTracking(), listProductsDto.SearchTerm, listProductsDto.IsActive);
+            var query = Filter(_context.Products.AsNoTracking(), listProductsDto.SearchTerm, listProductsDto.IsActive, listProductsDto.SupplierId);
 
             // En una compra, la primera búsqueda es entre lo que ya se le compra a ese proveedor. Un proveedor que
             // todavía no está registrado (se crea con la compra) no tiene ninguno.
@@ -54,11 +54,12 @@ namespace ERP.Persistence.Queries
                     SupplierCode = supplierId == null
                         ? null
                         : p.SupplierCodes.Where(c => c.SupplierId == supplierId).Select(c => c.Code).FirstOrDefault(),
-                    // Solo si no coincidió el código interno ni el nombre: el proveedor del primer código que coincide.
+                    // Solo si no coincidió el código interno ni el nombre: el proveedor del primer código que coincide
+                    // (en una compra, solo puede ser el de su proveedor).
                     MatchedSupplierId = !hasTerm || p.Code.Contains(codeTerm) || EF.Functions.Unaccent(p.Name.ToLower()).Contains(nameTerm)
                         ? null
                         : _context.ProductSupplierCodes
-                            .Where(c => c.ProductId == p.Id && c.Code.Contains(codeTerm))
+                            .Where(c => c.ProductId == p.Id && (supplierId == null || c.SupplierId == supplierId) && c.Code.Contains(codeTerm))
                             .Join(_context.BusinessPartners, c => c.SupplierId, s => s.Id, (c, s) => new { c.SupplierId, s.Name })
                             .OrderBy(x => x.Name)
                             .Select(x => (Guid?)x.SupplierId)
@@ -132,8 +133,9 @@ namespace ERP.Persistence.Queries
             .ToArrayAsync();
 
         // La lista y la exportación filtran y ordenan igual: el Excel trae exactamente lo que se ve en la pantalla.
-        // El texto se busca en cualquier parte del código interno, del nombre o de los códigos de proveedores.
-        private static IQueryable<Product> Filter(IQueryable<Product> query, string? searchTerm, bool? isActive)
+        // El texto se busca en cualquier parte del código interno, del nombre o de los códigos de proveedores. En una
+        // compra (con proveedor) solo cuentan los códigos de ese proveedor: el mismo código de otro es otra cosa.
+        private static IQueryable<Product> Filter(IQueryable<Product> query, string? searchTerm, bool? isActive, Guid? supplierId = null)
         {
             var (hasTerm, codeTerm, nameTerm) = SearchTerms(searchTerm);
             if (hasTerm)
@@ -142,7 +144,7 @@ namespace ERP.Persistence.Queries
                     .Where(p =>
                     p.Code.Contains(codeTerm) ||
                     EF.Functions.Unaccent(p.Name.ToLower()).Contains(nameTerm) ||
-                    p.SupplierCodes.Any(c => c.Code.Contains(codeTerm))
+                    p.SupplierCodes.Any(c => (supplierId == null || c.SupplierId == supplierId) && c.Code.Contains(codeTerm))
                     );
             }
 

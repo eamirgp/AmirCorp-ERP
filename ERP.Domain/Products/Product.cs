@@ -15,9 +15,10 @@ namespace ERP.Domain.Products
         // El código interno va en la factura electrónica, donde SUNAT acepta hasta 30 caracteres.
         public const int CodeMaxLength = 30;
         public const int NameMaxLength = 100;
-        // La columna es numeric(18,6): 12 dígitos enteros y 6 decimales como máximo.
+        // La columna es numeric(18,6): 12 dígitos enteros como máximo.
         public const decimal SalePriceMax = 999_999_999_999m;
-        public const int SalePriceDecimals = 6;
+        // Precio en soles y céntimos (S/ 10.50): con más decimales se rechaza, no se redondea sin avisar.
+        public const int SalePriceDecimals = 2;
 
         /// <summary>Código interno: lo define la empresa y es único.</summary>
         public string Code { get; private set; }
@@ -51,7 +52,7 @@ namespace ERP.Domain.Products
             Throw(IgvAffectationError(igvAffectation));
             Throw(SalePriceError(salePrice));
 
-            return new(Guid.CreateVersion7(), NormalizeCode(code), NormalizeName(name), unitOfMeasure.Code, igvAffectation, RoundSalePrice(salePrice), isActive: true);
+            return new(Guid.CreateVersion7(), NormalizeCode(code), NormalizeName(name), unitOfMeasure.Code, igvAffectation, salePrice, isActive: true);
         }
 
         /// <summary>El código tal como se guarda y se compara: sin espacios alrededor y en mayúsculas (" abc" es "ABC").</summary>
@@ -61,10 +62,6 @@ namespace ERP.Domain.Products
         /// <summary>El nombre tal como se guarda: sin espacios al inicio ni al final, ni dobles en medio.</summary>
         public static string NormalizeName(string name) =>
             TextNormalizer.CollapseSpaces(name);
-
-        /// <summary>El precio como se guarda: la base tiene 6 decimales.</summary>
-        public static decimal RoundSalePrice(decimal salePrice) =>
-            Math.Round(salePrice, SalePriceDecimals, MidpointRounding.AwayFromZero);
 
         public void UpdateCode(string code)
         {
@@ -94,7 +91,7 @@ namespace ERP.Domain.Products
         public void UpdateSalePrice(decimal salePrice)
         {
             Throw(SalePriceError(salePrice));
-            SalePrice = RoundSalePrice(salePrice);
+            SalePrice = salePrice;
         }
 
         /// <summary>
@@ -226,6 +223,8 @@ namespace ERP.Domain.Products
                 null => "Ingresa el precio de venta como un número, por ejemplo 12.90.",
                 < 0 => "El precio de venta no puede ser negativo.",
                 > SalePriceMax => "El precio de venta es demasiado grande. Revisa que esté bien escrito.",
+                { } value when Math.Round(value, SalePriceDecimals) != value =>
+                    $"El precio de venta puede tener hasta {SalePriceDecimals} decimales (céntimos), por ejemplo 12.90.",
                 _ => null
             };
 

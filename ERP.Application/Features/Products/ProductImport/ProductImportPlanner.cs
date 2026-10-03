@@ -146,7 +146,8 @@ namespace ERP.Application.Features.Products.ProductImport
 
         /// <summary>
         /// La unidad se reconoce por su nombre corto ("Docena"), su nombre SUNAT ("UNIDAD (BIENES)") o su código ("DZN"),
-        /// sin distinguir mayúsculas ni tildes. Debe estar activa.
+        /// sin distinguir mayúsculas ni tildes (<see cref="UnitOfMeasure.IsKnownAs"/>). Debe estar activa. Si el texto
+        /// sirve para más de una activa, no se adivina: la fila queda con error, para no cambiar la unidad sin que se note.
         /// </summary>
         private static UnitOfMeasure? ParseUnit(string? text, IReadOnlyCollection<UnitOfMeasure> units, List<string> errors)
         {
@@ -156,9 +157,16 @@ namespace ERP.Application.Features.Products.ProductImport
                 return null;
             }
 
-            var unit = units.FirstOrDefault(u => MatchesIgnoringAccents(text, u.Name))
-                ?? units.FirstOrDefault(u => MatchesIgnoringAccents(text, u.SunatName) || MatchesIgnoringAccents(text, u.Code));
+            var matches = units.Where(u => u.IsKnownAs(text)).ToList();
+            var active = matches.Where(u => u.IsActive).ToList();
 
+            if (active.Count > 1)
+            {
+                errors.Add($"La unidad de medida '{text.Trim()}' puede ser {string.Join(" o ", active.Select(u => $"{u.Name} ({u.Code})"))}. Escribe su código.");
+                return null;
+            }
+
+            var unit = active.FirstOrDefault() ?? matches.FirstOrDefault();
             if (unit is null)
             {
                 errors.Add($"La unidad de medida '{text.Trim()}' no existe. Elige una de la lista.");
@@ -196,7 +204,7 @@ namespace ERP.Application.Features.Products.ProductImport
 
         private static decimal? ParsePrice(ProductSheetRow row, List<string> errors)
         {
-            // El dominio lo redondea a los 6 decimales de la base, así un precio ya guardado no se marca como "cambio".
+            // Con más de 2 decimales la fila queda con error (Product.SalePriceError): no se redondea sin avisar.
             if (row.SalePrice is not null)
                 return row.SalePrice.Value;
 

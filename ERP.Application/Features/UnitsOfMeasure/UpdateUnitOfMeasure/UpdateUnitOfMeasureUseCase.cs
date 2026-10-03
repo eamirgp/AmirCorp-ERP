@@ -1,5 +1,6 @@
 using ERP.Application.Common.Results;
 using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Domain.UnitsOfMeasure;
 
 namespace ERP.Application.Features.UnitsOfMeasure.UpdateUnitOfMeasure
 {
@@ -28,7 +29,13 @@ namespace ERP.Application.Features.UnitsOfMeasure.UpdateUnitOfMeasure
             if (unit is null)
                 return Result.Failure(["La unidad de medida no existe."], ErrorType.NotFound);
 
-            unit.UpdateName(request.Name);
+            // Todo el catálogo (son pocas): el nombre no puede confundirse con el de otra unidad.
+            var units = await _unitOfMeasureRepository.ListAllAsync();
+
+            if (UnitOfMeasure.NameError(request.Name, unit.Id, units) is { } nameError)
+                return Result.Failure([nameError], ErrorType.Conflict);
+
+            unit.UpdateName(request.Name, units);
 
             await _unitOfWork.SaveChangesAsync();
 

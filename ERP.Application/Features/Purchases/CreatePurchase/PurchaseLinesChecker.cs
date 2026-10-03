@@ -1,4 +1,5 @@
 using ERP.Application.Contracts.Persistence.Commands;
+using ERP.Domain.Catalogs;
 using ERP.Domain.Partners;
 using ERP.Domain.Products;
 using ERP.Domain.Purchases;
@@ -20,6 +21,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
         /// <param name="units">Las unidades de las líneas y la de los productos nuevos, por código.</param>
         public async Task<List<string>> CheckAsync(
             CreatePurchaseLineDto[] lines,
+            InvoicePriceType invoicePriceType,
             BusinessPartner supplier,
             IReadOnlyDictionary<Guid, Product> products,
             IReadOnlyDictionary<string, UnitOfMeasure> units
@@ -43,8 +45,16 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 var unit = units.GetValueOrDefault(UnitOfMeasure.NormalizeCode(code));
                 if (UnitOfMeasure.UsableError(unit, code) is { } unitError)
                     errors.Add($"Línea {lineNumber}: {unitError}");
-                else if (PurchaseLine.ConversionFactorError(unit!, lines[i].ConversionFactor) is { } factorError)
-                    errors.Add($"Línea {lineNumber}: {factorError}");
+                // Cantidad, monto, unidades por caja y lo que resulta de ellos (que el costo no salga 0, que quepa).
+                else if (PurchaseLine.AmountsError(
+                    invoicePriceType,
+                    lines[i].InvoiceIgvAffectation,
+                    unit!,
+                    lines[i].InvoiceQuantity,
+                    lines[i].InvoiceAmount,
+                    lines[i].ConversionFactor
+                    ) is { } amountsError)
+                    errors.Add($"Línea {lineNumber}: {amountsError}");
             }
 
             errors.AddRange(await CheckNewProductsAsync(lines, units));

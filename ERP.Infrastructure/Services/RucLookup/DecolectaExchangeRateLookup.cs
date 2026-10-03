@@ -56,7 +56,7 @@ namespace ERP.Infrastructure.Services.RucLookup
                     ? ExchangeRateOutcome.Found(rates.OrderByDescending(r => r.Date).First())
                     : ExchangeRateOutcome.Failed(RucLookupFailure.NotFound);
             }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+            catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or JsonException) && !ct.IsCancellationRequested)
             {
                 return ExchangeRateOutcome.Failed(RucLookupFailure.Unavailable);
             }
@@ -82,7 +82,7 @@ namespace ERP.Infrastructure.Services.RucLookup
 
                 return Parse(json.RootElement).Where(r => r.Date.Year == year && r.Date.Month == month).ToArray();
             }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+            catch (Exception ex) when ((ex is HttpRequestException or TaskCanceledException or JsonException) && !ct.IsCancellationRequested)
             {
                 return [];
             }

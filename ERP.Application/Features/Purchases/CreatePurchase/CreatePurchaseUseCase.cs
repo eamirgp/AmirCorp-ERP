@@ -58,8 +58,9 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
 
             var number = Purchase.NormalizeNumber(request.Number);
 
-            if (await _purchaseRepository.DocumentExistsAsync(request.CompanyId, request.TaxDocumentType, supplier.Id, request.Serie, number))
-                return Result<CreatedResponseDto>.Failure(["El comprobante ya se encuentra registrado para este proveedor."], ErrorType.Conflict);
+            if (await _purchaseRepository.FindDocumentAsync(request.TaxDocumentType, supplier.Id, request.Serie, number) is { } registered)
+                return Result<CreatedResponseDto>.Failure(
+                    [Purchase.DuplicateDocumentError(company.Id, registered.CompanyId, registered.CompanyName)], ErrorType.Conflict);
 
             var lines = request.Lines.ToArray();
             var productIds = lines.Where(l => l.ProductId is not null).Select(l => l.ProductId!.Value).ToArray();
@@ -73,7 +74,7 @@ namespace ERP.Application.Features.Purchases.CreatePurchase
                 .ToArray();
             var units = (await _unitOfMeasureRepository.GetByCodesAsync(unitCodes)).ToDictionary(u => u.Code);
 
-            var errors = await _linesChecker.CheckAsync(lines, supplier, products, units);
+            var errors = await _linesChecker.CheckAsync(lines, request.InvoicePriceType, supplier, products, units);
             if (errors.Count > 0)
                 return Result<CreatedResponseDto>.Failure(errors, ErrorType.BadRequest);
 

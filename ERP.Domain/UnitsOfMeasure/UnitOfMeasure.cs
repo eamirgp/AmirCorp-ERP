@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Domain.Common;
 
 namespace ERP.Domain.UnitsOfMeasure
@@ -57,8 +58,50 @@ namespace ERP.Domain.UnitsOfMeasure
                     ? $"La unidad de medida '{unit.Name}' está desactivada. Actívala en Administración › Unidades de medida."
                     : null;
 
-        public void UpdateName(string name) =>
-            Name = ValidateName(name);
+        /// <summary>El nombre corto tal como se guarda: sin espacios al inicio ni al final, ni dobles en medio.</summary>
+        public static string NormalizeName(string name) =>
+            TextNormalizer.CollapseSpaces(name);
+
+        /// <param name="units">Todo el catálogo, para que el nombre no se confunda con el de otra unidad.</param>
+        public void UpdateName(string name, IReadOnlyCollection<UnitOfMeasure> units)
+        {
+            if (NameError(name, Id, units) is { } error)
+                throw new DomainException(error);
+
+            Name = NormalizeName(name);
+        }
+
+        /// <summary>
+        /// Qué tiene de malo el nombre corto, o null si está bien. No puede ser el nombre corto, el nombre SUNAT ni el
+        /// código de otra unidad (sin distinguir mayúsculas ni tildes): la planilla de Excel reconoce la unidad por
+        /// cualquiera de ellos, y con dos iguales no sabría cuál es.
+        /// </summary>
+        /// <param name="unitId">La unidad que se renombra.</param>
+        /// <param name="units">Todo el catálogo.</param>
+        public static string? NameError(string? name, Guid unitId, IReadOnlyCollection<UnitOfMeasure> units)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return "El nombre es requerido.";
+
+            var normalized = NormalizeName(name);
+            if (normalized.Length > NameMaxLength)
+                return $"El nombre no puede exceder los {NameMaxLength} caracteres.";
+
+            if (units.FirstOrDefault(u => u.Id != unitId && u.IsKnownAs(normalized)) is { } other)
+                return $"«{normalized}» ya identifica a la unidad {other.Name} ({other.Code}). Elige otro nombre.";
+
+            return null;
+        }
+
+        /// <summary>
+        /// Si el texto es el nombre corto, el nombre SUNAT o el código de esta unidad, sin distinguir mayúsculas ni
+        /// tildes ("docena", "DOCENA", "dzn"). Así se reconoce la unidad escrita en la planilla de Excel.
+        /// </summary>
+        public bool IsKnownAs(string text)
+        {
+            var trimmed = text.Trim();
+            return SameText(trimmed, Name) || SameText(trimmed, SunatName) || SameText(trimmed, Code);
+        }
 
         public void Activate() =>
             IsActive = true;
@@ -66,16 +109,7 @@ namespace ERP.Domain.UnitsOfMeasure
         public void Deactivate() =>
             IsActive = false;
 
-        private static string ValidateName(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new DomainException("El nombre es requerido.");
-
-            var normalized = TextNormalizer.CollapseSpaces(name);
-            if (normalized.Length > NameMaxLength)
-                throw new DomainException($"El nombre no puede exceder los {NameMaxLength} caracteres.");
-
-            return normalized;
-        }
+        private static bool SameText(string a, string b) =>
+            string.Compare(a, b, CultureInfo.InvariantCulture, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) == 0;
     }
 }
