@@ -1,3 +1,4 @@
+using ERP.Application.Common.Results;
 using ERP.Application.Features.Products.CreateProduct;
 using ERP.Domain.Catalogs;
 using ERP.Domain.Products;
@@ -13,7 +14,7 @@ namespace ERP.Api.Controllers.Products.Requests
         IReadOnlyCollection<ProductSupplierCodeRequest?>? SupplierCodes
         )
     {
-        public IReadOnlyCollection<string> Validate() =>
+        public IReadOnlyCollection<ErrorDetail> Validate() =>
             ProductRequestRules.Validate(Code, Name, UnitOfMeasureCode, IgvAffectation, SalePrice, SupplierCodes);
 
         public CreateProductDto ToDto() =>

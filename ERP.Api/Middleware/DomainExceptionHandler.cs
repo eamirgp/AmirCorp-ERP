@@ -25,7 +25,7 @@ namespace ERP.Api.Middleware
             httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
 
             await httpContext.Response.WriteAsJsonAsync(
-                new ErrorResponse([domainException.Message]),
+                ErrorResponse.From([domainException.Message]),
                 cancellationToken
                 );
 

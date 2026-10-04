@@ -51,7 +51,9 @@ Las constantes compartidas (largos máximos, `User.PasswordMinLength`) viven en 
 | `DomainException` | `DomainExceptionHandler` | 400 |
 | `ConcurrencyException` | `ConcurrencyExceptionHandler` | 409 |
 
-Todas responden `{ "errors": [ ... ] }`.
+Todas responden `{ "errors": [{ "message": "...", "field": "..." }] }` (`ErrorResponse`, decisión 37).
+
+**Errores con su campo.** `Result` guarda cada error como `ErrorDetail(Message, Field)`; `Errors` sigue dando solo los mensajes. El campo es el nombre de la propiedad del pedido en camelCase y se arma con `FieldName` (`FieldName.Of(nameof(request.Code))` → `code`; `FieldName.Item("SupplierCodes", 0, "Code")` → `supplierCodes[0].code`, filas desde 0). Lo pone quien sabe de qué campo es la regla: el `Request.Validate()` de la API y el caso de uso; el dominio sigue devolviendo solo el mensaje (`…Error`), salvo que una regla de lista necesite decir de qué elemento es (`Product.SupplierCodesErrors` devuelve `SupplierCodeProblem` con el proveedor). Un error sin campo (concurrencia, `DomainException`, "falta la versión") va arriba del formulario. `Result.Failure(string[])` sigue sirviendo para los errores sin campo.
 
 ## Concurrencia
 

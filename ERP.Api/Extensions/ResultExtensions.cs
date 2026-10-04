@@ -11,7 +11,7 @@ namespace ERP.Api.Extensions
             public IActionResult ToActionResult(int successStatusCode) =>
                 result.IsSuccess
                 ? new ObjectResult(result.Value) { StatusCode = successStatusCode }
-                : Failure(result.Errors, result.ErrorType);
+                : Failure(result.Details, result.ErrorType);
         }
 
         extension(Result result)
@@ -19,10 +19,10 @@ namespace ERP.Api.Extensions
             public IActionResult ToActionResult(int successStatusCode) =>
                 result.IsSuccess
                 ? new StatusCodeResult(successStatusCode)
-                : Failure(result.Errors, result.ErrorType);
+                : Failure(result.Details, result.ErrorType);
         }
 
-        private static IActionResult Failure(IReadOnlyCollection<string> errors, ErrorType? errorType)
+        private static IActionResult Failure(IReadOnlyCollection<ErrorDetail> errors, ErrorType? errorType)
         {
             var statusCode = errorType switch
             {

@@ -34,7 +34,7 @@ namespace ERP.Domain.Products
         public static string? CodeError(string? code)
         {
             if (string.IsNullOrWhiteSpace(code))
-                return "Falta el código del proveedor.";
+                return "Escribe el código del proveedor.";
 
             if (NormalizeCode(code).Length > CodeMaxLength)
                 return $"El código del proveedor no puede exceder los {CodeMaxLength} caracteres.";

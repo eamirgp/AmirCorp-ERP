@@ -103,11 +103,17 @@ Todos, salvo el login, requieren `Authorization: Bearer <token>`. Salvo `api/me`
 Cada recurso tiene `POST` (crear), `GET` (listar), `GET {id}` y `PUT {id}` (actualizar), salvo compras, que no se editan: se anulan.
 
 ### Formato de errores
-Todos los errores de negocio devuelven el mismo cuerpo:
+Todos los errores devuelven el mismo cuerpo. `field` dice de qué campo del pedido es cada error (la pantalla lo pone debajo de ese campo); si es `null`, es del pedido entero (decisión 37):
 
 ```json
-{ "errors": ["El usuario Ana Pérez ya tiene el correo ana@pizarro.pe. Usa otro correo."] }
+{ "errors": [
+  { "message": "Escribe el nombre.", "field": "name" },
+  { "message": "Elige el proveedor.", "field": "supplierCodes[0].supplierId" },
+  { "message": "El usuario Ana Pérez ya tiene el correo ana@pizarro.pe. Usa otro correo.", "field": null }
+] }
 ```
+
+Por ahora solo crear y editar productos indican el campo; los demás pedidos envían `field: null` hasta que se rediseñe su pantalla.
 
 | Código | Cuándo |
 |---|---|

@@ -29,22 +29,23 @@ namespace ERP.Application.Features.Products.CreateProduct
 
         public async Task<Result<CreatedResponseDto>> ExecuteAsync(CreateProductDto request)
         {
-            // Todos los errores juntos: el código repetido, la unidad y los códigos de proveedores.
-            var errors = new List<string>();
+            // Todos los errores juntos, cada uno con su campo (decisión 37): el código repetido, la unidad y los códigos de
+            // proveedores.
+            var errors = new List<ErrorDetail>();
             var owner = await _productRepository.FindByCodeAsync(request.Code);
             var codeTaken = owner is not null;
             if (owner is not null)
-                errors.Add(Product.CodeTakenError(owner));
+                errors.Add(new(Product.CodeTakenError(owner), FieldName.Of(nameof(request.Code))));
 
             // Las mismas reglas del dominio, revisadas antes para responder con el mensaje en vez de una excepción.
             var unit = await _unitOfMeasureRepository.GetByCodeAsync(request.UnitOfMeasureCode);
             var unitError = UnitOfMeasure.UsableError(unit, request.UnitOfMeasureCode);
             if (unitError is not null)
-                errors.Add(unitError);
+                errors.Add(new(unitError, FieldName.Of(nameof(request.UnitOfMeasureCode))));
 
             var supplierCodes = await ProductSupplierCodeRules.CheckAsync(request.SupplierCodes, product: null, _businessPartnerRepository, _productRepository);
             if (!supplierCodes.IsSuccess)
-                errors.AddRange(supplierCodes.Errors);
+                errors.AddRange(supplierCodes.Details);
 
             if (errors.Count > 0)
                 return Result<CreatedResponseDto>.Failure(

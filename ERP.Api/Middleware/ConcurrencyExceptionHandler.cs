@@ -14,7 +14,7 @@ namespace ERP.Api.Middleware
             httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
 
             await httpContext.Response.WriteAsJsonAsync(
-                new ErrorResponse([concurrencyException.Message]),
+                ErrorResponse.From([concurrencyException.Message]),
                 cancellationToken
                 );
 

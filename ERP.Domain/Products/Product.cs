@@ -125,7 +125,7 @@ namespace ERP.Domain.Products
         public void SetSupplierCodes(IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes)
         {
             if (SupplierCodesErrors(codes) is [var first, ..])
-                throw new DomainException(first);
+                throw new DomainException(first.Message);
 
             var normalized = codes.Select(c => (SupplierId: c.Supplier.Id, Code: ProductSupplierCode.NormalizeCode(c.Code))).ToList();
 
@@ -189,37 +189,37 @@ namespace ERP.Domain.Products
         /// Qué tiene de malo la lista completa de códigos del formulario, o una lista vacía si está bien: un código por
         /// proveedor, cada código bien escrito, y solo proveedores. Un proveedor con compras bloqueadas conserva su código
         /// (se puede corregir), pero no se le agrega uno nuevo. Que el código no lo use otro producto lo revisa quien
-        /// puede buscar en la base.
+        /// puede buscar en la base. Cada problema dice de qué proveedor es, para que el formulario lo marque en su fila.
         /// </summary>
-        public IReadOnlyList<string> SupplierCodesErrors(IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes) =>
+        public IReadOnlyList<SupplierCodeProblem> SupplierCodesErrors(IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes) =>
             SupplierCodesErrors(codes, SupplierCodeOf);
 
         /// <summary>
         /// Lo mismo que <see cref="SupplierCodesErrors(IReadOnlyCollection{ValueTuple{BusinessPartner, string}})"/> para un
         /// producto que todavía no se crea (no tiene códigos): así se avisa junto con los demás errores del formulario.
         /// </summary>
-        public static IReadOnlyList<string> NewProductSupplierCodesErrors(IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes) =>
+        public static IReadOnlyList<SupplierCodeProblem> NewProductSupplierCodesErrors(IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes) =>
             SupplierCodesErrors(codes, _ => null);
 
-        private static IReadOnlyList<string> SupplierCodesErrors(
+        private static IReadOnlyList<SupplierCodeProblem> SupplierCodesErrors(
             IReadOnlyCollection<(BusinessPartner Supplier, string Code)> codes,
             Func<Guid, ProductSupplierCode?> linkedCodeOf)
         {
-            var errors = new List<string>();
+            var errors = new List<SupplierCodeProblem>();
 
             foreach (var group in codes.GroupBy(c => c.Supplier.Id))
             {
                 var supplier = group.First().Supplier;
 
                 if (group.Count() > 1)
-                    errors.Add($"{supplier.Name} aparece más de una vez. Deja un solo código por proveedor.");
+                    errors.Add(new(supplier.Id, $"{supplier.Name} aparece más de una vez. Deja un solo código por proveedor."));
 
                 foreach (var (_, code) in group)
                     if (ProductSupplierCode.CodeError(code) is { } codeError)
-                        errors.Add($"{supplier.Name}: {codeError}");
+                        errors.Add(new(supplier.Id, $"{supplier.Name}: {codeError}", IsAboutCode: true));
 
                 if (linkedCodeOf(supplier.Id) is null && NewSupplierLinkError(supplier) is { } linkError)
-                    errors.Add(linkError);
+                    errors.Add(new(supplier.Id, linkError));
             }
 
             return errors;
@@ -235,7 +235,7 @@ namespace ERP.Domain.Products
         public static string? CodeError(string? code)
         {
             if (string.IsNullOrWhiteSpace(code))
-                return "El código interno es requerido.";
+                return "Escribe el código interno.";
 
             if (NormalizeCode(code).Length > CodeMaxLength)
                 return $"El código interno no puede exceder los {CodeMaxLength} caracteres.";
@@ -260,7 +260,7 @@ namespace ERP.Domain.Products
         public static string? NameError(string? name)
         {
             if (string.IsNullOrWhiteSpace(name))
-                return "El nombre es requerido.";
+                return "Escribe el nombre.";
 
             if (NormalizeName(name).Length > NameMaxLength)
                 return $"El nombre no puede exceder los {NameMaxLength} caracteres.";
@@ -272,7 +272,7 @@ namespace ERP.Domain.Products
         public static string? IgvAffectationError(IgvAffectation? igvAffectation) =>
             igvAffectation switch
             {
-                null => "El tipo de afectación del IGV es requerido.",
+                null => "Elige la afectación al IGV.",
                 { } value when !Enum.IsDefined(value) => "El tipo de afectación del IGV es inválido.",
                 _ => null
             };

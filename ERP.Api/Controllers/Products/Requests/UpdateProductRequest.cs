@@ -1,3 +1,4 @@
+using ERP.Application.Common.Results;
 using ERP.Application.Features.Products.UpdateProduct;
 using ERP.Domain.Catalogs;
 using ERP.Domain.Products;
@@ -15,12 +16,13 @@ namespace ERP.Api.Controllers.Products.Requests
         uint? RowVersion
         )
     {
-        public IReadOnlyCollection<string> Validate()
+        public IReadOnlyCollection<ErrorDetail> Validate()
         {
             var errors = ProductRequestRules.Validate(Code, Name, UnitOfMeasureCode, IgvAffectation, SalePrice, SupplierCodes);
 
+            // Sin campo: es del formulario entero.
             if (RowVersion is null)
-                errors.Add("Falta la versión del producto. Vuelve a abrir el formulario.");
+                errors.Add(new("Falta la versión del producto. Vuelve a abrir el formulario."));
 
             return errors;
         }

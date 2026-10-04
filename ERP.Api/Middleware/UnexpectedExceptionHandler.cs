@@ -33,7 +33,7 @@ namespace ERP.Api.Middleware
             httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
             await httpContext.Response.WriteAsJsonAsync(
-                new ErrorResponse(["Ocurrió un error inesperado. Vuelve a intentarlo; si continúa, avisa al administrador."]),
+                ErrorResponse.From(["Ocurrió un error inesperado. Vuelve a intentarlo; si continúa, avisa al administrador."]),
                 cancellationToken
                 );
 

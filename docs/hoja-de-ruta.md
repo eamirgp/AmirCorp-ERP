@@ -7,6 +7,7 @@
 - [x] Compras nacionales con ingreso de stock por lotes
 - [x] Concurrencia optimista (`xmin`) en compras y stock; en productos, el formulario envía la versión que abrió (`RowVersion`)
 - [x] Errores siempre como `{ errors: [...] }` en español: datos con formato inválido, 404 y errores inesperados (500)
+- [x] Cada error con su campo (`{ message, field }`, decisión 37): hecho en crear y editar productos. Pendiente en los demás formularios (clientes, proveedores, compras, usuarios, empresas, unidades, vistas), cada uno cuando se rediseñe su pantalla
 - [x] Llaves foráneas faltantes
 - [x] SuperAdmin automático al arrancar
 - [x] Migración a PostgreSQL
@@ -23,7 +24,7 @@
 - [x] Código interno y códigos de proveedores por producto (ver [decisiones.md](decisiones.md#14-código-interno-y-códigos-de-proveedores))
 - [x] Datos repetidos guardados al mismo tiempo (índice único): la API responde 409 en vez de 500
 - [x] Carga masiva de productos con Excel: plantilla, exportación, revisión sin guardar y confirmación todo o nada (ver [decisiones.md](decisiones.md#11-carga-masiva-de-productos-con-excel))
-- [x] Rediseño de la pantalla al estilo Apple, pieza por pieza: inicio de sesión, marco de la aplicación (menú lateral por área, barra superior) componentes base (botones, campos, ventanas, avisos, tabla en franjas) y la pantalla de Productos. Siguen las demás pantallas; el modo oscuro, al final (decisiones 12 a 25 de `AmirCorp-ERP-Web`; la 16 pasó los estados a los colores de Apple y la 21 el acento y el botón principal a su azul, la 17 las listas desplegables y los menús a los de la Mac, la 18 hace que los menús se abran al soltar el clic la 23 rediseña "Administrar vistas" y adapta Productos al celular con filas como las del iPhone, y la 24 deja el foco y el error de los campos y los botones de solo texto como en Cuenta de Apple)
+- [x] Rediseño de la pantalla al estilo Apple, pieza por pieza: inicio de sesión, marco de la aplicación (menú lateral por área, barra superior) componentes base (botones, campos, ventanas, avisos, tabla en franjas) y la pantalla de Productos. Siguen las demás pantallas; el modo oscuro, al final (decisiones 12 a 26 de `AmirCorp-ERP-Web`; la 16 pasó los estados a los colores de Apple y la 21 el acento y el botón principal a su azul, la 17 las listas desplegables y los menús a los de la Mac, la 18 hace que los menús se abran al soltar el clic la 23 rediseña "Administrar vistas" y adapta Productos al celular con filas como las del iPhone, y la 24 deja el foco y el error de los campos y los botones de solo texto como en Cuenta de Apple)
 - [x] Ordenar las listas por cada columna (ver [decisiones.md](decisiones.md#35-ordenar-las-listas-por-cada-columna)); las listas informan su tamaño de página y su orden por defecto (decisión 36)
 
 ## Siguiente: base técnica

@@ -4,7 +4,7 @@ namespace ERP.Api.Common
 {
     /// <summary>
     /// Respuestas de error que salen sin cuerpo (sesión vencida, sin permiso, dirección que no existe, método no
-    /// permitido): les pone la forma de siempre, <c>{ errors: [...] }</c>, con un mensaje en español (decisión 10). Las
+    /// permitido): les pone la forma de siempre, <c>{ errors: [{ message }] }</c>, con un mensaje en español (decisión 10). Las
     /// que ya traen su mensaje (un 404 de un caso de uso, el 401 con el motivo de la sesión) no se tocan.
     /// </summary>
     internal static class StatusCodeResponse
@@ -24,7 +24,7 @@ namespace ERP.Api.Common
                 _ => "No se pudo completar el pedido."
             };
 
-            await response.WriteAsJsonAsync(new ErrorResponse([message]));
+            await response.WriteAsJsonAsync(ErrorResponse.From([message]));
         }
     }
 }

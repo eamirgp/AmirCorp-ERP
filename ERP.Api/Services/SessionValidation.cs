@@ -52,7 +52,7 @@ namespace ERP.Api.Services
 
                 context.HandleResponse();
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsJsonAsync(new ErrorResponse([message]));
+                await context.Response.WriteAsJsonAsync(ErrorResponse.From([message]));
             }
         };
     }

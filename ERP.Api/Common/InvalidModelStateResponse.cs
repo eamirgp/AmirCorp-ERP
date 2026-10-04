@@ -22,7 +22,7 @@ namespace ERP.Api.Common
                 ? "Los datos enviados no tienen el formato esperado."
                 : $"Algunos datos no tienen el formato esperado ({string.Join(", ", fields)}). Revisa e inténtalo de nuevo.";
 
-            return new BadRequestObjectResult(new ErrorResponse([message]));
+            return new BadRequestObjectResult(ErrorResponse.From([message]));
         }
     }
 }
