@@ -18,6 +18,9 @@ namespace ERP.Application.Common.Pagination
 
         public IReadOnlyList<int> PageSizeOptions => PaginationDefaults.PageSizeOptions;
 
+        /// <summary>Filas por página cuando no se pide otra cantidad: la pantalla la usa para no guardar "10" como si se hubiera elegido.</summary>
+        public int DefaultPageSize => PaginationDefaults.DefaultPageSize;
+
         public PagedResult(IReadOnlyCollection<T> items, int page, int pageSize, int totalCount)
         {
             Items = items;

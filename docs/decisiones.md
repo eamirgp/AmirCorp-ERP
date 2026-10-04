@@ -82,7 +82,7 @@ El frontend (`AmirCorp-ERP-Web`) no valida, no calcula, no normaliza y no decide
 - **Descripciones** de enums y catálogos en las respuestas (`...Description`).
 - **Números en textos** (historial, revisión de importación, mensajes): punto decimal y espacio para los miles, sin comas ("S/ 1 234.50", `NumberText`), igual que la pantalla. Así nadie confunde comas con puntos.
 - **Orden por defecto:** lo decide la API (`ListProductsDto.DefaultSortBy`, etc.). La pantalla no envía orden si el usuario no eligió uno, y la respuesta informa el orden aplicado (`sortBy`, `sortDescending`) para que el menú "Ordenar" lo muestre (y, desde la decisión 35, la flecha de la columna ordenada).
-- **Paginación:** cada lista paginada trae `page`, `totalPages`, `hasNextPage`, el rango visible (`from`, `to`) y los tamaños de página que se pueden elegir (`pageSizeOptions`). Un `PageSize` fuera del rango se ajusta al mínimo o al máximo, y una página que ya no existe se ajusta a la última (`PaginationDefaults.ClampPage`): la respuesta trae la página real.
+- **Paginación:** cada lista paginada trae `page`, `totalPages`, `hasNextPage`, el rango visible (`from`, `to`) y los tamaños de página que se pueden elegir (`pageSizeOptions`) con el de por defecto (`defaultPageSize`, decisión 36). Un `PageSize` fuera del rango se ajusta al mínimo o al máximo, y una página que ya no existe se ajusta a la última (`PaginationDefaults.ClampPage`): la respuesta trae la página real.
 - **Errores:** toda respuesta de error tiene la forma `{ errors: [...] }` con mensajes en español, también cuando un dato no se puede leer (`InvalidModelStateResponse`), en los 404 y en los errores inesperados (`UnexpectedExceptionHandler`, que deja el detalle técnico solo en el log).
 - **Auditoría:** el historial de cambios se consulta en `GET /api/audit` con los textos listos para mostrar (ver la decisión 12).
 - **Permisos:** qué módulos y acciones puede usar el usuario se informará en `GET /api/me` cuando existan pantallas que dependan del rol.
@@ -456,3 +456,11 @@ Con el rediseño de la pantalla (decisión 14 de `AmirCorp-ERP-Web`) las columna
 - **Compras** (`PurchaseSortBy`): `Document` (serie y número; el número se guarda con ceros a la izquierda, así que como texto queda en orden numérico) y `CompanyName` (dentro de cada empresa, lo más reciente primero).
 - Los valores de antes no cambian de número: las vistas guardadas y los enlaces siguen funcionando.
 - **Aviso:** ordenar compras por total compara el número sin mirar la moneda (una factura de US$ 100 queda junto a una de S/ 100). Ya era así con el menú "Ordenar"; se resuelve cuando la compra guarde su total en soles (pendiente "Costo en dólares" de la hoja de ruta).
+
+### 36. Las listas informan su tamaño de página y su orden por defecto
+**Fecha:** octubre 2026
+
+Error que encontró el dueño: en una vista guardada (por ejemplo "Activos"), si cambiaba las filas por página y volvía a 10, la vista ya no se marcaba. La URL quedaba con `filas=10`, que la vista no tiene, aunque 10 es lo que se usa sin elegir nada. Lo mismo pasaba al volver al orden normal con un clic en una columna.
+
+- **Cada lista paginada trae `defaultPageSize`** (`PagedResult`, de `PaginationDefaults.DefaultPageSize`), y **cada lista ordenable trae `defaultSortBy` y `defaultSortDescending`** (`SortedPagedResult`, de las constantes `DefaultSortBy` y `DefaultSortDescending` de cada DTO).
+- Con eso la pantalla quita de la URL lo que coincide con lo de por defecto, sin tener que saber esos valores (decisión 19 de `AmirCorp-ERP-Web`): la lista se reconoce igual a la que abre normalmente o a su vista guardada.

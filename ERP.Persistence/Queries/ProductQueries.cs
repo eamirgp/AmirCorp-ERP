@@ -93,7 +93,9 @@ namespace ERP.Persistence.Queries
                 listProductsDto.PageSize,
                 totalCount,
                 listProductsDto.SortBy,
-                listProductsDto.SortDescending
+                listProductsDto.SortDescending,
+                ListProductsDto.DefaultSortBy,
+                ListProductsDto.DefaultSortDescending
                 );
         }
 

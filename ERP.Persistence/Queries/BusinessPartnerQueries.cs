@@ -88,7 +88,9 @@ namespace ERP.Persistence.Queries
                 listBusinessPartnersDto.PageSize,
                 totalCount,
                 listBusinessPartnersDto.SortBy,
-                listBusinessPartnersDto.SortDescending
+                listBusinessPartnersDto.SortDescending,
+                ListBusinessPartnersDto.DefaultSortBy,
+                ListBusinessPartnersDto.DefaultSortDescending
                 );
         }
 
