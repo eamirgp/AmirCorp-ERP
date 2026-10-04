@@ -44,7 +44,7 @@
    - Costo unitario puesto en almacén. IGV, IPM y percepción son crédito fiscal, no costo.
    - `StockEntry.PurchaseLineId` es obligatorio hoy; los lotes también nacerán de importaciones y ajustes.
 2. **Inventario**: almacenes, kardex, ajustes y traslados.
-3. **Ventas**: facturas, boletas y notas de crédito con series y correlativos. Consumen stock. Modelo listo para SUNAT (ver [decisiones.md](decisiones.md#8-facturación-electrónica-al-final)).
+3. **Ventas**: facturas, boletas y notas de crédito con series y correlativos. Consumen stock. Avisar al vender un producto con precio 0 (los productos nuevos empiezan así: decisión 20 de `AmirCorp-ERP-Web`). Modelo listo para SUNAT (ver [decisiones.md](decisiones.md#8-facturación-electrónica-al-final)).
 4. **Guías de remisión remitente**: por venta, traslado entre establecimientos e importación.
 5. **Caja y cobranzas**: pagos, ventas al crédito, cuentas por cobrar y por pagar.
 6. **Reportes y dashboard**.
